@@ -14,7 +14,12 @@ set(${EXECUTABLE_NAME}_ENTRY
     PARENT_SCOPE
 )
 set(${EXECUTABLE_NAME}_HEADERS
+    ${THIS_DIR}/Command.h
     ${THIS_DIR}/InputMapper.h
+    ${THIS_DIR}/LaneCommands.h
+    ${THIS_DIR}/FollowCamera.h
+    ${THIS_DIR}/HudText.h
+    ${THIS_DIR}/Hud.h
     ${THIS_DIR}/SceneAdapter.h
     ${THIS_DIR}/BowlingCanvas.h
     ${THIS_DIR}/BowlingFrame.h
@@ -22,6 +27,10 @@ set(${EXECUTABLE_NAME}_HEADERS
 )
 set(${EXECUTABLE_NAME}_SOURCES
     ${THIS_DIR}/InputMapper.cpp
+    ${THIS_DIR}/LaneCommands.cpp
+    ${THIS_DIR}/FollowCamera.cpp
+    ${THIS_DIR}/HudText.cpp
+    ${THIS_DIR}/Hud.cpp
     ${THIS_DIR}/SceneAdapter.cpp
     ${THIS_DIR}/BowlingCanvas.cpp
     ${THIS_DIR}/BowlingFrame.cpp
@@ -47,14 +56,16 @@ set(PROJECT_LIST
     PARENT_SCOPE
 )
 
-# Window-free unit test for the input mapping.
+# Window-free unit tests: input mapping, lane commands, camera rig, HUD.
 if(BUILD_TESTING AND BUILD_WX_UI)
     build_gtest_executable(
-        NAME     test_bowlinggl_input
-        SRC      ${THIS_DIR}/InputMapper.cpp ${THIS_DIR}/test/test_InputMapper.cpp
-        DEPENDS  ${CMAKE_ROOT_NAME}::Alley wx::core wx::base
+        NAME     test_bowlinggl
+        SRC      ${THIS_DIR}/InputMapper.cpp ${THIS_DIR}/LaneCommands.cpp
+                 ${THIS_DIR}/FollowCamera.cpp ${THIS_DIR}/HudText.cpp ${THIS_DIR}/Hud.cpp
+                 ${THIS_DIR}/test/test_InputMapper.cpp ${THIS_DIR}/test/test_Gameplay.cpp
+        DEPENDS  ${CMAKE_ROOT_NAME}::Alley ${CMAKE_ROOT_NAME}::Render wx::core wx::base
                  GTest::gtest GTest::gmock GTest::gmock_main
         DISCOVER ON
     )
-    target_include_directories(test_bowlinggl_input PRIVATE ${THIS_DIR})
+    target_include_directories(test_bowlinggl PRIVATE ${THIS_DIR})
 endif()

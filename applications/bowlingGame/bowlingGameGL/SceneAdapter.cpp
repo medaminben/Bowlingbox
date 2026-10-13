@@ -1,7 +1,7 @@
 #include "SceneAdapter.h"
 #include <glm/gtc/quaternion.hpp>
 
-using namespace Sandbox;
+using namespace Gamebox;
 
 namespace SceneAdapter {
 

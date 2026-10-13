@@ -24,7 +24,9 @@ set(${EXECUTABLE_NAME}_ENTRY
 # header files
 set(${EXECUTABLE_NAME}_HEADERS
     ${THIS_DIR}/bowlingScreen.h
+    ${THIS_DIR}/scoreGrid.h
     ${THIS_DIR}/screenTools.h
+    ${THIS_DIR}/terminal.h
     PARENT_SCOPE
 )
 
@@ -32,7 +34,9 @@ set(${EXECUTABLE_NAME}_HEADERS
 set(${EXECUTABLE_NAME}_SOURCES
     ${THIS_DIR}/console.cpp
     ${THIS_DIR}/bowlingScreen.cpp
+    ${THIS_DIR}/scoreGrid.cpp
     ${THIS_DIR}/screenTools.cpp
+    ${THIS_DIR}/terminal.cpp
     PARENT_SCOPE
 )
 
@@ -47,7 +51,7 @@ set(${EXECUTABLE_NAME}_RSC
 )
 # dependencies
 set(${EXECUTABLE_NAME}_DEPS
-    ${CMAKE_ROOT_NAME}::Gamebox
+    ${CMAKE_ROOT_NAME}::Score
     PARENT_SCOPE
 )
 # compile arguments

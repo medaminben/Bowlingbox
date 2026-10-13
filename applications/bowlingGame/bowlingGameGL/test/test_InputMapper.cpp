@@ -2,7 +2,7 @@
 #include <wx/defs.h>
 #include <gtest/gtest.h>
 
-using Sandbox::Alley::Phase;
+using Gamebox::Alley::Phase;
 
 TEST(test_input_mapper, arrows_move_while_aiming_or_charging) {
     EXPECT_EQ(InputMapper::keyDown(WXK_LEFT, false, Phase::Aiming), Command::MoveLeft);

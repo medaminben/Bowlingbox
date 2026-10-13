@@ -1,14 +1,16 @@
 #ifndef BOWLINGGL_BOWLING_CANVAS_H
 #define BOWLINGGL_BOWLING_CANVAS_H
-#include "InputMapper.h"
-#include <Sandbox/Alley/Alley.h>
-#include <Sandbox/Render/Render.h>
+#include "Command.h"
+#include "FollowCamera.h"
+#include <Gamebox/Alley/Alley.h>
+#include <Gamebox/Render/Render.h>
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
 #include <functional>
 #include <memory>
 
-/// GL canvas: owns the Lane, drives it at 60 Hz, draws it, maps input.
+/// GL canvas: owns the Lane and the GL resources, runs the 60 Hz loop and
+/// forwards wx events. Rules, input mapping, camera and HUD live elsewhere.
 class BowlingCanvas : public wxGLCanvas {
 public:
     BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs);
@@ -29,18 +31,16 @@ private:
     bool ensureRenderer();
     void apply(Command command);
     void renderFrame();
-    void updateCamera(const Sandbox::Alley::Snapshot& s, float dt);
-    void drawHud(const Sandbox::Alley::Snapshot& s, int w, int h, int topPx, int bottomPx);
-    wxString statusFor(const Sandbox::Alley::Snapshot& s) const;
+    void resizeContext();
 
     std::unique_ptr<wxGLContext> _gl;
-    std::unique_ptr<Sandbox::Render::Context> _ctx;
-    std::unique_ptr<Sandbox::Render::SceneRenderer> _scene;
-    std::unique_ptr<Sandbox::Render::Overlay> _overlay;
-    Sandbox::Render::Camera _camera;
-    Sandbox::Alley::Lane _lane;
+    std::unique_ptr<Gamebox::Render::Context> _ctx;
+    std::unique_ptr<Gamebox::Render::SceneRenderer> _scene;
+    std::unique_ptr<Gamebox::Render::Overlay> _overlay;
+    Gamebox::Render::Camera _camera;
+    FollowCamera _follow;
+    Gamebox::Alley::Lane _lane;
     wxTimer _timer;
-    float _cameraZ = -3.5f;
     wxPoint _lastMouse;
     bool _failed = false;
 };

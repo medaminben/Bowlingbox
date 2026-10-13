@@ -1,10 +1,13 @@
-#include <Sandbox/Render/Geometry.h>
-#include <Sandbox/Render/ScoreboardLayout.h>
+#include <Gamebox/Render/Geometry.h>
+#include <Gamebox/Render/ScoreboardLayout.h>
+#include <Gamebox/Render/ScoreboardPainter.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <cmath>
+#include <string>
+#include <vector>
 
-using namespace Sandbox::Render;
+using namespace Gamebox::Render;
 
 namespace {
 void expectWellFormed(const MeshData& m) {
@@ -99,4 +102,34 @@ TEST(test_render_scoreboard, roll_cells_map_the_21_slot_encoding) {
     EXPECT_FLOAT_EQ(s4.x, 80.f);
     EXPECT_FLOAT_EQ(s4.y, 10.f);
     EXPECT_FLOAT_EQ(s4.w, 20.f);
+}
+
+namespace {
+/// ICanvas2D that records instead of drawing: no GL context needed.
+class RecordingCanvas final : public ICanvas2D {
+public:
+    std::vector<std::string> texts;
+    int rects = 0;
+    void drawText(std::string_view text, glm::vec2, float, glm::vec3) override { texts.emplace_back(text); }
+    glm::vec2 measureText(std::string_view text, float scale) const override {
+        return {static_cast<float>(text.size()) * 6.f * scale, 7.f * scale};
+    }
+    void drawRect(glm::vec2, glm::vec2, glm::vec4) override { ++rects; }
+};
+}  // namespace
+
+TEST(test_render_scoreboard, painter_writes_marks_scores_and_total) {
+    std::vector<int> rolls(21, -3);
+    rolls[0] = -2;  // strike
+    rolls[1] = -4;  // empty cell after it
+    rolls[2] = 3;
+    rolls[3] = -1;  // spare
+    std::vector<int> scores(10, -3);
+    scores[0] = 20;
+    RecordingCanvas canvas;
+    paintScoreboard(canvas, rolls, scores, 20, ScoreboardLayout {0.f, 0.f, 20.f});
+    const std::vector<std::string> expected {"X", "20", "3", "/", "Total 20"};  // frame by frame
+    EXPECT_EQ(canvas.texts, expected);
+    // panel + 10 frame outlines (4 each) + 11 cell dividers + 10 score separators
+    EXPECT_EQ(canvas.rects, 1 + 40 + 11 + 10);
 }

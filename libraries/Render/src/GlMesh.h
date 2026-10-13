@@ -1,8 +1,8 @@
-#ifndef SANDBOX_RENDER_GLMESH_H
-#define SANDBOX_RENDER_GLMESH_H
-#include <Sandbox/Render/Geometry.h>
+#ifndef GAMEBOX_RENDER_GLMESH_H
+#define GAMEBOX_RENDER_GLMESH_H
+#include <Gamebox/Render/Geometry.h>
 
-namespace Sandbox {
+namespace Gamebox {
 namespace Render {
 
 /// VAO/VBO/EBO for a MeshData: location 0 = position, location 1 = normal.
@@ -20,5 +20,5 @@ private:
 };
 
 }  // namespace Render
-}  // namespace Sandbox
-#endif  // SANDBOX_RENDER_GLMESH_H
+}  // namespace Gamebox
+#endif  // GAMEBOX_RENDER_GLMESH_H

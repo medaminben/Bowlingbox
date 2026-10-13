@@ -1,14 +1,4 @@
-# Architecture detection and target helpers.
-
-macro(get_project_arch)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(PROJECT_ARCH_TARGET "amd64")
-    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set(PROJECT_ARCH_TARGET "i386")
-    else()
-        message(WARNING "Unknown architecture!")
-    endif()
-endmacro()
+# Target helpers.
 
 function(check_project_name)
     set(options)
@@ -32,7 +22,7 @@ macro(add_project name name_list)
     list(APPEND ${name_list} ${name})
 endmacro()
 
-# Convert "Sandbox::Core" -> "sandbox_core" for add_library().
+# Convert "Gamebox::Core" -> "sandbox_core" for add_library().
 macro(get_raw_target_name qualified_name out_var)
     string(REPLACE "::" "_" ${out_var} ${qualified_name})
     string(TOLOWER ${${out_var}} ${out_var})

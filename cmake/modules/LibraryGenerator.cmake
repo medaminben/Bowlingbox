@@ -71,9 +71,9 @@ function(generate_library)
     endif()
 
     if(NOT DEFINED lib_ROOT_NAME OR lib_ROOT_NAME STREQUAL "")
-        set(lib_ROOT_NAME Sandbox)
+        set(lib_ROOT_NAME Gamebox)
         message(WARNING
-            "${lib_NAME}: ROOT_NAME missing; defaulting to Sandbox")
+            "${lib_NAME}: ROOT_NAME missing; defaulting to Gamebox")
     endif()
 
     set(lib_include_DIR ${lib_DIR}/include/${lib_ROOT_NAME}/${lib_NAME})

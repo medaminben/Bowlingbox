@@ -1,49 +1,15 @@
 #include "BowlingCanvas.h"
+#include "Hud.h"
+#include "HudText.h"
+#include "InputMapper.h"
+#include "LaneCommands.h"
 #include "SceneAdapter.h"
-#include <algorithm>
-#include <string>
 
-using namespace Sandbox;
+using namespace Gamebox;
 using Alley::Phase;
 
 namespace {
-constexpr bool kFollowCamera = true;
 constexpr float kDt = 1.f / 60.f;
-constexpr float kCameraHomeZ = -3.5f;
-constexpr float kCameraHeight = 1.8f;
-constexpr float kCameraLookAhead = 9.f;
-
-const char* hintFor(Phase p) {
-    switch (p) {
-        case Phase::Aiming:   return "<- -> move   A D angle   hold Space to charge";
-        case Phase::Charging: return "release to throw";
-        case Phase::GameOver: return "N: new game   Esc: quit";
-        default:              return "";
-    }
-}
-
-/// Gamebox marks the most recent roll slot with -1 for a spare and -2 for a strike.
-int lastRollValue(const std::vector<int>& rolls) {
-    for (auto it = rolls.rbegin(); it != rolls.rend(); ++it)
-        if (*it != -3 && *it != -4)
-            return *it;
-    return -3;
-}
-
-std::string resultFor(const Alley::Snapshot& s, const Alley::Lane& lane) {
-    if (s.phase == Phase::GameOver)
-        return "Game over - score " + std::to_string(lane.totalScore());
-    if (s.phase != Phase::FrameDone || s.lastPinsDown < 0)
-        return "";
-    const int last = lastRollValue(lane.rolls());
-    if (last == -2 || s.lastPinsDown == 10)
-        return "STRIKE!";
-    if (last == -1)
-        return "SPARE!";
-    if (s.lastPinsDown == 0)
-        return "Gutter";
-    return std::to_string(s.lastPinsDown) + " pins";
-}
 }  // namespace
 
 BowlingCanvas::BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs)
@@ -104,10 +70,14 @@ bool BowlingCanvas::ensureRenderer() {
     _ctx = created();
     _scene = std::make_unique<Render::SceneRenderer>(*_ctx, SceneAdapter::geometry(Alley::kLane));
     _overlay = std::make_unique<Render::Overlay>(*_ctx);
+    resizeContext();
+    return true;
+}
+
+void BowlingCanvas::resizeContext() {
     const double scale = GetContentScaleFactor();
     const wxSize sz = GetClientSize();
     _ctx->resize(static_cast<int>(sz.x * scale), static_cast<int>(sz.y * scale));
-    return true;
 }
 
 void BowlingCanvas::OnPaint(wxPaintEvent&) {
@@ -123,20 +93,18 @@ void BowlingCanvas::OnPaint(wxPaintEvent&) {
 
 void BowlingCanvas::OnSize(wxSizeEvent& e) {
     e.Skip();
-    if (_ctx) {
-        const double scale = GetContentScaleFactor();
-        const wxSize sz = GetClientSize();
-        _ctx->resize(static_cast<int>(sz.x * scale), static_cast<int>(sz.y * scale));
-    }
+    if (_ctx)
+        resizeContext();
     Refresh(false);
 }
 
 void BowlingCanvas::OnTimer(wxTimerEvent&) {
     _lane.step(kDt);
     const auto s = _lane.snapshot();
-    updateCamera(s, kDt);
+    _follow.update(s, kDt);
+    _follow.applyTo(_camera);
     if (onStatus)
-        onStatus(statusFor(s));
+        onStatus(wxString::FromUTF8(HudText::status(s, _lane.scoreSheet())));
     Refresh(false);
 }
 
@@ -178,31 +146,13 @@ void BowlingCanvas::OnMouse(wxMouseEvent& e) {
 }
 
 void BowlingCanvas::apply(Command command) {
-    Result<> r(std::monostate {});
-    switch (command) {
-        case Command::MoveLeft:    r = _lane.moveAim(-InputMapper::kKeyOffsetStep); break;
-        case Command::MoveRight:   r = _lane.moveAim(InputMapper::kKeyOffsetStep); break;
-        case Command::AngleLeft:   r = _lane.rotateAim(-InputMapper::kKeyAngleStep); break;
-        case Command::AngleRight:  r = _lane.rotateAim(InputMapper::kKeyAngleStep); break;
-        case Command::StartCharge: r = _lane.startCharge(); break;
-        case Command::Release:     r = _lane.release(); break;
-        case Command::NewGame:     r = _lane.newGame(); break;
-        case Command::Quit:
-            if (onQuit) onQuit();
-            return;
-        case Command::None:
-            return;
+    if (command == Command::Quit) {
+        if (onQuit) onQuit();
+        return;
     }
+    auto r = LaneCommands::execute(command, _lane);
     if (r.isError())
         wxLogDebug("command rejected: %s", r.error().c_str());
-}
-
-void BowlingCanvas::updateCamera(const Alley::Snapshot& s, float dt) {
-    float target = kCameraHomeZ;
-    if (kFollowCamera && (s.phase == Phase::Rolling || s.phase == Phase::Settling || s.phase == Phase::FrameDone))
-        target = std::clamp(s.ball.position[2] - 3.5f, kCameraHomeZ, Alley::kLane.length - 5.5f);
-    _cameraZ += (target - _cameraZ) * std::min(1.f, 6.f * dt);
-    _camera.lookAt({0.f, kCameraHeight, _cameraZ}, {0.f, 0.f, _cameraZ + kCameraLookAhead});
 }
 
 void BowlingCanvas::renderFrame() {
@@ -216,44 +166,6 @@ void BowlingCanvas::renderFrame() {
     _camera.setViewport(w, midPx);
     _scene->draw(_camera, SceneAdapter::toScene(s), bottomPx, midPx);
     _overlay->begin(w, h);
-    drawHud(s, w, h, topPx, bottomPx);
+    drawHud(*_overlay, s, _lane.scoreSheet(), {w, h, topPx, bottomPx});
     _ctx->endFrame();
-}
-
-void BowlingCanvas::drawHud(const Alley::Snapshot& s, int w, int h, int topPx, int bottomPx) {
-    const float margin = w * 0.02f;
-    float cell = (w - 2 * margin) / 25.f;  // 21 cells + room for the total
-    cell = std::min(cell, (topPx - 2 * margin) / 2.f);
-    const Render::ScoreboardLayout layout {margin, margin, cell};
-    _overlay->drawScoreboard(_lane.rolls(), _lane.frameScores(), _lane.totalScore(), layout);
-
-    // Power bar (left of the bottom band).
-    const float barY = h - bottomPx * 0.7f, barH = bottomPx * 0.4f, barW = w * 0.3f;
-    _overlay->strokeRect({margin, barY, barW, barH}, 2.f, {0.f, 0.898f, 1.f, 1.f});
-    const glm::vec4 powerFill = glm::mix(glm::vec4(1.f, 0.541f, 0.f, 1.f), glm::vec4(1.f, 0.780f, 0.f, 1.f), s.power);
-    _overlay->drawRect({margin + 2.f, barY + 2.f}, {(barW - 4.f) * s.power, barH - 4.f}, powerFill);
-
-    // Hint (centre) and result (right).
-    const float textScale = std::max(1.f, bottomPx / 40.f);
-    const std::string hint = hintFor(s.phase);
-    const glm::vec2 hintSize = _overlay->measureText(hint, textScale);
-    _overlay->drawText(hint, {(w - hintSize.x) / 2, barY + (barH - hintSize.y) / 2}, textScale, {0.85f, 0.85f, 0.85f});
-    const std::string result = resultFor(s, _lane);
-    const glm::vec2 resSize = _overlay->measureText(result, textScale * 1.5f);
-    _overlay->drawText(result, {w - margin - resSize.x, barY + (barH - resSize.y) / 2}, textScale * 1.5f,
-                       {1.f, 0.780f, 0.2f});
-}
-
-wxString BowlingCanvas::statusFor(const Alley::Snapshot& s) const {
-    const char* phase = "";
-    switch (s.phase) {
-        case Phase::Aiming:    phase = "Aiming"; break;
-        case Phase::Charging:  phase = "Charging"; break;
-        case Phase::Rolling:   phase = "Rolling"; break;
-        case Phase::Settling:  phase = "Settling"; break;
-        case Phase::FrameDone: phase = "Frame done"; break;
-        case Phase::GameOver:  phase = "Game over"; break;
-    }
-    return wxString::Format("%s   |   score %d   |   pins standing %d", phase, _lane.totalScore(),
-                            static_cast<int>(std::count(s.pinStanding.begin(), s.pinStanding.end(), true)));
 }

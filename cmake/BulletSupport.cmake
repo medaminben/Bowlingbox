@@ -1,17 +1,17 @@
 # Bullet3 rigid-body physics, fetched and built statically with -fPIC so it
-# can be linked into the shared Sandbox::Alley library.
+# can be linked into the shared Gamebox::Alley library.
 include(FetchContent)
 
-set(SANDBOX_BULLET_VERSION "3.25" CACHE STRING "Bullet3 release tag")
+set(GAMEBOX_BULLET_VERSION "3.25" CACHE STRING "Bullet3 release tag")
 
 FetchContent_Declare(
     bullet3
-    URL https://github.com/bulletphysics/bullet3/archive/refs/tags/${SANDBOX_BULLET_VERSION}.tar.gz
+    URL https://github.com/bulletphysics/bullet3/archive/refs/tags/${GAMEBOX_BULLET_VERSION}.tar.gz
     SYSTEM
 )
 
 # Bullet's option() calls must not override these (CMP0077 NEW is set in Common.cmake).
-# BUILD_SHARED_LIBS is restored afterwards so Sandbox libraries stay shared.
+# BUILD_SHARED_LIBS is restored afterwards so Gamebox libraries stay shared.
 set(_sandbox_saved_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

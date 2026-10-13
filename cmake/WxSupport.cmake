@@ -3,11 +3,11 @@
 include(FetchContent)
 find_package(OpenGL REQUIRED)
 
-set(SANDBOX_WX_VERSION "3.2.8" CACHE STRING "wxWidgets release")
+set(GAMEBOX_WX_VERSION "3.2.8" CACHE STRING "wxWidgets release")
 
 FetchContent_Declare(
     wxWidgets
-    URL https://github.com/wxWidgets/wxWidgets/releases/download/v${SANDBOX_WX_VERSION}/wxWidgets-${SANDBOX_WX_VERSION}.tar.bz2
+    URL https://github.com/wxWidgets/wxWidgets/releases/download/v${GAMEBOX_WX_VERSION}/wxWidgets-${GAMEBOX_WX_VERSION}.tar.bz2
     SYSTEM
 )
 
@@ -32,3 +32,14 @@ find_package(ZLIB REQUIRED)
 set(wxUSE_ZLIB sys CACHE STRING "" FORCE)
 
 FetchContent_MakeAvailable(wxWidgets)
+
+# Static wxGTK pulls X11 helpers (e.g. utilsx11.cpp) into libwx_gtk3u_core. CMake
+# often omits -lX11 on app link lines, which yields "DSO missing from command line".
+if(UNIX AND NOT APPLE)
+    find_package(X11 REQUIRED)
+    foreach(_wx_target IN ITEMS wxcore wxgl)
+        if(TARGET ${_wx_target})
+            target_link_libraries(${_wx_target} INTERFACE X11::X11)
+        endif()
+    endforeach()
+endif()

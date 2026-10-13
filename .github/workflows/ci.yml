@@ -55,7 +55,6 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug \
             -DBUILD_QT_UI=OFF \
             -DBUILD_WX_UI=ON \
-            -DBUILD_BOOST_3RD=OFF \
             -DBUILD_TESTING=ON \
             -DBUILD_APPS=ON \
             -DGENERATE_SCAFFOLD=OFF \

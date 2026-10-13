@@ -1,10 +1,10 @@
-#ifndef SANDBOX_RENDER_GLSHADER_H
-#define SANDBOX_RENDER_GLSHADER_H
-#include <Sandbox/Core/Core.h>
+#ifndef GAMEBOX_RENDER_GLSHADER_H
+#define GAMEBOX_RENDER_GLSHADER_H
+#include <Gamebox/Core/Core.h>
 #include <glm/glm.hpp>
 #include <memory>
 
-namespace Sandbox {
+namespace Gamebox {
 namespace Render {
 
 class GlShader {
@@ -27,5 +27,5 @@ private:
 };
 
 }  // namespace Render
-}  // namespace Sandbox
-#endif  // SANDBOX_RENDER_GLSHADER_H
+}  // namespace Gamebox
+#endif  // GAMEBOX_RENDER_GLSHADER_H

@@ -3,7 +3,7 @@ include(GTestSupport)
 # build_gtest_executable(
 #   NAME test_sandbox_core
 #   SRC  test/src/test_Core.cpp
-#   DEPENDS Sandbox::Core GTest::gtest ...
+#   DEPENDS Gamebox::Core GTest::gtest ...
 #   DISCOVER ON
 # )
 function(build_gtest_executable)

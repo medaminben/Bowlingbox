@@ -3,7 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 
-namespace Sandbox {
+namespace Gamebox {
 namespace Render {
 namespace {
 Result<unsigned> compile(GLenum type, const char* src) {
@@ -73,4 +73,4 @@ void GlShader::setVec4(const char* name, const glm::vec4& v) const {
 }
 
 }  // namespace Render
-}  // namespace Sandbox
+}  // namespace Gamebox

@@ -1,8 +1,10 @@
-#include <Sandbox/Alley/Alley.h>
+#include <Gamebox/Alley/Alley.h>
+#include <Gamebox/Alley/PhysicsWorld.h>
 #include <gtest/gtest.h>
 #include <cmath>
+#include <vector>
 
-using namespace Sandbox::Alley;
+using namespace Gamebox::Alley;
 
 namespace {
 constexpr float kPi = 3.14159265358979f;
@@ -54,8 +56,8 @@ TEST_F(test_alley, initial_state_is_aiming_with_full_rack) {
     EXPECT_EQ(standingCount(s), 10);
     EXPECT_EQ(s.lastPinsDown, -1);
     EXPECT_FLOAT_EQ(s.aimOffset, 0.f);
-    EXPECT_EQ(lane.totalScore(), 0);
-    EXPECT_FALSE(lane.isGameOver());
+    EXPECT_EQ(lane.scoreSheet().score(), 0);
+    EXPECT_FALSE(lane.scoreSheet().isOver());
 }
 
 TEST_F(test_alley, release_in_aiming_is_an_error) {
@@ -107,7 +109,7 @@ TEST_F(test_alley, new_game_resets_everything) {
     EXPECT_EQ(s.phase, Phase::Aiming);
     EXPECT_FLOAT_EQ(s.aimOffset, 0.f);
     EXPECT_EQ(standingCount(s), 10);
-    EXPECT_EQ(lane.totalScore(), 0);
+    EXPECT_EQ(lane.scoreSheet().score(), 0);
 }
 
 TEST_F(test_alley, gutter_ball_scores_zero_and_keeps_the_rack) {
@@ -116,18 +118,18 @@ TEST_F(test_alley, gutter_ball_scores_zero_and_keeps_the_rack) {
     EXPECT_EQ(s.phase, Phase::Aiming);
     EXPECT_EQ(s.lastPinsDown, 0);
     EXPECT_EQ(standingCount(s), 10);
-    EXPECT_EQ(lane.rolls()[0], 0);  // Miss
-    EXPECT_EQ(lane.pinsLeft(), 10);
+    EXPECT_EQ(lane.scoreSheet().rolls()[0], 0);  // Miss
+    EXPECT_EQ(lane.scoreSheet().pinsLeft(), 10);
 }
 
 TEST_F(test_alley, pocket_throw_is_a_strike) {
     throwBall(lane, kPocketOffset, 0.f, kStrikePower);
     const auto s = lane.snapshot();
     EXPECT_EQ(s.lastPinsDown, 10);
-    EXPECT_EQ(lane.rolls()[0], -2);  // Strike
+    EXPECT_EQ(lane.scoreSheet().rolls()[0], -2);  // Strike
     EXPECT_EQ(standingCount(s), 10);  // fresh rack for the next frame
     // Gamebox reports provisional running frame score once the strike is recorded.
-    EXPECT_EQ(lane.frameScores()[0], 10);
+    EXPECT_EQ(lane.scoreSheet().scores()[0], 10);
 }
 
 TEST_F(test_alley, same_inputs_give_identical_results) {
@@ -149,7 +151,7 @@ TEST_F(test_alley, second_ball_keeps_standing_pins) {
     ASSERT_GE(down, 1);
     ASSERT_LT(down, 10);
     EXPECT_EQ(standingCount(s), 10 - down);
-    EXPECT_EQ(lane.pinsLeft(), 10 - down);
+    EXPECT_EQ(lane.scoreSheet().pinsLeft(), 10 - down);
     for (int i = 0; i < 10; ++i)
         EXPECT_EQ(s.pinInPlay[i], s.pinStanding[i]);  // fallen pins were removed
 }
@@ -171,8 +173,8 @@ TEST_F(test_alley, twenty_gutter_balls_end_the_game_with_zero) {
     for (int i = 0; i < 20; ++i)
         throwBall(lane, kMaxAimOffset, 0.f, 0.5f);
     EXPECT_EQ(lane.snapshot().phase, Phase::GameOver);
-    EXPECT_TRUE(lane.isGameOver());
-    EXPECT_EQ(lane.totalScore(), 0);
+    EXPECT_TRUE(lane.scoreSheet().isOver());
+    EXPECT_EQ(lane.scoreSheet().score(), 0);
     EXPECT_TRUE(lane.startCharge().isError());
 }
 
@@ -180,5 +182,131 @@ TEST_F(test_alley, twelve_strikes_score_three_hundred) {
     for (int i = 0; i < 12; ++i)
         throwBall(lane, kPocketOffset, 0.f, kStrikePower);
     EXPECT_EQ(lane.snapshot().phase, Phase::GameOver);
-    EXPECT_EQ(lane.totalScore(), 300);
+    EXPECT_EQ(lane.scoreSheet().score(), 300);
+}
+
+// ------------------------------------------------------------ injected collaborators
+namespace {
+/// Deterministic stand-in for Bullet: the ball drops into the pit as soon as it
+/// is launched and knocks down the first `knockDown` standing pins.
+class FakeWorld final : public IPhysicsWorld {
+public:
+    int knockDown = 0;
+    int rebuilds = 0;
+
+    void step(float) override {}
+    void placeBall(float) override { _launched = false; }
+    void launchBall(float, float, float) override {
+        _launched = true;
+        int left = knockDown;
+        for (int i = 0; i < 10 && left > 0; ++i)
+            if (_inPlay[i] && _standing[i]) {
+                _standing[i] = false;
+                --left;
+            }
+    }
+    void resetRack() override {
+        _standing.fill(true);
+        _inPlay.fill(true);
+    }
+    void rebuild() override {
+        ++rebuilds;
+        resetRack();
+    }
+    void removePin(int i) override { _inPlay[i] = false; }
+    Pose ballPose() const override { return {}; }
+    Pose pinPose(int) const override { return {}; }
+    bool isPinStanding(int i) const override { return _inPlay[i] && _standing[i]; }
+    bool isPinInPlay(int i) const override { return _inPlay[i]; }
+    bool ballInPit() const override { return _launched; }
+    float ballSpeed() const override { return 0.f; }
+    bool allSlow() const override { return true; }
+
+private:
+    bool _launched = false;
+    std::array<bool, 10> _standing {};
+    std::array<bool, 10> _inPlay {};
+};
+
+/// Records every roll; reports "over" once `rollsUntilOver` rolls were made.
+class FakeGame final : public Gamebox::Score::IBowlingGame {
+public:
+    std::vector<int> recorded;
+    int rollsUntilOver = 100;
+    int pinsLeftValue = 10;
+
+    bool roll(int pins) override {
+        if (isOver())
+            return false;
+        recorded.push_back(pins);
+        return true;
+    }
+    void reset() override { recorded.clear(); }
+    std::vector<int> rolls() const override { return recorded; }
+    std::vector<int> scores() const override { return {}; }
+    int score() const override { return 0; }
+    int frameScore(int) const override { return 0; }
+    int pinsLeft() const override { return pinsLeftValue; }
+    bool isOver() const override { return static_cast<int>(recorded.size()) >= rollsUntilOver; }
+};
+
+void throwAndWait(Lane& lane, float seconds) {
+    lane.startCharge();
+    lane.step(0.25f);
+    lane.release();
+    for (float t = 0.f; t < seconds; t += kDt)
+        lane.step(kDt);
+}
+
+struct InjectedLane {
+    FakeWorld* world;
+    FakeGame* game;
+    std::unique_ptr<Lane> lane;
+};
+InjectedLane makeInjectedLane() {
+    auto world = std::make_unique<FakeWorld>();
+    auto game = std::make_unique<FakeGame>();
+    InjectedLane l {world.get(), game.get(), nullptr};
+    l.lane = std::make_unique<Lane>(std::move(world), std::move(game));
+    return l;
+}
+}  // namespace
+
+TEST(test_alley_injected, fallen_pins_are_credited_to_the_scorer) {
+    auto l = makeInjectedLane();
+    l.world->knockDown = 7;
+    throwAndWait(*l.lane, 0.1f);
+    EXPECT_EQ(l.lane->snapshot().phase, Phase::FrameDone);
+    ASSERT_EQ(l.game->recorded.size(), 1u);
+    EXPECT_EQ(l.game->recorded[0], 7);
+    EXPECT_EQ(l.lane->snapshot().lastPinsDown, 7);
+}
+
+TEST(test_alley_injected, second_ball_removes_fallen_pins) {
+    auto l = makeInjectedLane();
+    l.world->knockDown = 7;
+    l.game->pinsLeftValue = 3;
+    throwAndWait(*l.lane, 2.f);
+    const auto s = l.lane->snapshot();
+    EXPECT_EQ(s.phase, Phase::Aiming);
+    EXPECT_EQ(standingCount(s), 3);
+    for (int i = 0; i < 10; ++i)
+        EXPECT_EQ(s.pinInPlay[i], s.pinStanding[i]);
+}
+
+TEST(test_alley_injected, full_rack_is_rebuilt_when_the_scorer_says_so) {
+    auto l = makeInjectedLane();
+    l.world->knockDown = 10;
+    const int before = l.world->rebuilds;
+    throwAndWait(*l.lane, 2.f);
+    EXPECT_EQ(l.world->rebuilds, before + 1);
+    EXPECT_EQ(standingCount(l.lane->snapshot()), 10);
+}
+
+TEST(test_alley_injected, game_over_is_decided_by_the_scorer) {
+    auto l = makeInjectedLane();
+    l.game->rollsUntilOver = 1;
+    throwAndWait(*l.lane, 2.f);
+    EXPECT_EQ(l.lane->snapshot().phase, Phase::GameOver);
+    EXPECT_TRUE(l.lane->scoreSheet().isOver());
 }

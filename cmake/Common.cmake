@@ -54,16 +54,13 @@ if(BUILD_TESTING)
     include(TestUtils)
 endif()
 
-include(BulletSupport)   # Sandbox::Alley always needs it
-include(GlmSupport)      # Sandbox::Render always needs it
+include(BulletSupport)   # Gamebox::Alley always needs it
+include(GlmSupport)      # Gamebox::Render always needs it
 if(BUILD_QT_UI)
     include(QtSupport)
 endif()
 if(BUILD_WX_UI)
     include(WxSupport)
-endif()
-if(BUILD_BOOST_3RD)
-    include(BoostSupport)
 endif()
 if(BUILD_VERBOSE_OUTPUT)
     dump_cmake_vars(configLogEnd.log)

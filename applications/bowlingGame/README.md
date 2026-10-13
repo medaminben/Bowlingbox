@@ -1,6 +1,7 @@
 # [Bowling Game](https://codingdojo.org/kata/Bowling/) challenge
 
-Three front-ends for the `Sandbox::Gamebox` score calculator.
+Three front-ends for the `Gamebox::Score` score calculator.
+See also the [manual](../../docs/MANUAL.md) and the [architecture](../../docs/ARCHITECTURE.md).
 
 ## BowlingGL (wxWidgets + OpenGL) — play it
 
@@ -27,7 +28,8 @@ ctest --test-dir build
 ./build/bin/BowlingGL
 ```
 
-On Wayland sessions, if the canvas stays black: `GDK_BACKEND=x11 ./build/bin/BowlingGL`.
+On Wayland, the app picks `GDK_BACKEND=x11` automatically (GLX via XWayland). Override with
+`GDK_BACKEND=wayland ./build/bin/BowlingGL` only if you know your stack supports it.
 
 Manual checklist after changes to Alley/Render/app:
 1. Launch: lane, 10 pins, ball and an empty scoreboard are visible.
@@ -36,6 +38,25 @@ Manual checklist after changes to Alley/Render/app:
 4. Partial hit, then second ball: the standing pins stay where they were.
 5. Resize the window: scoreboard and lane rescale.
 6. `N` during a roll restarts; `Esc` exits with nothing on stderr.
+
+## Architecture
+
+Front-ends depend on interfaces; the concrete classes are picked in `main` (or a default constructor).
+
+| Interface | Library | Default implementation | Used by |
+|---|---|---|---|
+| `Score::IScoreSheet` (read) / `Score::IBowlingGame` (+ `roll`, `reset`) | Score | `Score::Bowlingbox` | all three apps, `Alley::Lane` |
+| `Alley::IPhysicsWorld` | Alley | Bullet3 (`makeBulletWorld()`) | `Alley::Lane` |
+| `Render::ICanvas2D` | Render | `Render::Overlay` (OpenGL) | `paintScoreboard`, BowlingGL `drawHud` |
+| `Console::ITerminal` | BowlingConsole | `SystemTerminal` (stdin/stdout) | `Console::Screen` |
+
+`Score/Notation.h` owns the 21-slot roll encoding (`Mark::Strike`, `Spare`, ...) and its
+"X / -" notation; Render, the console and Qt all use it. Inject fakes to test without Bullet,
+OpenGL or a terminal: see `test_alley_injected`, `test_render_scoreboard` and `test_hud`.
+
+BowlingGL: `BowlingCanvas` only owns GL resources, the 60 Hz loop and wx events. Input goes
+`InputMapper` → `Command` → `LaneCommands::execute`, the camera is `FollowCamera`, and the HUD is
+`drawHud` + `HudText`.
 
 ## BowlingConsole
 
