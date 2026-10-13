@@ -3325,7 +3325,7 @@ Expected: no diagnostics; all tests pass (Core 4 + Gamebox 16 + Alley 14 + Rende
 ```bash
 ./build/bin/BowlingGL
 ```
-Check: window with lane, 10 pins, blue ball, empty scoreboard; ← → move the ball; A/D rotate the yellow guide; hold Space → power bar oscillates; release → ball rolls, camera follows, pins fall, scoreboard fills, result text appears; second ball keeps standing pins; `N` restarts; `Esc` quits with no GL errors on stderr. Resize the window: layout rescales. On Wayland, if the canvas stays black run `GDK_BACKEND=x11 ./build/bin/BowlingGL`.
+Check: window with lane, 10 pins, electric-blue ball, empty scoreboard (cyan-bordered panel); ← → move the ball; A/D rotate the cyan aim guide; hold Space → power bar oscillates; release → ball rolls, camera follows, pins fall, scoreboard fills, result text appears; second ball keeps standing pins; `N` restarts; `Esc` quits with no GL errors on stderr. Resize the window: layout rescales. On Wayland, if the canvas stays black run `GDK_BACKEND=x11 ./build/bin/BowlingGL`.
 
 - [ ] **Step 11: Commit**
 
