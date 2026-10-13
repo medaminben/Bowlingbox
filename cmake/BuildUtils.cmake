@@ -166,7 +166,7 @@ function(create_application)
     endforeach()
 
     if(NOT DEFINED app_ENTRY OR app_ENTRY STREQUAL "")
-        message(FATAL_ERROR "${app_NAME} is missing ENTRY [Console|QT_ui]")
+        message(FATAL_ERROR "${app_NAME} is missing ENTRY [Console|QT_ui|WX_ui]")
     endif()
 
     set(PROJECT_FILES ${app_HEADERS} ${app_SOURCES} ${app_RESOURCES})
@@ -187,6 +187,20 @@ function(create_application)
 
     elseif(BUILD_QT_UI AND app_ENTRY STREQUAL "QT_ui")
         qt_add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
+        if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
+            target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
+        endif()
+        set_target_properties(${app_NAME} PROPERTIES
+            WIN32_EXECUTABLE TRUE
+            MACOSX_BUNDLE TRUE
+        )
+        sandbox_set_warnings(${app_NAME})
+        install(TARGETS ${app_NAME}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    elseif(BUILD_WX_UI AND app_ENTRY STREQUAL "WX_ui")
+        add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
         if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
             target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
         endif()

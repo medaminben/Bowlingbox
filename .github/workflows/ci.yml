@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     env:
       BUILD_DIR: build
@@ -32,26 +32,29 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential \
             ninja-build \
-            git
+            git \
+            libgtk-3-dev \
+            libgl1-mesa-dev
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: "3.31.6"
 
-      - name: Cache FetchContent (GoogleTest)
+      - name: Cache FetchContent
         uses: actions/cache@v4
         with:
           path: .cache/fetchcontent
-          key: fetchcontent-gtest-v1.15.2-${{ runner.os }}-${{ hashFiles('cmake/GTestSupport.cmake') }}
+          key: fetchcontent-v2-${{ runner.os }}-${{ hashFiles('cmake/GTestSupport.cmake', 'cmake/BulletSupport.cmake', 'cmake/GlmSupport.cmake', 'cmake/WxSupport.cmake') }}
           restore-keys: |
-            fetchcontent-gtest-v1.15.2-${{ runner.os }}-
+            fetchcontent-v2-${{ runner.os }}-
 
       - name: Configure
         run: |
           cmake -S . -B "${BUILD_DIR}" -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DBUILD_QT_UI=OFF \
+            -DBUILD_WX_UI=ON \
             -DBUILD_BOOST_3RD=OFF \
             -DBUILD_TESTING=ON \
             -DBUILD_APPS=ON \
