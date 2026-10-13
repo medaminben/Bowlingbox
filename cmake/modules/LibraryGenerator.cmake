@@ -104,11 +104,15 @@ function(generate_library)
         return()
     endif()
 
+    # Hand-written applications win over scaffolds.
+    if(IS_DIRECTORY ${lib_APPS_DIR}/${lib_NAME})
+        message(STATUS "scaffold: apps for ${lib_NAME} already present")
+        return()
+    endif()
+
     message(STATUS "scaffold: generating apps for ${lib_NAME}")
 
-    if(NOT EXISTS ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt)
-        file(WRITE ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt "")
-    endif()
+    file(WRITE ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt "")
     file(APPEND ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt
         "\nadd_subdirectory(${lib_NAME}_Console)\n")
 
@@ -116,6 +120,15 @@ function(generate_library)
         ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Console/CMakeLists.txt)
     configure_file(${lib_CFG_SRC}/app/lib_Console.cpp.in
         ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Console/${lib_NAME}_Console.cpp)
+
+    if(BUILD_WX_UI)
+        file(APPEND ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt
+            "\nadd_subdirectory(${lib_NAME}_Wx_UI)\n")
+        configure_file(${lib_CFG_SRC}/app/lib_wx_ui_CMakeLists.txt.in
+            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Wx_UI/CMakeLists.txt)
+        configure_file(${lib_CFG_SRC}/app/lib_Wx_UI.cpp.in
+            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Wx_UI/${lib_NAME}_Wx_UI.cpp)
+    endif()
 
     if(Qt${QT_VERSION_MAJOR}_FOUND)
         file(APPEND ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt
