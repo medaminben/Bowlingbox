@@ -10,6 +10,10 @@
 
 Spec: `docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md`.
 
+**Visual reference:** `docs/Bowlingbox_ Neon-Kegeln im Spielmodus.png` (see spec §4.4).
+Implement `Render` and `BowlingCanvas` HUD colours from the tokens below unless a
+task explicitly overrides them.
+
 ## Global Constraints
 
 - Language C++20; `CMAKE_CXX_STANDARD 20`, extensions off (already set in `cmake/Common.cmake`).
@@ -33,6 +37,30 @@ Spec: `docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md`.
 3. The camera is still "behind the ball" but its z follows the ball during Rolling/Settling/FrameDone (with smoothing) so the pins are visible when they fall; otherwise pins 20 m away are a few pixels tall. A single constant `kFollowCamera` in `BowlingCanvas.cpp` switches it off.
 4. Render splits CPU geometry (`Geometry.h`, testable) from GL upload (`GlMesh`, private), and the scoreboard maths (`ScoreboardLayout.h`, testable) from GL drawing (`Overlay`).
 5. `kMaxAimOffset` is 0.7 m instead of 0.6 m so that a max-offset ball never touches the lane edge or pin 10 (deterministic gutter test). The gutter outer wall sits at x = ±0.845 to leave room.
+
+## Visual theme constants (from splash)
+
+Derived from `docs/Bowlingbox_ Neon-Kegeln im Spielmodus.png`. Prefer a shared
+header `libraries/Render/include/Sandbox/Render/Theme.h` with `inline constexpr`
+`glm` colours; until that file exists, copy these literals into the snippets in
+Tasks 6–8.
+
+| Token | RGBA (linear 0–1) | Usage |
+|---|---|---|
+| `kClearColor` | `(0.02f, 0.03f, 0.08f)` | `Context::beginFrame` |
+| `kAlleyDark` | `(0.008f, 0.055f, 0.22f, 1.f)` | Gutters, lane walls |
+| `kLaneWood` | `(0.831f, 0.639f, 0.451f, 1.f)` | Lane deck |
+| `kBallBlue` | `(0.098f, 0.365f, 0.925f, 1.f)` | Ball albedo |
+| `kPinWhite` | `(0.941f, 0.941f, 0.941f, 1.f)` | Pin body |
+| `kPinRed` | `(0.902f, 0.f, 0.f, 1.f)` | Pin neck band |
+| `kNeonCyan` | `(0.f, 0.898f, 1.f, 1.f)` | Scoreboard stroke, aim guide, bar outline |
+| `kHudInk` | `(1.f, 1.f, 1.f, 1.f)` | Scoreboard glyphs, hints |
+| `kScoreboardPanel` | `(0.008f, 0.055f, 0.22f, 0.78f)` | Scoreboard background fill |
+| `kPowerLow` | `(1.f, 0.541f, 0.f, 1.f)` | Power bar at 0 (`#FF8A00`) |
+| `kPowerHigh` | `(1.f, 0.780f, 0.f, 1.f)` | Power bar at 1 (`#FFC700`) |
+| `kResultAccent` | `(1.f, 0.780f, 0.2f, 1.f)` | `STRIKE!` / `SPARE!` overlay text |
+
+Aim guide alpha: `{0.f, 0.898f, 1.f, 0.40f}` (`kNeonCyan` with α = 0.4).
 
 ## File structure
 
@@ -2268,17 +2296,18 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
     s.setVec3("uLightDir", kLightDir);
 
     const float outerX = g.laneHalfWidth + g.gutterWidth;
-    p.drawMesh(p.lane, Impl::at(0.f, -0.05f, (g.laneLength - g.approach) / 2), {0.76f, 0.60f, 0.38f, 1.f});
+    // Theme tokens: spec §4.4 / plan “Visual theme constants”.
+    p.drawMesh(p.lane, Impl::at(0.f, -0.05f, (g.laneLength - g.approach) / 2), {0.831f, 0.639f, 0.451f, 1.f});
     for (float sx : {-1.f, 1.f}) {
         p.drawMesh(p.gutter, Impl::at(sx * (g.laneHalfWidth + g.gutterWidth / 2), -g.gutterDepth - 0.05f, g.laneLength / 2),
-                   {0.25f, 0.25f, 0.28f, 1.f});
-        p.drawMesh(p.wall, Impl::at(sx * (outerX + 0.02f), 0.05f, g.laneLength / 2), {0.18f, 0.18f, 0.2f, 1.f});
+                   {0.008f, 0.055f, 0.22f, 1.f});
+        p.drawMesh(p.wall, Impl::at(sx * (outerX + 0.02f), 0.05f, g.laneLength / 2), {0.008f, 0.055f, 0.22f, 1.f});
     }
     const glm::vec2 neck {0.55f * g.pinHeight - g.pinComHeight, 0.65f * g.pinHeight - g.pinComHeight};
     for (int i = 0; i < 10; ++i)
         if (scene.pinVisible[i])
-            p.drawMesh(p.pin, scene.pins[i].matrix(), {0.95f, 0.95f, 0.92f, 1.f}, neck, {0.85f, 0.1f, 0.1f, 1.f});
-    p.drawMesh(p.ball, scene.ball.matrix(), {0.15f, 0.25f, 0.75f, 1.f});
+            p.drawMesh(p.pin, scene.pins[i].matrix(), {0.941f, 0.941f, 0.941f, 1.f}, neck, {0.902f, 0.f, 0.f, 1.f});
+    p.drawMesh(p.ball, scene.ball.matrix(), {0.098f, 0.365f, 0.925f, 1.f});
 
     if (scene.showAimGuide) {
         glEnable(GL_BLEND);
@@ -2291,7 +2320,7 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
         glm::mat4 model = glm::translate(glm::mat4(1.f), start + dir * (length / 2)) *
                           glm::rotate(glm::mat4(1.f), a, glm::vec3(0.f, 1.f, 0.f)) *
                           glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, length));
-        p.drawMesh(p.guide, model, {1.f, 1.f, 0.3f, 0.35f});
+        p.drawMesh(p.guide, model, {0.f, 0.898f, 1.f, 0.40f});
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
     }
@@ -2386,10 +2415,15 @@ void Overlay::strokeRect(const Rect& r, float t, glm::vec4 rgba) {
 
 void Overlay::drawScoreboard(const std::vector<int>& rolls, const std::vector<int>& scores, int total,
                              const ScoreboardLayout& layout) {
-    const glm::vec4 line {0.9f, 0.9f, 0.9f, 1.f};
+    const glm::vec4 line {0.f, 0.898f, 1.f, 1.f};
+    const glm::vec4 panel {0.008f, 0.055f, 0.22f, 0.78f};
     const glm::vec3 ink {1.f, 1.f, 1.f};
     const float textScale = layout.cell / 20.f;
     const float t = std::max(1.f, layout.cell / 30.f);
+
+    const Rect board {layout.originX, layout.originY, layout.totalWidth() + layout.cell * 5.f,
+                      layout.cell * 2.f};
+    drawRect({board.x, board.y}, {board.w, board.h}, panel);
 
     auto centred = [&](const Rect& r, const std::string& s) {
         if (s.empty())
@@ -3122,7 +3156,7 @@ void BowlingCanvas::renderFrame() {
     const int midPx = h - topPx - bottomPx;
     const auto s = _lane.snapshot();
 
-    _ctx->beginFrame({0.07f, 0.07f, 0.10f});
+    _ctx->beginFrame({0.02f, 0.03f, 0.08f});  // kClearColor — splash backdrop
     _camera.setViewport(w, midPx);
     _scene->draw(_camera, SceneAdapter::toScene(s), bottomPx, midPx);
     _overlay->begin(w, h);
@@ -3139,9 +3173,9 @@ void BowlingCanvas::drawHud(const Alley::Snapshot& s, int w, int h, int topPx, i
 
     // Power bar (left of the bottom band).
     const float barY = h - bottomPx * 0.7f, barH = bottomPx * 0.4f, barW = w * 0.3f;
-    _overlay->strokeRect({margin, barY, barW, barH}, 2.f, {0.9f, 0.9f, 0.9f, 1.f});
-    _overlay->drawRect({margin + 2.f, barY + 2.f}, {(barW - 4.f) * s.power, barH - 4.f},
-                       {1.f - s.power, s.power, 0.2f, 1.f});
+    _overlay->strokeRect({margin, barY, barW, barH}, 2.f, {0.f, 0.898f, 1.f, 1.f});
+    const glm::vec4 powerFill = glm::mix(glm::vec4(1.f, 0.541f, 0.f, 1.f), glm::vec4(1.f, 0.780f, 0.f, 1.f), s.power);
+    _overlay->drawRect({margin + 2.f, barY + 2.f}, {(barW - 4.f) * s.power, barH - 4.f}, powerFill);
 
     // Hint (centre) and result (right).
     const float textScale = std::max(1.f, bottomPx / 40.f);
@@ -3150,7 +3184,8 @@ void BowlingCanvas::drawHud(const Alley::Snapshot& s, int w, int h, int topPx, i
     _overlay->drawText(hint, {(w - hintSize.x) / 2, barY + (barH - hintSize.y) / 2}, textScale, {0.85f, 0.85f, 0.85f});
     const std::string result = resultFor(s, _lane);
     const glm::vec2 resSize = _overlay->measureText(result, textScale * 1.5f);
-    _overlay->drawText(result, {w - margin - resSize.x, barY + (barH - resSize.y) / 2}, textScale * 1.5f, {1.f, 0.9f, 0.3f});
+    _overlay->drawText(result, {w - margin - resSize.x, barY + (barH - resSize.y) / 2}, textScale * 1.5f,
+                       {1.f, 0.780f, 0.2f});
 }
 
 wxString BowlingCanvas::statusFor(const Alley::Snapshot& s) const {
