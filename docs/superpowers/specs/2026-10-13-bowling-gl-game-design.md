@@ -384,7 +384,24 @@ Only the application links `OpenGL::GL` (`find_package(OpenGL REQUIRED)` inside
 4. New Game works in any phase; Quit exits cleanly.
 5. All ctest targets pass; Qt is not required to build.
 
-## 10. Out of scope
+## 10. Amendments made during planning (2026-10-13)
+
+1. `Snapshot` gains `std::array<bool,10> pinInPlay` (pin still in the world,
+   standing or lying). Fallen pins stay in play until the phase returns to
+   Aiming; the renderer uses `pinInPlay` for visibility.
+2. `Lane::score()` is replaced by `rolls()`, `frameScores()`, `totalScore()`,
+   `isGameOver()`, `pinsLeft()` because `Bowlingbox` has no const methods.
+3. Aim offset range is ±0.7 m (not ±0.6) so a max-offset ball is fully over
+   the gutter and never touches the lane edge or pin 10; the gutter outer wall
+   moves to x = ±0.845.
+4. The camera stays behind the ball but its z follows the ball during
+   Rolling/Settling/FrameDone (smoothed); a `kFollowCamera` constant in the app
+   switches back to a strictly fixed camera.
+5. `Render` splits CPU geometry (`Geometry.h`) and scoreboard maths
+   (`ScoreboardLayout.h`) into testable units; GL upload and drawing stay in
+   private sources.
+
+## 11. Out of scope
 
 Multiple players, ball spin/hook, sound, textures, replay camera, settings
 persistence, high-score table, Windows/macOS packaging.
