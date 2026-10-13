@@ -6,17 +6,28 @@ set(TST_DISCOVER ON)
 # Manage project files
 ###############################################################
 set(TARGET_HEADERS
+    src/GlShader.h
+    src/GlMesh.h
+    src/ContextData.h
     include/Sandbox/Render/Geometry.h
     include/Sandbox/Render/ScoreboardLayout.h
+    include/Sandbox/Render/Render.h
 )
 set(TARGET_SOURCES
     src/Geometry.cpp
     src/ScoreboardLayout.cpp
+    src/GlShader.cpp
+    src/GlMesh.cpp
+    src/Render.cpp
 )
 set(TARGET_RSC)
-set(PRIVATE_DEPS)
+set(PRIVATE_DEPS
+    $<BUILD_INTERFACE:glad::glad>
+    $<BUILD_INTERFACE:stb::easy_font>
+)
 set(PUBLIC_DEPS
     ${CMAKE_ROOT_NAME}::Core
+    $<BUILD_INTERFACE:glm::glm>
 )
 set(TARGET_FILES ${TARGET_HEADERS} ${TARGET_SOURCES})
 ###############################################################
