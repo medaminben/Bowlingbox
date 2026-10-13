@@ -22,9 +22,9 @@ Sandbox::Gamebox::Bowlingbox::~Bowlingbox() {}
  *
  * @param pins The number of pins rolled in the current turn.
  */
-void Sandbox::Gamebox::Bowlingbox::roll(const int& pins) {
+bool Sandbox::Gamebox::Bowlingbox::roll(const int& pins) {
     // Pass the number of pins rolled to the BowlingSet object to update the game state
-    _gameSet->roll(pins);
+    return _gameSet->roll(pins);
 }
 
 /**

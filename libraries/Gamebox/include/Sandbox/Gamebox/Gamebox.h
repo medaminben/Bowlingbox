@@ -13,7 +13,7 @@ public:
     SANDBOX_GAMEBOX_API ~Bowlingbox();
 
 public:
-    void SANDBOX_GAMEBOX_API roll(const int&);
+    bool SANDBOX_GAMEBOX_API roll(const int&);
     int SANDBOX_GAMEBOX_API score();
     std::vector<int> SANDBOX_GAMEBOX_API rolls();
     std::vector<int> SANDBOX_GAMEBOX_API scores();
