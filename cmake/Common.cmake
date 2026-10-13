@@ -12,6 +12,11 @@ include(BuildLocation)
 include(CompilerWarnings)
 include(Coverage)
 
+# Fetched projects must honour our normal variables in their option() calls
+# (CMP0077) and must not drop them when creating cache entries (CMP0126).
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0126 NEW)
+
 if(BUILD_VERBOSE_OUTPUT)
     include(DebugUtils)
     set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -49,8 +54,13 @@ if(BUILD_TESTING)
     include(TestUtils)
 endif()
 
+include(BulletSupport)   # Sandbox::Alley always needs it
+include(GlmSupport)      # Sandbox::Render always needs it
 if(BUILD_QT_UI)
     include(QtSupport)
+endif()
+if(BUILD_WX_UI)
+    include(WxSupport)
 endif()
 if(BUILD_BOOST_3RD)
     include(BoostSupport)

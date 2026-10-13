@@ -1,0 +1,15 @@
+#include <${lib_ROOT_NAME}/${lib_NAME}/${lib_NAME}.h>
+#include <wx/wx.h>
+
+class ${lib_NAME}App : public wxApp {
+public:
+    bool OnInit() override {
+        auto* frame = new wxFrame(nullptr, wxID_ANY, "${lib_NAME}", wxDefaultPosition, wxSize(640, 480));
+        frame->CreateStatusBar();
+        frame->SetStatusText("${lib_NAME} wx scaffold");
+        frame->Show(true);
+        return true;
+    }
+};
+
+wxIMPLEMENT_APP(${lib_NAME}App);

@@ -247,7 +247,57 @@ flowchart TD
     T --> M --> B
 ```
 
-### 4.4 Errors and tests
+### 4.4 Visual design reference
+
+Authoritative splash art (repo path):
+
+`docs/Bowlingbox_ Neon-Kegeln im Spielmodus.png`
+
+Use this image as the visual north star for `SceneRenderer`, `Overlay`, and the
+3D lane backdrop. The look is **neon arcade bowling**: deep navy atmosphere,
+cyan and magenta accent lights, warm polished wood on the lane, glossy white
+pins with red neck bands, and a marbled electric-blue ball. Typography in the
+splash is bold rounded 3D display type for the logo; in-game HUD text stays
+**clean geometric sans** (stb_easy_font), all-caps for short labels, white with
+a subtle dark drop shadow where contrast is low.
+
+**Palette (sRGB hex → use as `glm` RGB in `[0,1]`):**
+
+| Role | Hex | Notes |
+|---|---|---|
+| Clear / sky fill | `#050714` | Frame clear colour; deep perspective behind the lane |
+| Alley ambient | `#020E38` | Gutter troughs, side walls, pit surround |
+| Neon cyan (UI accent) | `#00E5FF` | Scoreboard borders, aim guide, power-bar outline |
+| Neon magenta (secondary accent) | `#D81BFF` | Optional lane-edge glow strips in a later pass |
+| Lane wood | `#D4A373` | Main deck; slightly higher specular via the lit shader |
+| Ball (base) | `#195DEC` | Marbled blue; single albedo is enough for v1 |
+| Pin body | `#F0F0F0` | Glossy white |
+| Pin neck band | `#E60000` | Classic red stripe |
+| Logo orange | `#FF8A00` | Power bar low end, strike/spare highlights |
+| Logo yellow | `#FFC700` | Power bar high end, celebratory overlay text |
+| HUD ink | `#FFFFFF` | Scoreboard glyphs, hints |
+
+**Mood:** energetic, polished, “cosmic bowling” at night — not flat retro neon;
+keep contrast high and backgrounds dark so coloured accents read clearly.
+
+**UI guidance (aligned with splash):**
+
+- **Scoreboard (top band):** semi-transparent panel over the 3D view —
+  fill ≈ `#020E38` at 75–80% opacity; 1–2 px stroke in neon cyan (`#00E5FF`);
+  white cell text; total column same treatment as frame boxes.
+- **3D scene (middle band):** lane wood warm; gutters and walls in deep navy;
+  ball electric blue; pins white/red; optional faint cyan/magenta emissive strips
+  on side walls are out of scope for v1 unless time permits.
+- **Bottom band:** power bar with cyan outline; fill interpolates orange →
+  yellow with charge (matching the “BOX” gradient in the logo); hint text white
+  at ~85% brightness; frame result text in logo yellow/orange.
+- **Aim guide:** semi-transparent cyan line (not yellow), visible on wood and
+  in dark gutters.
+
+Implementers may centralise these constants in a small `Theme.h` under
+`libraries/Render/include/Sandbox/Render/`; values below are normative for v1.
+
+### 4.5 Errors and tests
 
 - `Context::create()` returns `Error` with the GL info log on shader
   compile/link failure or when GLAD cannot load 3.3. Draw calls never throw.

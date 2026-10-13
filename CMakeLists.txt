@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 
 # Project names are only relevant for humans; camel case is okay.
-project(Sandbox VERSION 1.3.0 LANGUAGES CXX)
+project(Sandbox VERSION 1.4.0 LANGUAGES CXX)
 
 # Global project name used by library aliases (Sandbox::Core)
 set(CMAKE_ROOT_NAME ${PROJECT_NAME})
@@ -13,7 +13,8 @@ option(BUILD_SHARED_LIBS     "Build project libraries as shared libraries" ON)
 option(BUILD_APPS            "Build applications"                          ON)
 option(BUILD_DESIGN          "Build Design pattern related apps"           ON)
 option(BUILD_METAPROGRAMMING "Build meta programming related topics"       ON)
-option(BUILD_QT_UI           "Build Qt based applications"                 ON)
+option(BUILD_QT_UI           "Build Qt based applications"                 OFF)
+option(BUILD_WX_UI           "Build wxWidgets based applications"          ON)
 option(BUILD_VERBOSE_OUTPUT  "Build with verbose output"                   OFF)
 option(BUILD_TESTING         "Build tests"                                 ON)
 option(BUILD_BOOST_3RD       "Build boost based libs and apps"             ON)
@@ -30,6 +31,8 @@ include(Common)
 set(SANDBOX_LIBRARIES
     Gamebox
     Core
+    Alley
+    Render
 )
 
 set(libraries_dir    ${CMAKE_SOURCE_DIR}/libraries)
@@ -45,6 +48,8 @@ if(GENERATE_SCAFFOLD)
         TEMPLATE_LOCATION  ${template_dir}
     )
 endif()
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty)
 
 if(EXISTS "${libraries_dir}/CMakeLists.txt")
     add_subdirectory(${libraries_dir})

@@ -115,3 +115,13 @@ TEST_F(test_gamebox, roll_almost_perfect_game) {
     roll_n_times(10, 10);
     EXPECT_EQ(270, bowlingGame->score());
 }
+
+TEST_F(test_gamebox, roll_returns_true_while_playing) {
+    EXPECT_TRUE(bowlingGame->roll(3));
+    EXPECT_TRUE(bowlingGame->roll(4));
+}
+
+TEST_F(test_gamebox, roll_returns_false_when_game_is_over) {
+    roll_n_times(20, 0);
+    EXPECT_FALSE(bowlingGame->roll(1));
+}
