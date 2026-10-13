@@ -5,6 +5,7 @@ set(PROJECT_LIST)
 #################################################
 add_subdirectory(bowlingGameCMD)
 add_subdirectory(bowlingGameUI)
+add_subdirectory(bowlingGameGL)
 #################################################
 # Build all the subprojects
 #################################################
