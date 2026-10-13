@@ -46,6 +46,8 @@ if(GENERATE_SCAFFOLD)
     )
 endif()
 
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty)
+
 if(EXISTS "${libraries_dir}/CMakeLists.txt")
     add_subdirectory(${libraries_dir})
 endif()
