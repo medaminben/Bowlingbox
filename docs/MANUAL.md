@@ -17,7 +17,7 @@ structured, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Tool | Version |
 |---|---|
-| C++ compiler | C++20: GCC 11+, Clang 14+ or MSVC 2022 |
+| C++ compiler | C++20: GCC 11+ or Clang 14+ (Linux is the tested platform) |
 | CMake | 3.29 or newer |
 | Git | to fetch GoogleTest |
 | Network access | on the first configure (or a pre-filled `build/_deps`, see [Offline builds](#offline-builds)) |
@@ -49,7 +49,7 @@ ctest --test-dir build --output-on-failure
 The first configure and build take several minutes, because wxWidgets and Bullet are compiled from
 source. Later builds are incremental.
 
-Executables are written to `build/bin/`:
+Executables are written to `<build-dir>/bin/` (`build/bin/` with the commands above):
 
 | Binary | What it is |
 |---|---|
@@ -73,7 +73,7 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | `ENABLE_COVERAGE` | `OFF` | Add `--coverage` and a `coverage` target (GCC/Clang) |
 | `ENABLE_CLANG_TIDY` | `OFF` | Run `clang-tidy` during compilation |
 | `BUILD_VERBOSE_OUTPUT` | `OFF` | Verbose makefiles and CMake variable dumps |
-| `SB_FETCH_OFFLINE` | `OFF` | Use only already-downloaded dependencies |
+| `GAMEBOX_FETCH_OFFLINE` | `OFF` | Use only already-downloaded dependencies |
 
 The dependency versions can be overridden with `GAMEBOX_BULLET_VERSION`, `GAMEBOX_GLM_VERSION`,
 `GAMEBOX_WX_VERSION` and `GAMEBOX_GTEST_VERSION`.
@@ -85,18 +85,20 @@ The dependency versions can be overridden with `GAMEBOX_BULLET_VERSION`, `GAMEBO
 cmake -S . -B build -DBUILD_WX_UI=OFF
 
 # Release build
-cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 
 # With the Qt display (point CMake to your Qt if it is not found)
 cmake -S . -B build -DBUILD_QT_UI=ON -DCMAKE_PREFIX_PATH=/path/to/Qt/6.x/gcc_64
 ```
+
+Keep extra build directories under `build/` (for example `build/release`). It is git-ignored, and each directory has its own `bin/` and `lib/`.
 
 ### Offline builds
 
 After one successful online configure, `build/_deps` contains every downloaded dependency. Then:
 
 ```bash
-cmake -S . -B build -DSB_FETCH_OFFLINE=ON
+cmake -S . -B build -DGAMEBOX_FETCH_OFFLINE=ON
 ```
 
 You can also share a download cache between build directories with
@@ -110,6 +112,9 @@ cmake --install build --prefix ~/.local
 
 This installs the Gamebox libraries, headers and `lib/cmake/Gamebox/GameboxConfig.cmake`, so other
 projects can use `find_package(Gamebox)` and link `Gamebox::Score`, `Gamebox::Alley` and so on.
+
+CI checks this on every run with `ci/install-smoke.sh`. Code that includes
+`Gamebox/Render/Render.h` must also find GLM itself.
 
 ## 3. Playing BowlingGL
 
@@ -147,8 +152,7 @@ On the second ball of a frame, the pins that are still standing stay exactly whe
 | Show controls | | Help ▸ Controls |
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
-You can move and aim while charging. Inputs that make no sense in the current phase (for example
-aiming while the ball rolls) are ignored.
+With the keyboard you can still move and aim while charging; mouse aiming works only before you start charging. Inputs that make no sense in the current phase (for example aiming while the ball rolls) are ignored.
 
 ### Tips
 
@@ -171,7 +175,7 @@ BowlingConsole is a score keeper for real games: type the number of pins each ba
 | `r` | in a game | restart the game |
 | `q` | anywhere | quit |
 
-Anything else is rejected with "Invalid choice!". After each roll the score grid is redrawn with
+Anything else is rejected with "Invalid choice!". Pin counts larger than the number of pins standing are rejected the same way. The game ends when input ends (for example when stdin is a pipe). After each roll the score grid is redrawn with
 the current total. When the tenth frame is complete, the final score is shown.
 
 ## 5. BowlingDisplay (Qt)
@@ -189,7 +193,10 @@ Gamebox scores standard ten-pin bowling:
 - **Spare** (`/`): all 10 pins with two balls. The frame scores 10 plus the next ball.
 - **Open frame**: the frame scores the number of pins knocked down.
 - **Miss** (`-`): a ball that knocks down no pins.
-- **Tenth frame**: a strike or spare earns bonus balls, up to three balls in the frame.
+- **Tenth frame**: a strike earns two bonus balls and a spare one, so the frame has up to three
+  balls. The rack is set up again whenever it is cleared; otherwise the next ball faces the pins
+  still standing.
+- A ball can never knock down more pins than are standing. The calculator refuses such input.
 - A perfect game is 12 strikes = 300.
 
 On the scoreboard, the top row shows each ball and the bottom row shows the running total. A
@@ -201,7 +208,7 @@ frame's total appears once its bonus balls have been played.
 |---|---|
 | `Package 'gtk+-3.0' not found` / OpenGL not found | Install `libgtk-3-dev libgl1-mesa-dev`, or build without BowlingGL (`-DBUILD_WX_UI=OFF`) |
 | `DSO missing from command line` (X11) | Install `libx11-dev` and configure again |
-| Configure hangs or fails while downloading | Check network or proxy access to github.com. Once `build/_deps` is filled, use `-DSB_FETCH_OFFLINE=ON` |
+| Configure hangs or fails while downloading | Check network or proxy access to github.com. Once `build/_deps` is filled, use `-DGAMEBOX_FETCH_OFFLINE=ON` |
 | BowlingGL crashes at start on Wayland | The app switches to `GDK_BACKEND=x11` (XWayland) on its own. Make sure XWayland is available. Only set `GDK_BACKEND=wayland` if your wx/GL stack supports it |
 | Black window or an OpenGL error dialog | The GPU or driver lacks OpenGL 3.3 core. Run `glxinfo -B` and update the Mesa or vendor driver |
 | `CMake 3.29 or higher is required` | Install a newer CMake (for example `pip install cmake`, or from cmake.org) |
@@ -224,17 +231,17 @@ After changes to Alley, Render or BowlingGL, also go through the manual checklis
 ### Coverage
 
 ```bash
-cmake -S . -B build-cov -DENABLE_COVERAGE=ON
-cmake --build build-cov -j
-cmake --build build-cov --target coverage   # needs lcov + genhtml
-xdg-open build-cov/coverage/html/index.html
+cmake -S . -B build/coverage -DENABLE_COVERAGE=ON
+cmake --build build/coverage -j
+cmake --build build/coverage --target coverage   # needs lcov + genhtml
+xdg-open build/coverage/coverage/html/index.html
 ```
 
 ### Static analysis
 
 ```bash
-cmake -S . -B build-tidy -DENABLE_CLANG_TIDY=ON
-cmake --build build-tidy
+cmake -S . -B build/tidy -DENABLE_CLANG_TIDY=ON
+cmake --build build/tidy
 ```
 
 `compile_commands.json` is always generated in the build directory for editors and clangd.
@@ -266,7 +273,7 @@ cmake --build build-tidy
 
 Every push to `main` or `feature/**`, and every pull request to `main`, builds and tests on Ubuntu
 24.04 (`.github/workflows/ci.yml`). Add the `automerge` label to a pull request to squash-merge it
-automatically once CI is green.
+automatically once CI is green. The merge only happens if the pull request still points at the commit CI tested. A merge made by the workflow does not start another CI run on `main`.
 
 ## Third-party licences
 
