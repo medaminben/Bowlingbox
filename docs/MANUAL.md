@@ -297,8 +297,9 @@ Bowlingbox itself is MIT licensed (see [LICENSE](../LICENSE)). It uses:
 | wxWidgets | wxWindows Library Licence (LGPL with a static-linking exception) |
 | GLM | MIT (or Happy Bunny) |
 | GoogleTest | BSD-3-Clause (tests only, not shipped) |
-| GLAD 2 | generated code public domain / generator MIT and Apache-2.0 |
-| stb_easy_font | public domain / MIT |
+| GLAD 2 | generated loader (WTFPL OR CC0-1.0) AND Apache-2.0 |
+| stb_easy_font | MIT or public domain (Unlicense) |
 | Qt 6 (optional) | LGPL-3.0 / GPL / commercial |
 
-See [3rdparty/README.md](../3rdparty/README.md) for the in-tree components.
+See [licenses/](../licenses/README.md) for versions, the libraries bundled into a
+source-built wxWidgets, and the full licence texts.

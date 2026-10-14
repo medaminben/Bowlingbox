@@ -90,6 +90,8 @@ the sheet.
 | `cmake/modules/LibraryGenerator.cmake` | remove the Qt app branch |
 | `cmake/template/app/` | delete `lib_qt_ui_CMakeLists.txt.in`, `lib_Qt_UI.cpp.in`, `lib_mainwindow.cpp.in`, `lib_mainwindow.h.in`, `lib_mainwindow.ui.in` |
 | `bowlingGameUI/display.{h,cpp,ui}` | delete (replaced by `ScoreSheetFrame`) |
+| `licenses/Qt-LGPL-3.0.txt` | delete |
+| `licenses/README.md` | remove the Qt 6 row |
 | `README.md`, `applications/bowlingGame/README.md`, `docs/ARCHITECTURE.md`, `docs/MANUAL.md` | BowlingDisplay is wx and built with `BUILD_WX_UI`; drop `BUILD_QT_UI`, Qt 6 and its licence row; note that `test_bowlingdisplay` needs a display or `xvfb-run` |
 
 An old cache that still sets `BUILD_QT_UI` only gets CMake's unused-variable warning; no shim.
@@ -105,4 +107,4 @@ An old cache that still sets `BUILD_QT_UI` only gets CMake's unused-variable war
 
 ## Out of scope
 
-Score, Alley and Render libraries; BowlingGL and BowlingConsole; the wx scaffold template.
+The libraries in `libraries/` (Core, Score, Alley, Render): none of them uses Qt; BowlingGL and BowlingConsole; the wx scaffold template.

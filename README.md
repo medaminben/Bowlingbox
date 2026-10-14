@@ -47,6 +47,7 @@ every build option, and troubleshooting.
 | [`applications/bowlingGame`](applications/bowlingGame) | `BowlingGL` (wxWidgets + OpenGL), `BowlingConsole`, `BowlingDisplay` (Qt) |
 | [`cmake`](cmake) | Build helpers, dependency fetching, scaffold templates, install/export config |
 | [`3rdparty`](3rdparty) | In-tree GLAD loader and `stb_easy_font` |
+| [`licenses`](licenses) | Third-party licence list and texts |
 | [`docs`](docs) | Architecture, manual, design specs and plans |
 
 ## Main build options
@@ -71,4 +72,4 @@ The [manual](docs/MANUAL.md#build-options) lists the full set.
 ## License
 
 Bowlingbox is released under the [MIT License](LICENSE). Third-party components keep their own
-licences; see [3rdparty/README.md](3rdparty/README.md) and the [manual](docs/MANUAL.md#third-party-licences).
+licences; [licenses/](licenses/README.md) lists them with their full licence texts.
