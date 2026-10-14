@@ -18,3 +18,13 @@ create_application(
     SOURCES      main.cpp
     DEPENDENCIES bowlingdisplay_core
 )
+
+# Opens the form on Qt's offscreen platform; no display needed.
+if(BUILD_TESTING)
+    build_gtest_executable(
+        NAME     test_bowlingdisplay
+        SRC      test/test_Display.cpp
+        DEPENDS  bowlingdisplay_core GTest::gtest
+        DISCOVER ON
+    )
+endif()
