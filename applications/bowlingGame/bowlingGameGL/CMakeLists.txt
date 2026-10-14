@@ -2,6 +2,7 @@
 # live in bowlinggl_core; the executable adds the wx window classes and main().
 add_library(bowlinggl_core STATIC
     Command.h
+    FixedStep.h FixedStep.cpp
     InputMapper.h InputMapper.cpp
     LaneCommands.h LaneCommands.cpp
     FollowCamera.h FollowCamera.cpp
