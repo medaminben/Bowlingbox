@@ -51,12 +51,20 @@ Front-ends depend on interfaces; the concrete classes are picked in `main` (or a
 | `Console::ITerminal` | BowlingConsole | `SystemTerminal` (stdin/stdout) | `Console::Screen` |
 
 `Score/Notation.h` owns the 21-slot roll encoding (`Mark::Strike`, `Spare`, ...) and its
-"X / -" notation; Render, the console and Qt all use it. Inject fakes to test without Bullet,
-OpenGL or a terminal: see `test_alley_injected`, `test_render_scoreboard` and `test_hud`.
+"X / -" notation, and `Score/Frames.h` cuts the slots into ten `FrameView`s. Render, the console
+and Qt all draw from `Score::frames()`. Inject fakes to test without Bullet, OpenGL or a terminal:
+see `test_alley_injected`, `test_render_scoreboard` and `test_hud`.
 
-BowlingGL: `BowlingCanvas` only owns GL resources, the 60 Hz loop and wx events. Input goes
-`InputMapper` → `Command` → `LaneCommands::execute`, the camera is `FollowCamera`, and the HUD is
-`drawHud` + `HudText`.
+Each app keeps everything except its entry point in a static library (`bowlingconsole_core`,
+`bowlingdisplay_core`, `bowlinggl_core`) that the app and its tests link.
+
+BowlingGL: `BowlingCanvas` only owns GL resources, the timer and wx events. `FixedStep` turns timer
+ticks into 1/60 s physics steps. Keyboard and mouse input both go `InputMapper` →
+`Command {type, amount}` → `LaneCommands::execute`. The camera is `FollowCamera`, the HUD is
+`drawHud` + `HudText`, and `hudLayout()` sizes its bands.
+
+BowlingConsole: `Console::Session` holds the game flow (menu, playing, game over) with no I/O;
+`Console::Screen` draws it on an `ITerminal` with `banner()` and `renderScoreSheet()`.
 
 ## BowlingConsole
 
@@ -69,3 +77,4 @@ Text UI; type the number of pins. Built with `BUILD_APPS=ON`.
 ![bdisplay](https://github.com/medaminben/Sandbox/assets/166343832/bb91928f-58ca-4893-8179-2c4ee2be4679)
 
 Kept for comparison; off by default because of the Qt licence. Build with `-DBUILD_QT_UI=ON` (needs Qt 6).
+`test_bowlingdisplay` opens the form on Qt's offscreen platform, so it needs no display.

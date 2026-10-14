@@ -64,6 +64,7 @@ The scoring rules of ten-pin bowling (the [codingdojo bowling kata](https://codi
 | `IBowlingGame.h` | `IScoreSheet` (read-only view: `rolls`, `scores`, `score`, `frameScore`, `pinsLeft`, `isOver`) and `IBowlingGame` (adds `roll`, `reset`) |
 | `Score.h` | `ScoreCalculator`, the default `IBowlingGame` (pimpl over `BowlingSet`) |
 | `Notation.h` | Constants (`kFrames = 10`, `kPins = 10`, `kRollSlots = 21`), the `Mark` sentinels and `notation()` |
+| `Frames.h` | `FrameView` and `frames()`: the 21 slots and 10 totals cut into ten frames (the tenth has three rolls) |
 
 **Roll encoding.** A game is stored as 21 roll slots (9 frames × 2 + 3 for the tenth) and 10
 frame totals. A slot is either a pin count or a `Mark` sentinel:
@@ -158,23 +159,28 @@ current.
 |---|---|
 | `main.cpp` | wx entry point; forces `GDK_BACKEND=x11` on Wayland (wxGLCanvas needs GLX) |
 | `BowlingFrame` | Window, menu (Game ▸ New/Quit, Help ▸ Controls/About), status bar |
-| `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the 60 Hz timer, forwards wx events |
-| `Command.h` | Player intents (`MoveLeft`, `AngleRight`, `StartCharge`, `Release`, `NewGame`, `Quit`, …) |
-| `InputMapper` | Pure function: key or mouse event + current `Phase` → `Command` |
+| `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the timer, forwards wx events |
+| `FixedStep` | Turns irregular timer ticks into 1/60 s physics steps; drops the backlog after a stall |
+| `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `Quit` |
+| `InputMapper` | Pure functions: key, button or mouse move + current `Phase` → `Command` |
 | `LaneCommands` | `execute(Command, Lane&)` → `Result<>` |
 | `FollowCamera` | Waits behind the foul line, follows the ball down the lane, eases back |
 | `SceneAdapter` | The only place that converts Alley floats into Render/GLM types |
-| `Hud`, `HudText` | Scoreboard, power bar, hint and result text; `HudText` holds the strings |
+| `Hud`, `HudText` | Scoreboard, power bar, hint and result text; `hudLayout()` sizes the bands; `HudText` holds the strings, including the Controls dialog |
 
 ### BowlingConsole (`bowlingGameCMD`)
 
-`Console::Screen` runs the menu and game loop. It receives an `IBowlingGame` and an `ITerminal`
-(`SystemTerminal` uses stdin/stdout). `ScoreGrid` draws the score sheet as text.
+`Console::Session` is the game flow without I/O: `handle(line)` moves between `Menu`, `Playing` and
+`GameOver` and sets the message; rolls are validated by `IBowlingGame::roll`. `Console::Screen`
+receives an `IBowlingGame` and an `ITerminal` (`SystemTerminal` uses stdin/stdout), draws
+`banner()`, `renderScoreSheet()` and the session's message and prompt, and feeds it input lines.
 
 ### BowlingDisplay (`bowlingGameUI`, optional)
 
 A Qt Widgets form that shows a `ScoreCalculator`. It is built only with `BUILD_QT_UI=ON`, because Qt is
 a large external dependency with its own licence.
+`BowlingDisplay::MainWindow` finds its widgets by name in `display.ui` and draws the sheet from
+`Score::frames()`.
 
 ## Data flow: one throw in BowlingGL
 
@@ -191,11 +197,11 @@ sequenceDiagram
 
     wx->>C: key up (Space)
     C->>IM: keyUp(code, phase)
-    IM-->>C: Command::Release
+    IM-->>C: Command{Release}
     C->>LC: execute(Release, lane)
     LC->>L: release()
     L->>W: launchBall(offset, angle, speed)
-    loop every 1/60 s
+    loop FixedStep: 1/60 s steps per timer tick
         wx->>C: timer
         C->>L: step(dt)
         L->>W: step(dt)
@@ -241,8 +247,9 @@ The canvas never changes game state directly. Every change goes through a `Comma
   - installs the target, its headers and its export set
   - builds `test_bowlingbox_<lib>` from the test sources
 - `create_application(NAME … ENTRY Console|QT_ui|WX_ui …)` creates an executable of the right kind.
-  Applications declare their variables in their own `CMakeLists.txt`, and
-  `applications/bowlingGame/CMakeLists.txt` creates them in a loop.
+  It stops with an error for an unknown ENTRY or a disabled toolkit, so each app directory calls it
+  directly, inside `if(BUILD_QT_UI)` / `if(BUILD_WX_UI)` for toolkit apps. The app's logic goes in
+  a static `<app>_core` library that the executable and its test both link.
 - `build_gtest_executable(NAME test_… SRC … DEPENDS … DISCOVER ON)` registers the tests with
   `gtest_discover_tests` and labels them `unit`. Names must start with `test_` and be lowercase.
 
@@ -285,12 +292,13 @@ interface. Code that includes `Bowlingbox/Render/Render.h` must find GLM itself.
 
 | Executable | Covers |
 |---|---|
-| `test_bowlingbox_score` | Scoring rules, encoding, notation |
+| `test_bowlingbox_score` | Scoring rules, encoding, notation, frames() |
 | `test_bowlingbox_core` | `Result` / `Error` |
 | `test_bowlingbox_alley` | State machine with real Bullet (`test_alley`: gutter, strike, 300 game, determinism) and with `FakeWorld` / `FakeGame` (`test_alley_injected`) |
 | `test_bowlingbox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas |
-| `test_bowlinggl` | Input mapping, lane commands, follow camera, HUD text and drawing; no window is opened |
-| `test_bowlingconsole` | Console game loop with a scripted terminal: number parsing, out-of-range pins, end of input |
+| `test_bowlinggl` | Input mapping, lane commands, fixed time step, follow camera, HUD layout, text and drawing; no window is opened |
+| `test_bowlingconsole` | `Session` (menu, rolls, game over, input trimming), score grid text against golden output, banner, and the game loop with a scripted terminal |
+| `test_bowlingdisplay` | The Qt form on the offscreen platform: pin buttons, tenth frame, game over, restart (only with `BUILD_QT_UI=ON`) |
 
 Anything that needs a real window or GL context is checked by hand with the checklist in
 [applications/bowlingGame/README.md](../applications/bowlingGame/README.md).
