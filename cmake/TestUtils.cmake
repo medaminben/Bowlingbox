@@ -1,7 +1,7 @@
 include(GTestSupport)
 
 # build_gtest_executable(
-#   NAME test_sandbox_core
+#   NAME test_gamebox_core
 #   SRC  test/src/test_Core.cpp
 #   DEPENDS Gamebox::Core GTest::gtest ...
 #   DISCOVER ON

@@ -1,5 +1,5 @@
-#ifndef CORE_H
-#define CORE_H
+#ifndef GAMEBOX_CORE_H
+#define GAMEBOX_CORE_H
 #include <Gamebox/Core/Gamebox_Core_export.h>
 #include <string>
 #include <utility>
@@ -25,7 +25,6 @@ protected:
 
 }  // namespace Core
 }  // namespace Gamebox
-namespace Sc = Gamebox::Core;
 
 /**
  * @brief  a result wrapper
@@ -33,7 +32,7 @@ namespace Sc = Gamebox::Core;
  * @param T  a value type
  * @param ET  an error type
  */
-template <typename T = std::monostate, typename ET = Sc::Error<>>
+template <typename T = std::monostate, typename ET = Gamebox::Core::Error<>>
 struct Result {
 public:
     constexpr Result(T value) : result(std::move(value)) {};
@@ -50,4 +49,4 @@ private:
     std::variant<T, ET> result;
 };
 
-#endif  // CORE_H
+#endif  // GAMEBOX_CORE_H

@@ -22,7 +22,7 @@ macro(add_project name name_list)
     list(APPEND ${name_list} ${name})
 endmacro()
 
-# Convert "Gamebox::Core" -> "sandbox_core" for add_library().
+# Convert "Gamebox::Core" -> "gamebox_core" for add_library().
 macro(get_raw_target_name qualified_name out_var)
     string(REPLACE "::" "_" ${out_var} ${qualified_name})
     string(TOLOWER ${${out_var}} ${out_var})
@@ -82,7 +82,7 @@ function(create_library)
         PUBLIC  ${parameter_PUBLIC_DEPENDENCIES}
     )
 
-    sandbox_set_warnings(${LIBRARY_NAME_RAW})
+    gamebox_set_warnings(${LIBRARY_NAME_RAW})
 
     set_target_properties(${LIBRARY_NAME_RAW} PROPERTIES
         OUTPUT_NAME "${CMAKE_ROOT_NAME}${parameter_LIB_NAME}"
@@ -170,7 +170,7 @@ function(create_application)
         if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
             target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
         endif()
-        sandbox_set_warnings(${app_NAME})
+        gamebox_set_warnings(${app_NAME})
         install(TARGETS ${app_NAME}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         )
@@ -184,7 +184,7 @@ function(create_application)
             WIN32_EXECUTABLE TRUE
             MACOSX_BUNDLE TRUE
         )
-        sandbox_set_warnings(${app_NAME})
+        gamebox_set_warnings(${app_NAME})
         install(TARGETS ${app_NAME}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -198,7 +198,7 @@ function(create_application)
             WIN32_EXECUTABLE TRUE
             MACOSX_BUNDLE TRUE
         )
-        sandbox_set_warnings(${app_NAME})
+        gamebox_set_warnings(${app_NAME})
         install(TARGETS ${app_NAME}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -19,7 +19,7 @@ Design: [spec](../../docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md
 
 Prerequisites (Debian/Ubuntu): `sudo apt install build-essential cmake libgtk-3-dev libgl1-mesa-dev`.
 wxWidgets 3.2.8, Bullet3 3.25, GLM and GoogleTest are downloaded at configure time
-(`SB_FETCH_OFFLINE=ON` reuses a populated `build/_deps`).
+(`GAMEBOX_FETCH_OFFLINE=ON` reuses a populated `build/_deps`).
 
 ```bash
 cmake -S . -B build

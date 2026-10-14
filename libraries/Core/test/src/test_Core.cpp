@@ -13,7 +13,7 @@ TEST(test_Core_result, result_properties) {
 }
 
 TEST(test_Core_error, error_properties) {
-    auto error = Sc::Error<>("error");
+    auto error = Gamebox::Core::Error<>("error");
     auto result = Result<int>(error);
     EXPECT_STREQ(result.error().c_str(), error().c_str());
     EXPECT_EQ(result.isValue(), false);
@@ -21,7 +21,7 @@ TEST(test_Core_error, error_properties) {
 }
 
 TEST(test_Core_result_simple, simple_result_properties) {
-    auto error = Sc::Error<>("error");
+    auto error = Gamebox::Core::Error<>("error");
     auto result = Result<int>(error);
     EXPECT_STREQ(result.error().c_str(), error().c_str());
     EXPECT_EQ(result.isValue(), false);
@@ -29,7 +29,7 @@ TEST(test_Core_result_simple, simple_result_properties) {
 }
 
 TEST(test_Core_result_void, void_result_properties) {
-    auto error = Sc::Error<>("error");
+    auto error = Gamebox::Core::Error<>("error");
     auto result = Result<>(error);
     EXPECT_STREQ(result.error().c_str(), error().c_str());
     EXPECT_EQ(result.isValue(), false);

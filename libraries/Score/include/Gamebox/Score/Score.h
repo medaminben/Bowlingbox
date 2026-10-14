@@ -1,5 +1,5 @@
-#ifndef SCORE_H
-#define SCORE_H
+#ifndef GAMEBOX_SCORE_H
+#define GAMEBOX_SCORE_H
 #include <Gamebox/Score/Gamebox_Score_export.h>
 #include <Gamebox/Score/IBowlingGame.h>
 #include <Gamebox/Score/Notation.h>
@@ -32,4 +32,4 @@ private:
 }  // namespace Score
 }  // namespace Gamebox
 
-#endif  // SCORE_H
+#endif  // GAMEBOX_SCORE_H

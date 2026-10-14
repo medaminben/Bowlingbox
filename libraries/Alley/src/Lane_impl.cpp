@@ -19,7 +19,7 @@ Result<> ok() {
     return Result<>(std::monostate {});
 }
 Result<> fail(const char* message) {
-    return Result<>(Sc::Error<>(std::string(message)));
+    return Result<>(Gamebox::Core::Error<>(std::string(message)));
 }
 }  // namespace
 
