@@ -1,6 +1,7 @@
 // Include headers of other components from this project path
 // relative to the "include" directory of the component, just like external projects
 // would
+#include <Bowlingbox/Score/Frames.h>
 #include <Bowlingbox/Score/Score.h>
 // Include 3rd party headers
 #include <gtest/gtest.h>
@@ -8,6 +9,7 @@
 #include <iostream>
 #include <initializer_list>
 #include <string>
+#include <vector>
 using namespace Bowlingbox::Score;
 
 class test_score : public ::testing::Test {
@@ -267,4 +269,53 @@ TEST(test_score_totals, frame_score_clamps_the_frame_index) {
         game.roll(1);
     EXPECT_EQ(game.frameScore(10), 20);
     EXPECT_EQ(game.frameScore(-1), 2);
+}
+
+// ------------------------------------------------------------ frames()
+TEST(test_score_frames, empty_sheet_has_ten_blank_frames) {
+    ScoreCalculator game;
+    const auto views = frames(game);
+    for (int f = 0; f < kFrames; ++f) {
+        const FrameView& view = views[static_cast<std::size_t>(f)];
+        EXPECT_EQ(view.index, f);
+        EXPECT_EQ(view.rollCount, f == kFrames - 1 ? 3 : 2);
+        EXPECT_EQ(view.isLast(), f == kFrames - 1);
+        EXPECT_EQ(view.rolls[0], toInt(Mark::None));
+        EXPECT_EQ(view.score, toInt(Mark::None));
+    }
+}
+
+TEST(test_score_frames, frames_follow_the_21_slot_encoding) {
+    ScoreCalculator game;
+    for (int pins : {10, 7, 3})
+        game.roll(pins);
+    const auto views = frames(game);
+    EXPECT_EQ(views[0].rolls[0], toInt(Mark::Strike));
+    EXPECT_EQ(views[0].rolls[1], toInt(Mark::Empty));
+    EXPECT_EQ(views[0].score, 20);
+    EXPECT_EQ(views[1].rolls[0], 7);
+    EXPECT_EQ(views[1].rolls[1], toInt(Mark::Spare));
+    EXPECT_EQ(views[1].score, toInt(Mark::None));
+}
+
+TEST(test_score_frames, tenth_frame_has_three_rolls) {
+    ScoreCalculator game;
+    for (int i = 0; i < 18; ++i)
+        game.roll(0);
+    for (int pins : {7, 3, 5})
+        game.roll(pins);
+    const FrameView& last = frames(game)[9];
+    EXPECT_EQ(last.rollCount, 3);
+    EXPECT_EQ(last.rolls[0], 7);
+    EXPECT_EQ(last.rolls[1], toInt(Mark::Spare));
+    EXPECT_EQ(last.rolls[2], 5);
+    EXPECT_EQ(last.score, 15);
+}
+
+TEST(test_score_frames, short_vectors_read_as_not_played) {
+    const auto views = frames(std::vector<int> {3}, std::vector<int> {});
+    EXPECT_EQ(views[0].rolls[0], 3);
+    EXPECT_EQ(views[0].rolls[1], toInt(Mark::None));
+    EXPECT_EQ(views[9].rolls[2], toInt(Mark::None));
+    EXPECT_EQ(views[0].score, toInt(Mark::None));
 }
