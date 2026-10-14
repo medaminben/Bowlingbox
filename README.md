@@ -7,7 +7,7 @@ A C++20 bowling game built from small, testable libraries: a ten-pin score calcu
 a Bullet3 physics lane, an OpenGL renderer, and three front-ends (wxWidgets/OpenGL,
 console, optional Qt).
 
-![BowlingGL](docs/Bowlingbox_%20Neon-Kegeln%20im%20Spielmodus.png)
+![BowlingGL](docs/Bowlingbox_%20Neon%20Strike.png)
 
 ## Quick start
 
