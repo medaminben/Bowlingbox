@@ -45,10 +45,11 @@ std::string result(const Gamebox::Alley::Snapshot& s, const Gamebox::Score::ISco
     if (s.phase != Phase::FrameDone || s.lastPinsDown < 0)
         return "";
     const int last = lastRollValue(sheet.rolls());
-    if (last == toInt(Mark::Strike) || s.lastPinsDown == Gamebox::Score::kPins)
-        return "STRIKE!";
+    // The sheet's mark decides: ten pins on a second ball are a spare.
     if (last == toInt(Mark::Spare))
         return "SPARE!";
+    if (last == toInt(Mark::Strike) || s.lastPinsDown == Gamebox::Score::kPins)
+        return "STRIKE!";
     if (s.lastPinsDown == 0)
         return "Gutter";
     return std::to_string(s.lastPinsDown) + " pins";
