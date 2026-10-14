@@ -2,6 +2,7 @@
 #include <wx/defs.h>
 
 using Bowlingbox::Alley::Phase;
+using Type = Command::Type;
 
 namespace {
 bool canAim(Phase p) {
@@ -13,47 +14,49 @@ namespace InputMapper {
 
 Command keyDown(int keyCode, bool ctrl, Phase phase) {
     if (keyCode == WXK_ESCAPE || (ctrl && (keyCode == 'Q' || keyCode == 'q')))
-        return Command::Quit;
+        return {Type::Quit};
     if (keyCode == 'N' || keyCode == 'n')
-        return Command::NewGame;
+        return {Type::NewGame};
     switch (keyCode) {
         case WXK_LEFT:
-            return canAim(phase) ? Command::MoveLeft : Command::None;
+            return canAim(phase) ? Command {Type::MoveAim, -kKeyOffsetStep} : Command {};
         case WXK_RIGHT:
-            return canAim(phase) ? Command::MoveRight : Command::None;
+            return canAim(phase) ? Command {Type::MoveAim, kKeyOffsetStep} : Command {};
         case 'A':
         case 'a':
-            return canAim(phase) ? Command::AngleLeft : Command::None;
+            return canAim(phase) ? Command {Type::RotateAim, -kKeyAngleStep} : Command {};
         case 'D':
         case 'd':
-            return canAim(phase) ? Command::AngleRight : Command::None;
+            return canAim(phase) ? Command {Type::RotateAim, kKeyAngleStep} : Command {};
         case WXK_SPACE:
-            return phase == Phase::Aiming ? Command::StartCharge : Command::None;
+            return phase == Phase::Aiming ? Command {Type::StartCharge} : Command {};
         default:
-            return Command::None;
+            return {};
     }
 }
 
 Command keyUp(int keyCode, Phase phase) {
     if (keyCode == WXK_SPACE && phase == Phase::Charging)
-        return Command::Release;
-    return Command::None;
+        return {Type::Release};
+    return {};
 }
 
 Command mouseDown(bool leftButton, Phase phase) {
-    return (leftButton && phase == Phase::Aiming) ? Command::StartCharge : Command::None;
+    return (leftButton && phase == Phase::Aiming) ? Command {Type::StartCharge} : Command {};
 }
 
 Command mouseUp(bool leftButton, Phase phase) {
-    return (leftButton && phase == Phase::Charging) ? Command::Release : Command::None;
+    return (leftButton && phase == Phase::Charging) ? Command {Type::Release} : Command {};
 }
 
-float mouseDxToOffset(int dx, int canvasWidthPx) {
-    return 1.2f * static_cast<float>(dx) / static_cast<float>(canvasWidthPx > 0 ? canvasWidthPx : 1);
-}
-
-float mouseDxToAngle(int dx) {
-    return 0.05f * static_cast<float>(dx);
+Command mouseMove(int dx, bool leftDown, bool rightDown, int canvasWidthPx, Phase phase) {
+    if (dx == 0 || leftDown || phase != Phase::Aiming)
+        return {};
+    if (rightDown)
+        return {Type::RotateAim, kMouseAngleStep * static_cast<float>(dx)};
+    if (canvasWidthPx <= 0)  // minimised: no meaningful scale
+        return {};
+    return {Type::MoveAim, kMouseOffsetSpan * static_cast<float>(dx) / static_cast<float>(canvasWidthPx)};
 }
 
 }  // namespace InputMapper

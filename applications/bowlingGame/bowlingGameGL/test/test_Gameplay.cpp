@@ -33,19 +33,21 @@ public:
 // ------------------------------------------------------------ LaneCommands
 TEST(test_lane_commands, routes_commands_to_the_lane) {
     Alley::Lane lane;
-    EXPECT_TRUE(LaneCommands::execute(Command::MoveRight, lane).isValue());
-    EXPECT_GT(lane.snapshot().aimOffset, 0.f);
-    EXPECT_TRUE(LaneCommands::execute(Command::StartCharge, lane).isValue());
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::MoveAim, 0.1f}, lane).isValue());
+    EXPECT_NEAR(lane.snapshot().aimOffset, 0.1f, 1e-6f);
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::RotateAim, 2.f}, lane).isValue());
+    EXPECT_NEAR(lane.snapshot().aimAngle, 2.f, 1e-6f);
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::StartCharge}, lane).isValue());
     EXPECT_EQ(lane.snapshot().phase, Phase::Charging);
-    EXPECT_TRUE(LaneCommands::execute(Command::NewGame, lane).isValue());
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::NewGame}, lane).isValue());
     EXPECT_EQ(lane.snapshot().phase, Phase::Aiming);
 }
 
 TEST(test_lane_commands, reports_rejections_and_ignores_non_lane_commands) {
     Alley::Lane lane;
-    EXPECT_TRUE(LaneCommands::execute(Command::Release, lane).isError());
-    EXPECT_TRUE(LaneCommands::execute(Command::Quit, lane).isValue());
-    EXPECT_TRUE(LaneCommands::execute(Command::None, lane).isValue());
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::Release}, lane).isError());
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::Quit}, lane).isValue());
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::None}, lane).isValue());
 }
 
 // ------------------------------------------------------------ FollowCamera
