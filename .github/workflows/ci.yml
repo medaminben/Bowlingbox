@@ -66,3 +66,6 @@ jobs:
       - name: Test
         working-directory: ${{ env.BUILD_DIR }}
         run: ctest --output-on-failure --label-regex unit
+
+      - name: Install smoke test
+        run: ci/install-smoke.sh "${BUILD_DIR}"
