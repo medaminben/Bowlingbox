@@ -96,6 +96,15 @@ TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
     EXPECT_EQ(HudText::result(snapshotIn(Phase::GameOver), sheet), "Game over - score 30");
 }
 
+TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
+    Score::Bowlingbox sheet;
+    auto s = snapshotIn(Phase::FrameDone);
+    sheet.roll(0);
+    sheet.roll(10);
+    s.lastPinsDown = 10;
+    EXPECT_EQ(HudText::result(s, sheet), "SPARE!");
+}
+
 TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
     Score::Bowlingbox sheet;
     sheet.roll(4);
