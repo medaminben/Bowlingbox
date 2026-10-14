@@ -304,7 +304,8 @@ TEST(test_score_frames, tenth_frame_has_three_rolls) {
         game.roll(0);
     for (int pins : {7, 3, 5})
         game.roll(pins);
-    const FrameView& last = frames(game)[9];
+    const auto views = frames(game);
+    const FrameView& last = views[9];
     EXPECT_EQ(last.rollCount, 3);
     EXPECT_EQ(last.rolls[0], 7);
     EXPECT_EQ(last.rolls[1], toInt(Mark::Spare));
