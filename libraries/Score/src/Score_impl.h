@@ -1,9 +1,12 @@
-#ifndef SCORE_IMPL_H
-#define SCORE_IMPL_H
+#ifndef GAMEBOX_SCORE_IMPL_H
+#define GAMEBOX_SCORE_IMPL_H
 #include <Gamebox/Score/Notation.h>
+#include <array>
 #include <vector>
 namespace Gamebox {
 namespace Score {
+/// Ten-pin game state: the pins knocked down by each ball, in order.
+/// Frames, bonuses and the next ball are derived from that list on demand.
 struct BowlingSet {
     BowlingSet() { reset(); }
 
@@ -17,18 +20,17 @@ struct BowlingSet {
     int frameScore(int frameIndex) const;
 
 private:
-    bool isStrike(int index) const;
-    bool isSpare(int index) const;
-    bool isMiss(int index) const;
-    bool managePins(int pins);
-    int manageCursor() const;
-    static int validateRoll(int value);
+    /// Where the next ball goes.
+    struct Position {
+        int frame;     // 0..9, kFrames when the game is over
+        int standing;  // pins standing for the next ball, 0 when over
+    };
+    Position position() const;
+    int at(int index) const;  // pins of ball `index`, 0 if not thrown yet
 
-private:
-    int _rolls[kRollSlots];
-    int _rollIndex = 0;
-    int _pinsLeft = kPins;
+    std::array<int, kRollSlots> _balls {};
+    int _count = 0;
 };
 }  // namespace Score
 }  // namespace Gamebox
-#endif  // SCORE_IMPL_H
+#endif  // GAMEBOX_SCORE_IMPL_H

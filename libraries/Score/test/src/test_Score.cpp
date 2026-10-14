@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 // Include system headers
 #include <iostream>
+#include <initializer_list>
 #include <string>
 using namespace Gamebox::Score;
 
@@ -154,4 +155,116 @@ TEST(test_score_notation, follows_score_sheet_conventions) {
     EXPECT_EQ(notation(0, true), "0");
     EXPECT_EQ(notation(7), "7");
     EXPECT_EQ(notation(300, true), "300");
+}
+
+namespace {
+void rollAll(Bowlingbox& game, std::initializer_list<int> balls) {
+    for (int pins : balls)
+        ASSERT_TRUE(game.roll(pins)) << "roll(" << pins << ") was refused";
+}
+void rollZeros(Bowlingbox& game, int n) {
+    for (int i = 0; i < n; ++i)
+        game.roll(0);
+}
+}  // namespace
+
+TEST(test_score_tenth_frame, strike_then_open_balls_gets_both_bonus_balls) {
+    Bowlingbox game;
+    rollZeros(game, 18);
+    rollAll(game, {10, 3});
+    EXPECT_FALSE(game.isOver());
+    EXPECT_EQ(game.pinsLeft(), 7);
+    EXPECT_FALSE(game.roll(8));  // only 7 pins are standing
+    rollAll(game, {4});
+    EXPECT_TRUE(game.isOver());
+    EXPECT_EQ(game.score(), 17);
+}
+
+TEST(test_score_tenth_frame, strike_then_spare) {
+    Bowlingbox game;
+    rollZeros(game, 18);
+    rollAll(game, {10, 3, 7});
+    const auto r = game.rolls();
+    EXPECT_EQ(r[18], toInt(Mark::Strike));
+    EXPECT_EQ(r[19], 3);
+    EXPECT_EQ(r[20], toInt(Mark::Spare));
+    EXPECT_EQ(game.score(), 20);
+}
+
+TEST(test_score_tenth_frame, two_strikes_then_open_ball) {
+    Bowlingbox game;
+    rollZeros(game, 18);
+    rollAll(game, {10, 10, 3});
+    const auto r = game.rolls();
+    EXPECT_EQ(r[18], toInt(Mark::Strike));
+    EXPECT_EQ(r[19], toInt(Mark::Strike));
+    EXPECT_EQ(r[20], 3);
+    EXPECT_EQ(game.score(), 23);
+}
+
+TEST(test_score_tenth_frame, spare_then_strike) {
+    Bowlingbox game;
+    rollZeros(game, 18);
+    rollAll(game, {3, 7, 10});
+    const auto r = game.rolls();
+    EXPECT_EQ(r[18], 3);
+    EXPECT_EQ(r[19], toInt(Mark::Spare));
+    EXPECT_EQ(r[20], toInt(Mark::Strike));
+    EXPECT_EQ(game.score(), 20);
+}
+
+TEST(test_score_tenth_frame, gutter_then_ten_is_a_spare) {
+    Bowlingbox game;
+    rollZeros(game, 18);
+    rollAll(game, {0, 10, 5});
+    const auto r = game.rolls();
+    EXPECT_EQ(r[18], toInt(Mark::Miss));
+    EXPECT_EQ(r[19], toInt(Mark::Spare));
+    EXPECT_EQ(r[20], 5);
+    EXPECT_EQ(game.score(), 15);
+}
+
+TEST(test_score_validation, refuses_impossible_pin_counts) {
+    Bowlingbox game;
+    EXPECT_FALSE(game.roll(11));
+    EXPECT_FALSE(game.roll(-1));
+    EXPECT_TRUE(game.roll(7));
+    EXPECT_FALSE(game.roll(4));  // 7 + 4 > 10 in one frame
+    EXPECT_TRUE(game.roll(3));
+    EXPECT_EQ(game.score(), 10);
+    EXPECT_EQ(game.rolls()[1], toInt(Mark::Spare));
+}
+
+TEST(test_score_validation, regular_frame_gutter_then_ten_is_a_spare) {
+    Bowlingbox game;
+    rollAll(game, {0, 10});
+    EXPECT_EQ(game.rolls()[0], toInt(Mark::Miss));
+    EXPECT_EQ(game.rolls()[1], toInt(Mark::Spare));
+}
+
+TEST(test_score_validation, no_pins_left_after_the_game) {
+    Bowlingbox game;
+    rollZeros(game, 20);
+    EXPECT_TRUE(game.isOver());
+    EXPECT_EQ(game.pinsLeft(), 0);
+}
+
+TEST(test_score_totals, frame_total_is_blank_until_its_bonus_is_known) {
+    Bowlingbox game;
+    rollAll(game, {10, 3});
+    EXPECT_EQ(game.scores()[0], toInt(Mark::None));
+    EXPECT_EQ(game.scores()[1], toInt(Mark::None));
+    EXPECT_EQ(game.score(), 16);  // running total still counts what was thrown
+    rollAll(game, {4});
+    EXPECT_EQ(game.scores()[0], 17);
+    EXPECT_EQ(game.scores()[1], 24);
+    EXPECT_EQ(game.scores()[2], toInt(Mark::None));
+}
+
+TEST(test_score_totals, frame_score_clamps_the_frame_index) {
+    Bowlingbox game;
+    for (int i = 0; i < 20; ++i)
+        game.roll(1);
+    EXPECT_EQ(game.frameScore(10), 20);
+    EXPECT_EQ(game.frameScore(-1), 2);
 }

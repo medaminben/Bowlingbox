@@ -1,5 +1,6 @@
 #include <Gamebox/Alley/Alley.h>
 #include <Gamebox/Alley/PhysicsWorld.h>
+#include <Gamebox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <cmath>
 #include <vector>
@@ -128,8 +129,8 @@ TEST_F(test_alley, pocket_throw_is_a_strike) {
     EXPECT_EQ(s.lastPinsDown, 10);
     EXPECT_EQ(lane.scoreSheet().rolls()[0], -2);  // Strike
     EXPECT_EQ(standingCount(s), 10);  // fresh rack for the next frame
-    // Gamebox reports provisional running frame score once the strike is recorded.
-    EXPECT_EQ(lane.scoreSheet().scores()[0], 10);
+    // A strike's frame total is unknown until its two bonus balls are thrown.
+    EXPECT_EQ(lane.scoreSheet().scores()[0], -3);  // Mark::None
 }
 
 TEST_F(test_alley, same_inputs_give_identical_results) {
@@ -309,4 +310,23 @@ TEST(test_alley_injected, game_over_is_decided_by_the_scorer) {
     throwAndWait(*l.lane, 2.f);
     EXPECT_EQ(l.lane->snapshot().phase, Phase::GameOver);
     EXPECT_TRUE(l.lane->scoreSheet().isOver());
+}
+
+TEST(test_alley_injected, tenth_frame_strike_then_open_balls_plays_three_balls) {
+    auto world = std::make_unique<FakeWorld>();
+    FakeWorld* w = world.get();
+    Lane lane(std::move(world), std::make_unique<Gamebox::Score::Bowlingbox>());
+    w->knockDown = 0;
+    for (int i = 0; i < 18; ++i)
+        throwAndWait(lane, 2.f);
+    w->knockDown = 10;
+    throwAndWait(lane, 2.f);
+    w->knockDown = 3;
+    throwAndWait(lane, 2.f);
+    EXPECT_EQ(lane.snapshot().phase, Phase::Aiming);
+    EXPECT_EQ(standingCount(lane.snapshot()), 7);  // fallen pins removed, no new rack
+    w->knockDown = 4;
+    throwAndWait(lane, 2.f);
+    EXPECT_EQ(lane.snapshot().phase, Phase::GameOver);
+    EXPECT_EQ(lane.scoreSheet().score(), 17);
 }
