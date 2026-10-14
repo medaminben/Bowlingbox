@@ -11,8 +11,9 @@
 #include <functional>
 #include <memory>
 
-/// GL canvas: owns the Lane and the GL resources, runs the 60 Hz loop and
-/// forwards wx events. Rules, input mapping, camera and HUD live elsewhere.
+/// GL canvas: owns the Lane and the GL resources, runs the timer (FixedStep turns
+/// its ticks into 1/60 s physics steps) and forwards wx events. Rules, input
+/// mapping, camera and HUD live elsewhere.
 class BowlingCanvas : public wxGLCanvas {
 public:
     BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs);
