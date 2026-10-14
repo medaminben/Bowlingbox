@@ -56,9 +56,6 @@ endif()
 
 include(BulletSupport)   # Bowlingbox::Alley always needs it
 include(GlmSupport)      # Bowlingbox::Render always needs it
-if(BUILD_QT_UI)
-    include(QtSupport)
-endif()
 if(BUILD_WX_UI)
     include(WxSupport)
 endif()

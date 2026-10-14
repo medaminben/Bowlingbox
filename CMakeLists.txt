@@ -11,7 +11,6 @@ set(CMAKE_ROOT_NAME ${PROJECT_NAME})
 # ---------------------------------------------------------------------------
 option(BUILD_SHARED_LIBS     "Build project libraries as shared libraries" ON)
 option(BUILD_APPS            "Build applications"                          ON)
-option(BUILD_QT_UI           "Build Qt based applications"                 OFF)
 option(BUILD_WX_UI           "Build wxWidgets based applications"          ON)
 option(BUILD_VERBOSE_OUTPUT  "Build with verbose output"                   OFF)
 option(BUILD_TESTING         "Build tests"                                 ON)
