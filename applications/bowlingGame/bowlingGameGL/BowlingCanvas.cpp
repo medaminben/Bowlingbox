@@ -51,7 +51,7 @@ BowlingCanvas::~BowlingCanvas() {
 }
 
 void BowlingCanvas::newGame() {
-    apply(Command::NewGame);
+    apply({Command::Type::NewGame});
 }
 
 bool BowlingCanvas::ensureRenderer() {
@@ -110,7 +110,7 @@ void BowlingCanvas::OnTimer(wxTimerEvent&) {
 
 void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
     const Command c = InputMapper::keyDown(e.GetKeyCode(), e.ControlDown(), _lane.snapshot().phase);
-    if (c == Command::None)
+    if (c.type == Command::Type::None)
         e.Skip();
     else
         apply(c);
@@ -118,7 +118,7 @@ void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
 
 void BowlingCanvas::OnKeyUp(wxKeyEvent& e) {
     const Command c = InputMapper::keyUp(e.GetKeyCode(), _lane.snapshot().phase);
-    if (c == Command::None)
+    if (c.type == Command::Type::None)
         e.Skip();
     else
         apply(c);
@@ -128,25 +128,18 @@ void BowlingCanvas::OnMouse(wxMouseEvent& e) {
     const Phase phase = _lane.snapshot().phase;
     if (e.LeftDown() || e.RightDown()) {
         SetFocus();
-        _lastMouse = e.GetPosition();
         apply(InputMapper::mouseDown(e.LeftDown(), phase));
     } else if (e.LeftUp() || e.RightUp()) {
         apply(InputMapper::mouseUp(e.LeftUp(), phase));
-    } else if (e.Dragging() && e.RightIsDown()) {
+    } else if (e.Moving() || e.Dragging()) {
         const int dx = e.GetPosition().x - _lastMouse.x;
-        _lastMouse = e.GetPosition();
-        if (dx != 0 && phase == Phase::Aiming)
-            _lane.rotateAim(InputMapper::mouseDxToAngle(dx));
-    } else if (e.Moving()) {
-        const int dx = e.GetPosition().x - _lastMouse.x;
-        _lastMouse = e.GetPosition();
-        if (dx != 0 && phase == Phase::Aiming)
-            _lane.moveAim(InputMapper::mouseDxToOffset(dx, GetClientSize().x));
+        apply(InputMapper::mouseMove(dx, e.LeftIsDown(), e.RightIsDown(), GetClientSize().x, phase));
     }
+    _lastMouse = e.GetPosition();  // every event, so a left-drag leaves no stale origin
 }
 
 void BowlingCanvas::apply(Command command) {
-    if (command == Command::Quit) {
+    if (command.type == Command::Type::Quit) {
         if (onQuit) onQuit();
         return;
     }

@@ -1,19 +1,16 @@
 #include "LaneCommands.h"
-#include "InputMapper.h"
 
 namespace LaneCommands {
 
 Result<> execute(Command command, Bowlingbox::Alley::Lane& lane) {
-    switch (command) {
-        case Command::MoveLeft:    return lane.moveAim(-InputMapper::kKeyOffsetStep);
-        case Command::MoveRight:   return lane.moveAim(InputMapper::kKeyOffsetStep);
-        case Command::AngleLeft:   return lane.rotateAim(-InputMapper::kKeyAngleStep);
-        case Command::AngleRight:  return lane.rotateAim(InputMapper::kKeyAngleStep);
-        case Command::StartCharge: return lane.startCharge();
-        case Command::Release:     return lane.release();
-        case Command::NewGame:     return lane.newGame();
-        case Command::Quit:
-        case Command::None:
+    switch (command.type) {
+        case Command::Type::MoveAim:     return lane.moveAim(command.amount);
+        case Command::Type::RotateAim:   return lane.rotateAim(command.amount);
+        case Command::Type::StartCharge: return lane.startCharge();
+        case Command::Type::Release:     return lane.release();
+        case Command::Type::NewGame:     return lane.newGame();
+        case Command::Type::Quit:
+        case Command::Type::None:
             break;
     }
     return Result<>(std::monostate {});
