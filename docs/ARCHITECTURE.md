@@ -78,6 +78,11 @@ frame totals. A slot is either a pin count or a `Mark` sentinel:
 
 Every display (Render, console, Qt) calls `notation()`, so they all show the same marks.
 
+**Rules enforced.** `roll()` refuses negative counts, counts above `pinsLeft()` and any roll after
+the game is over. `pinsLeft()` follows the tenth frame's rack and is 0 once the game is over. A
+frame's entry in `scores()` stays `Mark::None` until it is final; `score()` and `frameScore()`
+count the balls thrown so far.
+
 ### Gamebox::Core
 
 Shared vocabulary types with no dependencies:
@@ -212,7 +217,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 | `Score::IScoreSheet` / `Score::IBowlingGame` | Score | `Score::Bowlingbox` | `FakeGame` in `test_Alley.cpp` |
 | `Alley::IPhysicsWorld` | Alley | `makeBulletWorld()` | `FakeWorld` in `test_Alley.cpp` |
 | `Render::ICanvas2D` | Render | `Render::Overlay` (OpenGL) | `RecordingCanvas` in `test_Render.cpp` and `test_Gameplay.cpp` |
-| `Console::ITerminal` | BowlingConsole | `SystemTerminal` | none yet (the seam allows a scripted terminal) |
+| `Console::ITerminal` | BowlingConsole | `SystemTerminal` | `ScriptedTerminal` in `test_Console.cpp` |
 
 ## Build system
 
@@ -222,7 +227,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
   `cmake/Common.cmake`.
 - `Common.cmake` sets the language level, loads the helper modules, sets up clang-tidy, offline
   fetching and testing, and pulls in the third-party support modules.
-- Binaries go to `build/bin`, and libraries to `build/lib` on Unix (`cmake/BuildLocation.cmake`).
+- Binaries go to `<build-dir>/bin`, and libraries to `<build-dir>/lib` on Unix (`cmake/BuildLocation.cmake`).
 - Warnings are `-Wall -Wextra -Wpedantic -Werror` (`/W4 /WX` on MSVC) for project targets
   (`cmake/modules/CompilerWarnings.cmake`).
 
@@ -285,6 +290,7 @@ interface. Code that includes `Gamebox/Render/Render.h` must find GLM itself.
 | `test_gamebox_alley` | State machine with real Bullet (`test_alley`: gutter, strike, 300 game, determinism) and with `FakeWorld` / `FakeGame` (`test_alley_injected`) |
 | `test_gamebox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas |
 | `test_bowlinggl` | Input mapping, lane commands, follow camera, HUD text and drawing; no window is opened |
+| `test_bowlingconsole` | Console game loop with a scripted terminal: number parsing, out-of-range pins, end of input |
 
 Anything that needs a real window or GL context is checked by hand with the checklist in
 [applications/bowlingGame/README.md](../applications/bowlingGame/README.md).
@@ -295,6 +301,6 @@ Anything that needs a real window or GL context is checked by hand with the chec
   `main`, Ubuntu 24.04 with CMake 3.31 and Ninja:
   - configures with Debug, `BUILD_WX_UI=ON`, `BUILD_QT_UI=OFF` and `GENERATE_SCAFFOLD=OFF`
   - builds, then runs `ctest --label-regex unit`
+  - installs the libraries and builds `ci/consumer` against them (`ci/install-smoke.sh`)
   - caches the FetchContent downloads
-- **`.github/workflows/automerge.yml`**: squash-merges a pull request labelled `automerge` once CI
-  succeeds on it.
+- **`.github/workflows/automerge.yml`**: squash-merges a pull request labelled `automerge` once CI succeeds on it, and only if the pull request still points at the tested commit.
