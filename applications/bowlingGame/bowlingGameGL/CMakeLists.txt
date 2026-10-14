@@ -1,71 +1,38 @@
-set(EXECUTABLE_NAME BowlingGL)
-set(EXEC_LIST)
-set(THIS_DIR ${CMAKE_CURRENT_LIST_DIR})
-
-add_project(${EXECUTABLE_NAME} EXEC_LIST) # add_guard
-
-if(BUILD_WX_UI AND BUILD_APPS)
-    set(BUILD_${EXECUTABLE_NAME} ON PARENT_SCOPE)
-else()
-    set(BUILD_${EXECUTABLE_NAME} OFF PARENT_SCOPE)
-endif()
-set(${EXECUTABLE_NAME}_ENTRY
-    WX_ui
-    PARENT_SCOPE
+# BowlingGL: wxWidgets + OpenGL game (BUILD_WX_UI=ON). The window-free units
+# live in bowlinggl_core; the executable adds the wx window classes and main().
+add_library(bowlinggl_core STATIC
+    Command.h
+    InputMapper.h InputMapper.cpp
+    LaneCommands.h LaneCommands.cpp
+    FollowCamera.h FollowCamera.cpp
+    HudText.h HudText.cpp
+    Hud.h Hud.cpp
+    SceneAdapter.h SceneAdapter.cpp
 )
-set(${EXECUTABLE_NAME}_HEADERS
-    ${THIS_DIR}/Command.h
-    ${THIS_DIR}/InputMapper.h
-    ${THIS_DIR}/LaneCommands.h
-    ${THIS_DIR}/FollowCamera.h
-    ${THIS_DIR}/HudText.h
-    ${THIS_DIR}/Hud.h
-    ${THIS_DIR}/SceneAdapter.h
-    ${THIS_DIR}/BowlingCanvas.h
-    ${THIS_DIR}/BowlingFrame.h
-    PARENT_SCOPE
-)
-set(${EXECUTABLE_NAME}_SOURCES
-    ${THIS_DIR}/InputMapper.cpp
-    ${THIS_DIR}/LaneCommands.cpp
-    ${THIS_DIR}/FollowCamera.cpp
-    ${THIS_DIR}/HudText.cpp
-    ${THIS_DIR}/Hud.cpp
-    ${THIS_DIR}/SceneAdapter.cpp
-    ${THIS_DIR}/BowlingCanvas.cpp
-    ${THIS_DIR}/BowlingFrame.cpp
-    ${THIS_DIR}/main.cpp
-    PARENT_SCOPE
-)
-set(${EXECUTABLE_NAME}_UI PARENT_SCOPE)
-set(${EXECUTABLE_NAME}_RSC PARENT_SCOPE)
-set(${EXECUTABLE_NAME}_DEPS
+target_include_directories(bowlinggl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(bowlinggl_core PUBLIC
     ${CMAKE_ROOT_NAME}::Alley
     ${CMAKE_ROOT_NAME}::Render
-    wx::gl
     wx::core
     wx::base
-    OpenGL::GL
-    PARENT_SCOPE
 )
-set(${EXECUTABLE_NAME}_BUILD_ARGS PARENT_SCOPE)
+bowlingbox_set_warnings(bowlinggl_core)
 
-set(PROJECT_LIST
-    ${PROJECT_LIST}
-    ${EXEC_LIST}
-    PARENT_SCOPE
+create_application(
+    NAME         BowlingGL
+    ENTRY        WX_ui
+    SOURCES      BowlingCanvas.h BowlingCanvas.cpp
+                 BowlingFrame.h BowlingFrame.cpp
+                 main.cpp
+    DEPENDENCIES bowlinggl_core wx::gl OpenGL::GL
 )
 
 # Window-free unit tests: input mapping, lane commands, camera rig, HUD.
-if(BUILD_TESTING AND BUILD_WX_UI)
+if(BUILD_TESTING)
     build_gtest_executable(
         NAME     test_bowlinggl
-        SRC      ${THIS_DIR}/InputMapper.cpp ${THIS_DIR}/LaneCommands.cpp
-                 ${THIS_DIR}/FollowCamera.cpp ${THIS_DIR}/HudText.cpp ${THIS_DIR}/Hud.cpp
-                 ${THIS_DIR}/test/test_InputMapper.cpp ${THIS_DIR}/test/test_Gameplay.cpp
-        DEPENDS  ${CMAKE_ROOT_NAME}::Alley ${CMAKE_ROOT_NAME}::Render wx::core wx::base
-                 GTest::gtest GTest::gmock GTest::gmock_main
+        SRC      test/test_InputMapper.cpp test/test_Gameplay.cpp
+        DEPENDS  bowlinggl_core GTest::gtest GTest::gmock GTest::gmock_main
         DISCOVER ON
     )
-    target_include_directories(test_bowlinggl PRIVATE ${THIS_DIR})
 endif()

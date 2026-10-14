@@ -1,27 +1,5 @@
 # Target helpers.
 
-function(check_project_name)
-    set(options)
-    set(single_value_args NAME)
-    set(list_args NAME_LIST)
-    cmake_parse_arguments(PARSE_ARGV 0 parameter "${options}" "${single_value_args}" "${list_args}")
-
-    foreach(arg IN LISTS parameter_UNPARSED_ARGUMENTS)
-        message(WARNING "unparsed argument: ${arg}")
-    endforeach()
-
-    foreach(proj IN LISTS parameter_NAME_LIST)
-        if(proj STREQUAL parameter_NAME)
-            message(FATAL_ERROR "name already exists: ${proj}")
-        endif()
-    endforeach()
-endfunction()
-
-macro(add_project name name_list)
-    check_project_name(NAME ${name} NAME_LIST ${${name_list}})
-    list(APPEND ${name_list} ${name})
-endmacro()
-
 # Convert "Bowlingbox::Core" -> "bowlingbox_core" for add_library().
 macro(get_raw_target_name qualified_name out_var)
     string(REPLACE "::" "_" ${out_var} ${qualified_name})
@@ -137,7 +115,8 @@ function(create_library)
 endfunction()
 
 # ---------------------------------------------------------------------------
-# create_application — console or Qt executable
+# create_application — executable of kind ENTRY (Console, QT_ui or WX_ui).
+# Callers guard QT_ui / WX_ui apps with if(BUILD_QT_UI) / if(BUILD_WX_UI).
 # ---------------------------------------------------------------------------
 function(create_application)
     # Empty keyword args (e.g. UI with no value) are allowed for app scaffolds.
@@ -155,8 +134,15 @@ function(create_application)
         message(WARNING "unparsed argument: ${arg}")
     endforeach()
 
-    if(NOT DEFINED app_ENTRY OR app_ENTRY STREQUAL "")
-        message(FATAL_ERROR "${app_NAME} is missing ENTRY [Console|QT_ui|WX_ui]")
+    set(_entries Console QT_ui WX_ui)
+    if(NOT app_ENTRY IN_LIST _entries)
+        message(FATAL_ERROR "${app_NAME}: ENTRY must be one of ${_entries}, got '${app_ENTRY}'")
+    endif()
+    if(app_ENTRY STREQUAL "QT_ui" AND NOT BUILD_QT_UI)
+        message(FATAL_ERROR "${app_NAME}: ENTRY QT_ui needs BUILD_QT_UI=ON; guard the call with if(BUILD_QT_UI)")
+    endif()
+    if(app_ENTRY STREQUAL "WX_ui" AND NOT BUILD_WX_UI)
+        message(FATAL_ERROR "${app_NAME}: ENTRY WX_ui needs BUILD_WX_UI=ON; guard the call with if(BUILD_WX_UI)")
     endif()
 
     set(PROJECT_FILES ${app_HEADERS} ${app_SOURCES} ${app_RESOURCES})
@@ -164,44 +150,21 @@ function(create_application)
         list(APPEND PROJECT_FILES ${app_UI})
     endif()
 
-
-    if(app_ENTRY STREQUAL "Console")
-        add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
-        if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
-            target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
-        endif()
-        bowlingbox_set_warnings(${app_NAME})
-        install(TARGETS ${app_NAME}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        )
-
-    elseif(BUILD_QT_UI AND app_ENTRY STREQUAL "QT_ui")
+    if(app_ENTRY STREQUAL "QT_ui")
         qt_add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
-        if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
-            target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
-        endif()
-        set_target_properties(${app_NAME} PROPERTIES
-            WIN32_EXECUTABLE TRUE
-            MACOSX_BUNDLE TRUE
-        )
-        bowlingbox_set_warnings(${app_NAME})
-        install(TARGETS ${app_NAME}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
-        )
-    elseif(BUILD_WX_UI AND app_ENTRY STREQUAL "WX_ui")
+    else()
         add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
-        if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
-            target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
-        endif()
+    endif()
+    target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
+    if(NOT app_ENTRY STREQUAL "Console")
         set_target_properties(${app_NAME} PROPERTIES
             WIN32_EXECUTABLE TRUE
             MACOSX_BUNDLE TRUE
-        )
-        bowlingbox_set_warnings(${app_NAME})
-        install(TARGETS ${app_NAME}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
         )
     endif()
+    bowlingbox_set_warnings(${app_NAME})
+    install(TARGETS ${app_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endfunction()
