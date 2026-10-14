@@ -1,16 +1,16 @@
-#include "display.h"
+#include "ScoreSheetFrame.h"
 #include <Bowlingbox/Score/Score.h>
-#include <QApplication>
-#include <QGroupBox>
-#include <QLabel>
-#include <QPushButton>
 #include <gtest/gtest.h>
+#include <wx/app.h>
+#include <wx/button.h>
+#include <wx/init.h>
+#include <wx/stattext.h>
+#include <cstdio>
 #include <initializer_list>
 #include <memory>
 #include <vector>
 
 namespace {
-/// ScoreCalculator that counts reset() calls.
 class CountingGame final : public Bowlingbox::Score::IBowlingGame {
 public:
     explicit CountingGame(int& resets) : _resets(resets) {}
@@ -31,72 +31,111 @@ private:
     int& _resets;
 };
 
-QString text(QWidget& w, const QString& label) {
-    return w.findChild<QLabel*>(label)->text();
+class WindowGuard {
+public:
+    explicit WindowGuard(std::unique_ptr<Bowlingbox::Score::IBowlingGame> game = nullptr)
+        : _window(new BowlingDisplay::MainWindow(nullptr, std::move(game))) {
+        _window->Show();
+    }
+    ~WindowGuard() { _window->Destroy(); }
+    BowlingDisplay::MainWindow& get() { return *_window; }
+
+private:
+    BowlingDisplay::MainWindow* _window;
+};
+
+wxString text(wxWindow& w, const char* name) {
+    auto* label = dynamic_cast<wxStaticText*>(wxWindow::FindWindowByName(name, &w));
+    return label->GetLabel();
 }
-QPushButton* pinButton(QWidget& w, int pins) {
-    return w.findChild<QPushButton*>(QString("btn_%1").arg(pins));
+wxButton* pinButton(wxWindow& w, int pins) {
+    return dynamic_cast<wxButton*>(
+        wxWindow::FindWindowByName(wxString::Format("btn_%d", pins), &w));
 }
-void roll(QWidget& w, std::initializer_list<int> pins) {
+void click(wxButton* button) {
+    wxCommandEvent event(wxEVT_BUTTON, button->GetId());
+    event.SetEventObject(button);
+    button->ProcessWindowEvent(event);
+}
+void roll(wxWindow& w, std::initializer_list<int> pins) {
     for (int p : pins)
-        pinButton(w, p)->click();
+        click(pinButton(w, p));
 }
 }  // namespace
 
 TEST(test_display, pin_buttons_fill_the_sheet) {
-    BowlingDisplay::MainWindow w;
+    WindowGuard guard;
+    auto& w = guard.get();
     roll(w, {7, 3, 10});
-    EXPECT_EQ(text(w, "lblRoll1Frame1"), "7");
-    EXPECT_EQ(text(w, "lblRoll2Frame1"), "/");
-    EXPECT_EQ(text(w, "lblRoll1Frame2"), "X");
-    EXPECT_EQ(text(w, "lblScoreFrame1"), "20");
-    EXPECT_EQ(text(w, "lblScoreFrame2"), "");
+    EXPECT_EQ(text(w, "lblRoll1Frame1"), wxString("7"));
+    EXPECT_EQ(text(w, "lblRoll2Frame1"), wxString("/"));
+    EXPECT_EQ(text(w, "lblRoll1Frame2"), wxString("X"));
+    EXPECT_EQ(text(w, "lblScoreFrame1"), wxString("20"));
+    EXPECT_EQ(text(w, "lblScoreFrame2"), wxString(""));
 }
 
 TEST(test_display, only_standing_pin_counts_are_offered) {
-    BowlingDisplay::MainWindow w;
+    WindowGuard guard;
+    auto& w = guard.get();
     roll(w, {7});
-    EXPECT_FALSE(pinButton(w, 3)->isHidden());
-    EXPECT_TRUE(pinButton(w, 4)->isHidden());
-    EXPECT_TRUE(pinButton(w, 10)->isHidden());
+    EXPECT_TRUE(pinButton(w, 3)->IsShown());
+    EXPECT_FALSE(pinButton(w, 4)->IsShown());
+    EXPECT_FALSE(pinButton(w, 10)->IsShown());
 }
 
 TEST(test_display, tenth_frame_shows_three_rolls) {
-    BowlingDisplay::MainWindow w;
+    WindowGuard guard;
+    auto& w = guard.get();
     for (int i = 0; i < 18; ++i)
         roll(w, {0});
     roll(w, {7, 3, 5});
-    EXPECT_EQ(text(w, "lblRoll1Frame10"), "7");
-    EXPECT_EQ(text(w, "lblRoll2Frame10"), "/");
-    EXPECT_EQ(text(w, "lblRoll3Frame10"), "5");
-    EXPECT_EQ(text(w, "lblScoreFrame10"), "15");
-    EXPECT_EQ(text(w, "lblScore"), "15");
+    EXPECT_EQ(text(w, "lblRoll1Frame10"), wxString("7"));
+    EXPECT_EQ(text(w, "lblRoll2Frame10"), wxString("/"));
+    EXPECT_EQ(text(w, "lblRoll3Frame10"), wxString("5"));
+    EXPECT_EQ(text(w, "lblScoreFrame10"), wxString("15"));
+    EXPECT_EQ(text(w, "lblScore"), wxString("15"));
 }
 
 TEST(test_display, game_over_disables_the_pins) {
-    BowlingDisplay::MainWindow w;
+    WindowGuard guard;
+    auto& w = guard.get();
     for (int i = 0; i < 12; ++i)
         roll(w, {10});
-    EXPECT_EQ(text(w, "lblScore"), "300");
-    EXPECT_FALSE(w.findChild<QGroupBox*>("pinsGroup")->isEnabled());
+    EXPECT_EQ(text(w, "lblScore"), wxString("300"));
+    EXPECT_FALSE(wxWindow::FindWindowByName("pinsGroup", &w)->IsEnabled());
     for (int pins = 0; pins <= 10; ++pins)
-        EXPECT_FALSE(pinButton(w, pins)->isHidden()) << pins;
+        EXPECT_TRUE(pinButton(w, pins)->IsShown()) << pins;
 }
 
 TEST(test_display, restart_resets_once_and_clears_the_sheet) {
     int resets = 0;
-    BowlingDisplay::MainWindow w(nullptr, std::make_unique<CountingGame>(resets));
+    WindowGuard guard(std::make_unique<CountingGame>(resets));
+    auto& w = guard.get();
     roll(w, {7});
-    w.findChild<QPushButton*>("btn_restart")->click();
-    EXPECT_EQ(resets, 1);  // an extra connectSlotsByName connection would make this 2
-    EXPECT_EQ(text(w, "lblRoll1Frame1"), "");
-    EXPECT_EQ(text(w, "lblScore"), "0");
-    EXPECT_FALSE(pinButton(w, 10)->isHidden());
+    click(dynamic_cast<wxButton*>(wxWindow::FindWindowByName("btn_restart", &w)));
+    EXPECT_EQ(resets, 1);
+    EXPECT_EQ(text(w, "lblRoll1Frame1"), wxString(""));
+    EXPECT_EQ(text(w, "lblScore"), wxString("0"));
+    EXPECT_TRUE(pinButton(w, 10)->IsShown());
 }
 
+namespace {
+class DisplayTestApp : public wxApp {
+public:
+    bool OnInit() override { return true; }
+};
+}  // namespace
+
 int main(int argc, char** argv) {
-    qputenv("QT_QPA_PLATFORM", "offscreen");  // no display needed
-    QApplication app(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    if (GTEST_FLAG_GET(list_tests))
+        return RUN_ALL_TESTS();
+    wxApp::SetInstance(new DisplayTestApp());
+    if (!wxEntryStart(argc, argv)) {
+        std::fprintf(stderr, "test_bowlingdisplay needs a display; run it under xvfb-run\n");
+        return 1;
+    }
+    const int result = RUN_ALL_TESTS();
+    wxEntryCleanup();
+    return result;
 }
