@@ -5,7 +5,7 @@
 #include "LaneCommands.h"
 #include "SceneAdapter.h"
 
-using namespace Gamebox;
+using namespace Bowlingbox;
 using Alley::Phase;
 
 namespace {

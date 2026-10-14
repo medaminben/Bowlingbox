@@ -4,7 +4,7 @@
 ////////////////////////////////////////////////////////////////
 // Screen class implementation
 ////////////////////////////////////////////////////////////////
-Console::Screen::Screen(std::shared_ptr<Gamebox::Score::IBowlingGame> game, ITerminal& terminal)
+Console::Screen::Screen(std::shared_ptr<Bowlingbox::Score::IBowlingGame> game, ITerminal& terminal)
     : _game(std::move(game)), _terminal(terminal) {}
 
 void Console::Screen::start() {
@@ -28,10 +28,10 @@ void Console::Screen::plotIntr() {
         int width = _terminal.width();
 
         std::string title =
-            ScreenTools::formatTitle(width, "Execution of BowlingGame from Gamebox Library");
+            ScreenTools::formatTitle(width, "Execution of BowlingGame from Bowlingbox Library");
 
         std::string introduction =
-            "This console game is an interface to the bowling game implemented under the Gamebox "
+            "This console game is an interface to the bowling game implemented under the Bowlingbox "
             "library.";
 
         std::string about = ScreenTools::giveAbout("github.com/medaminben");

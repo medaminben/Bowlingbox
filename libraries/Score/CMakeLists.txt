@@ -11,9 +11,9 @@ set(TST_DISCOVER ON)
 ###############################################################
 set(TARGET_HEADERS
     src/Score_impl.h
-    include/Gamebox/Score/IBowlingGame.h
-    include/Gamebox/Score/Notation.h
-    include/Gamebox/Score/Score.h
+    include/Bowlingbox/Score/IBowlingGame.h
+    include/Bowlingbox/Score/Notation.h
+    include/Bowlingbox/Score/Score.h
 )
 
 set(TARGET_SOURCES

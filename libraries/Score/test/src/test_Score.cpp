@@ -1,19 +1,19 @@
 // Include headers of other components from this project path
 // relative to the "include" directory of the component, just like external projects
 // would
-#include <Gamebox/Score/Score.h>
+#include <Bowlingbox/Score/Score.h>
 // Include 3rd party headers
 #include <gtest/gtest.h>
 // Include system headers
 #include <iostream>
 #include <initializer_list>
 #include <string>
-using namespace Gamebox::Score;
+using namespace Bowlingbox::Score;
 
 class test_score : public ::testing::Test {
 public:
-    std::unique_ptr<Bowlingbox> bowlingGame;
-    void SetUp() { bowlingGame = std::make_unique<Bowlingbox>(); }
+    std::unique_ptr<ScoreCalculator> bowlingGame;
+    void SetUp() { bowlingGame = std::make_unique<ScoreCalculator>(); }
     void TearDown() {}
     void roll_n_times(int n, int pins) {
         for (auto i = 0; i < n; i++) {
@@ -158,18 +158,18 @@ TEST(test_score_notation, follows_score_sheet_conventions) {
 }
 
 namespace {
-void rollAll(Bowlingbox& game, std::initializer_list<int> balls) {
+void rollAll(ScoreCalculator& game, std::initializer_list<int> balls) {
     for (int pins : balls)
         ASSERT_TRUE(game.roll(pins)) << "roll(" << pins << ") was refused";
 }
-void rollZeros(Bowlingbox& game, int n) {
+void rollZeros(ScoreCalculator& game, int n) {
     for (int i = 0; i < n; ++i)
         game.roll(0);
 }
 }  // namespace
 
 TEST(test_score_tenth_frame, strike_then_open_balls_gets_both_bonus_balls) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollZeros(game, 18);
     rollAll(game, {10, 3});
     EXPECT_FALSE(game.isOver());
@@ -181,7 +181,7 @@ TEST(test_score_tenth_frame, strike_then_open_balls_gets_both_bonus_balls) {
 }
 
 TEST(test_score_tenth_frame, strike_then_spare) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollZeros(game, 18);
     rollAll(game, {10, 3, 7});
     const auto r = game.rolls();
@@ -192,7 +192,7 @@ TEST(test_score_tenth_frame, strike_then_spare) {
 }
 
 TEST(test_score_tenth_frame, two_strikes_then_open_ball) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollZeros(game, 18);
     rollAll(game, {10, 10, 3});
     const auto r = game.rolls();
@@ -203,7 +203,7 @@ TEST(test_score_tenth_frame, two_strikes_then_open_ball) {
 }
 
 TEST(test_score_tenth_frame, spare_then_strike) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollZeros(game, 18);
     rollAll(game, {3, 7, 10});
     const auto r = game.rolls();
@@ -214,7 +214,7 @@ TEST(test_score_tenth_frame, spare_then_strike) {
 }
 
 TEST(test_score_tenth_frame, gutter_then_ten_is_a_spare) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollZeros(game, 18);
     rollAll(game, {0, 10, 5});
     const auto r = game.rolls();
@@ -225,7 +225,7 @@ TEST(test_score_tenth_frame, gutter_then_ten_is_a_spare) {
 }
 
 TEST(test_score_validation, refuses_impossible_pin_counts) {
-    Bowlingbox game;
+    ScoreCalculator game;
     EXPECT_FALSE(game.roll(11));
     EXPECT_FALSE(game.roll(-1));
     EXPECT_TRUE(game.roll(7));
@@ -236,21 +236,21 @@ TEST(test_score_validation, refuses_impossible_pin_counts) {
 }
 
 TEST(test_score_validation, regular_frame_gutter_then_ten_is_a_spare) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollAll(game, {0, 10});
     EXPECT_EQ(game.rolls()[0], toInt(Mark::Miss));
     EXPECT_EQ(game.rolls()[1], toInt(Mark::Spare));
 }
 
 TEST(test_score_validation, no_pins_left_after_the_game) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollZeros(game, 20);
     EXPECT_TRUE(game.isOver());
     EXPECT_EQ(game.pinsLeft(), 0);
 }
 
 TEST(test_score_totals, frame_total_is_blank_until_its_bonus_is_known) {
-    Bowlingbox game;
+    ScoreCalculator game;
     rollAll(game, {10, 3});
     EXPECT_EQ(game.scores()[0], toInt(Mark::None));
     EXPECT_EQ(game.scores()[1], toInt(Mark::None));
@@ -262,7 +262,7 @@ TEST(test_score_totals, frame_total_is_blank_until_its_bonus_is_known) {
 }
 
 TEST(test_score_totals, frame_score_clamps_the_frame_index) {
-    Bowlingbox game;
+    ScoreCalculator game;
     for (int i = 0; i < 20; ++i)
         game.roll(1);
     EXPECT_EQ(game.frameScore(10), 20);

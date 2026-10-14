@@ -1,10 +1,10 @@
-#ifndef GAMEBOX_RENDER_GLSHADER_H
-#define GAMEBOX_RENDER_GLSHADER_H
-#include <Gamebox/Core/Core.h>
+#ifndef BOWLINGBOX_RENDER_GLSHADER_H
+#define BOWLINGBOX_RENDER_GLSHADER_H
+#include <Bowlingbox/Core/Core.h>
 #include <glm/glm.hpp>
 #include <memory>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
 class GlShader {
@@ -27,5 +27,5 @@ private:
 };
 
 }  // namespace Render
-}  // namespace Gamebox
-#endif  // GAMEBOX_RENDER_GLSHADER_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_RENDER_GLSHADER_H

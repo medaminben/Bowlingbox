@@ -1,11 +1,11 @@
-#ifndef GAMEBOX_CORE_H
-#define GAMEBOX_CORE_H
-#include <Gamebox/Core/Gamebox_Core_export.h>
+#ifndef BOWLINGBOX_CORE_H
+#define BOWLINGBOX_CORE_H
+#include <Bowlingbox/Core/Bowlingbox_Core_export.h>
 #include <string>
 #include <utility>
 #include <variant>
 static_assert(sizeof(void*) == 8, "expected 64-bit platform");
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Core {
 /**
  * @brief an error wrapper
@@ -24,7 +24,7 @@ protected:
 };
 
 }  // namespace Core
-}  // namespace Gamebox
+}  // namespace Bowlingbox
 
 /**
  * @brief  a result wrapper
@@ -32,7 +32,7 @@ protected:
  * @param T  a value type
  * @param ET  an error type
  */
-template <typename T = std::monostate, typename ET = Gamebox::Core::Error<>>
+template <typename T = std::monostate, typename ET = Bowlingbox::Core::Error<>>
 struct Result {
 public:
     constexpr Result(T value) : result(std::move(value)) {};
@@ -49,4 +49,4 @@ private:
     std::variant<T, ET> result;
 };
 
-#endif  // GAMEBOX_CORE_H
+#endif  // BOWLINGBOX_CORE_H

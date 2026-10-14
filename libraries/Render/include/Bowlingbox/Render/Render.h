@@ -1,9 +1,9 @@
-#ifndef GAMEBOX_RENDER_H
-#define GAMEBOX_RENDER_H
-#include <Gamebox/Render/Gamebox_Render_export.h>
-#include <Gamebox/Render/Canvas2D.h>
-#include <Gamebox/Render/ScoreboardLayout.h>
-#include <Gamebox/Core/Core.h>
+#ifndef BOWLINGBOX_RENDER_H
+#define BOWLINGBOX_RENDER_H
+#include <Bowlingbox/Render/Bowlingbox_Render_export.h>
+#include <Bowlingbox/Render/Canvas2D.h>
+#include <Bowlingbox/Render/ScoreboardLayout.h>
+#include <Bowlingbox/Core/Core.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <array>
@@ -11,10 +11,10 @@
 #include <string_view>
 #include <vector>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
-struct GAMEBOX_RENDER_API Transform {
+struct BOWLINGBOX_RENDER_API Transform {
     glm::vec3 position {0.f};
     glm::quat rotation {1.f, 0.f, 0.f, 0.f};  // w, x, y, z
     glm::vec3 scale {1.f};
@@ -39,7 +39,7 @@ struct SceneDescription {
 struct ContextData;
 
 /// One per GL context. Loads GL 3.3 core via GLAD and owns the shader programs.
-class GAMEBOX_RENDER_API Context {
+class BOWLINGBOX_RENDER_API Context {
 public:
     static Result<std::unique_ptr<Context>> create();  // needs a current GL context
     ~Context();
@@ -55,7 +55,7 @@ private:
     std::unique_ptr<ContextData> _d;
 };
 
-class GAMEBOX_RENDER_API Camera {
+class BOWLINGBOX_RENDER_API Camera {
 public:
     void setViewport(int width, int height);
     void lookAt(glm::vec3 eye, glm::vec3 target);
@@ -69,7 +69,7 @@ private:
 };
 
 /// Lane, gutters, ball, pins, aim guide.
-class GAMEBOX_RENDER_API SceneRenderer {
+class BOWLINGBOX_RENDER_API SceneRenderer {
 public:
     SceneRenderer(Context& ctx, const SceneGeometry& geometry);
     ~SceneRenderer();
@@ -81,7 +81,7 @@ private:
 };
 
 /// OpenGL implementation of ICanvas2D, drawn after the scene.
-class GAMEBOX_RENDER_API Overlay final : public ICanvas2D {
+class BOWLINGBOX_RENDER_API Overlay final : public ICanvas2D {
 public:
     explicit Overlay(Context& ctx);
     ~Overlay() override;
@@ -96,5 +96,5 @@ private:
 };
 
 }  // namespace Render
-}  // namespace Gamebox
-#endif  // GAMEBOX_RENDER_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_RENDER_H

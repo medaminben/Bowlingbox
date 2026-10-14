@@ -1,11 +1,11 @@
-#include <Gamebox/Alley/Alley.h>
-#include <Gamebox/Alley/PhysicsWorld.h>
-#include <Gamebox/Score/Score.h>
+#include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Alley/PhysicsWorld.h>
+#include <Bowlingbox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <cmath>
 #include <vector>
 
-using namespace Gamebox::Alley;
+using namespace Bowlingbox::Alley;
 
 namespace {
 constexpr float kPi = 3.14159265358979f;
@@ -230,7 +230,7 @@ private:
 };
 
 /// Records every roll; reports "over" once `rollsUntilOver` rolls were made.
-class FakeGame final : public Gamebox::Score::IBowlingGame {
+class FakeGame final : public Bowlingbox::Score::IBowlingGame {
 public:
     std::vector<int> recorded;
     int rollsUntilOver = 100;
@@ -315,7 +315,7 @@ TEST(test_alley_injected, game_over_is_decided_by_the_scorer) {
 TEST(test_alley_injected, tenth_frame_strike_then_open_balls_plays_three_balls) {
     auto world = std::make_unique<FakeWorld>();
     FakeWorld* w = world.get();
-    Lane lane(std::move(world), std::make_unique<Gamebox::Score::Bowlingbox>());
+    Lane lane(std::move(world), std::make_unique<Bowlingbox::Score::ScoreCalculator>());
     w->knockDown = 0;
     for (int i = 0; i < 18; ++i)
         throwAndWait(lane, 2.f);

@@ -2,8 +2,8 @@
 #define BOWLINGGL_BOWLING_CANVAS_H
 #include "Command.h"
 #include "FollowCamera.h"
-#include <Gamebox/Alley/Alley.h>
-#include <Gamebox/Render/Render.h>
+#include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Render/Render.h>
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
 #include <functional>
@@ -34,12 +34,12 @@ private:
     void resizeContext();
 
     std::unique_ptr<wxGLContext> _gl;
-    std::unique_ptr<Gamebox::Render::Context> _ctx;
-    std::unique_ptr<Gamebox::Render::SceneRenderer> _scene;
-    std::unique_ptr<Gamebox::Render::Overlay> _overlay;
-    Gamebox::Render::Camera _camera;
+    std::unique_ptr<Bowlingbox::Render::Context> _ctx;
+    std::unique_ptr<Bowlingbox::Render::SceneRenderer> _scene;
+    std::unique_ptr<Bowlingbox::Render::Overlay> _overlay;
+    Bowlingbox::Render::Camera _camera;
     FollowCamera _follow;
-    Gamebox::Alley::Lane _lane;
+    Bowlingbox::Alley::Lane _lane;
     wxTimer _timer;
     wxPoint _lastMouse;
     bool _failed = false;

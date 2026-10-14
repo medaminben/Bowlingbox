@@ -2,13 +2,13 @@
 #include "Hud.h"
 #include "HudText.h"
 #include "LaneCommands.h"
-#include <Gamebox/Score/Score.h>
+#include <Bowlingbox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <string>
 #include <vector>
 
-using namespace Gamebox;
+using namespace Bowlingbox;
 using Alley::Phase;
 
 namespace {
@@ -73,7 +73,7 @@ TEST(test_follow_camera, follows_a_rolling_ball_but_not_past_the_deck) {
 
 // ------------------------------------------------------------ HudText
 TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
-    Score::Bowlingbox sheet;
+    Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
 
     sheet.roll(10);
@@ -97,7 +97,7 @@ TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
 }
 
 TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
-    Score::Bowlingbox sheet;
+    Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
     sheet.roll(0);
     sheet.roll(10);
@@ -106,7 +106,7 @@ TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
 }
 
 TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
-    Score::Bowlingbox sheet;
+    Score::ScoreCalculator sheet;
     sheet.roll(4);
     auto s = snapshotIn(Phase::Settling);
     s.pinStanding.fill(true);
@@ -116,7 +116,7 @@ TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
 
 // ------------------------------------------------------------ Hud
 TEST(test_hud, draws_scoreboard_hint_and_result_without_gl) {
-    Score::Bowlingbox sheet;
+    Score::ScoreCalculator sheet;
     sheet.roll(10);
     auto s = snapshotIn(Phase::FrameDone);
     s.lastPinsDown = 10;

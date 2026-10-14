@@ -1,6 +1,6 @@
-#include <Gamebox/Score/Notation.h>
+#include <Bowlingbox/Score/Notation.h>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Score {
 
 std::string notation(int value, bool isScore) {
@@ -19,4 +19,4 @@ std::string notation(int value, bool isScore) {
 }
 
 }  // namespace Score
-}  // namespace Gamebox
+}  // namespace Bowlingbox

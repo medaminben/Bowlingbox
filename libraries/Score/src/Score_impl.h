@@ -1,9 +1,9 @@
-#ifndef GAMEBOX_SCORE_IMPL_H
-#define GAMEBOX_SCORE_IMPL_H
-#include <Gamebox/Score/Notation.h>
+#ifndef BOWLINGBOX_SCORE_IMPL_H
+#define BOWLINGBOX_SCORE_IMPL_H
+#include <Bowlingbox/Score/Notation.h>
 #include <array>
 #include <vector>
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Score {
 /// Ten-pin game state: the pins knocked down by each ball, in order.
 /// Frames, bonuses and the next ball are derived from that list on demand.
@@ -32,5 +32,5 @@ private:
     int _count = 0;
 };
 }  // namespace Score
-}  // namespace Gamebox
-#endif  // GAMEBOX_SCORE_IMPL_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_SCORE_IMPL_H

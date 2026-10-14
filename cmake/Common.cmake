@@ -33,9 +33,9 @@ if(ENABLE_CLANG_TIDY)
     endif()
 endif()
 
-option(GAMEBOX_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
+option(BOWLINGBOX_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
 
-if(GAMEBOX_FETCH_OFFLINE)
+if(BOWLINGBOX_FETCH_OFFLINE)
     set(FETCHCONTENT_FULLY_DISCONNECTED ON)
     message(STATUS "Fetch offline mode: requires pre-populated _deps")
 else()
@@ -54,8 +54,8 @@ if(BUILD_TESTING)
     include(TestUtils)
 endif()
 
-include(BulletSupport)   # Gamebox::Alley always needs it
-include(GlmSupport)      # Gamebox::Render always needs it
+include(BulletSupport)   # Bowlingbox::Alley always needs it
+include(GlmSupport)      # Bowlingbox::Render always needs it
 if(BUILD_QT_UI)
     include(QtSupport)
 endif()

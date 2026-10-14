@@ -2,7 +2,7 @@
 #include <glad/gl.h>
 #include <cstdint>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
 GlMesh::GlMesh(const MeshData& data) : _count(static_cast<int>(data.indices.size())) {
@@ -38,4 +38,4 @@ void GlMesh::draw() const {
 }
 
 }  // namespace Render
-}  // namespace Gamebox
+}  // namespace Bowlingbox

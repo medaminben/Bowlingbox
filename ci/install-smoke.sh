@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs Gamebox from an existing build tree into <build-dir>/install-smoke
+# Installs Bowlingbox from an existing build tree into <build-dir>/install-smoke
 # and builds and runs a separate consumer project against it via find_package.
 # Everything stays inside the build directory.
 set -euo pipefail

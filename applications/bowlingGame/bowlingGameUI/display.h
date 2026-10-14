@@ -12,7 +12,7 @@
 #include <QPushButton>
 #include <QLabel>
 
-#include <Gamebox/Score/IBowlingGame.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
 #include <memory>
 namespace Ui {
 class Display;
@@ -21,9 +21,9 @@ class Display;
 class DisplayF : public QMainWindow {
     Q_OBJECT
 public:
-    /// `game` defaults to a Gamebox::Score::Bowlingbox.
+    /// `game` defaults to a Bowlingbox::Score::ScoreCalculator.
     explicit DisplayF(QWidget* parent = nullptr,
-                      std::unique_ptr<Gamebox::Score::IBowlingGame> game = nullptr);
+                      std::unique_ptr<Bowlingbox::Score::IBowlingGame> game = nullptr);
     ~DisplayF();
 
 private:
@@ -45,6 +45,6 @@ private:
     QList<QLabel*> scoreList;
 
 private:
-    std::unique_ptr<Gamebox::Score::IBowlingGame> _game;
+    std::unique_ptr<Bowlingbox::Score::IBowlingGame> _game;
 };
 #endif  // DISPLAY_H

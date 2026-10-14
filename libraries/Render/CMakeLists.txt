@@ -9,11 +9,11 @@ set(TARGET_HEADERS
     src/GlShader.h
     src/GlMesh.h
     src/ContextData.h
-    include/Gamebox/Render/Geometry.h
-    include/Gamebox/Render/Canvas2D.h
-    include/Gamebox/Render/ScoreboardLayout.h
-    include/Gamebox/Render/ScoreboardPainter.h
-    include/Gamebox/Render/Render.h
+    include/Bowlingbox/Render/Geometry.h
+    include/Bowlingbox/Render/Canvas2D.h
+    include/Bowlingbox/Render/ScoreboardLayout.h
+    include/Bowlingbox/Render/ScoreboardPainter.h
+    include/Bowlingbox/Render/Render.h
 )
 set(TARGET_SOURCES
     src/Geometry.cpp

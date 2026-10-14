@@ -1,16 +1,16 @@
-#ifndef GAMEBOX_ALLEY_PHYSICS_WORLD_H
-#define GAMEBOX_ALLEY_PHYSICS_WORLD_H
-#include <Gamebox/Alley/Gamebox_Alley_export.h>
-#include <Gamebox/Alley/Types.h>
+#ifndef BOWLINGBOX_ALLEY_PHYSICS_WORLD_H
+#define BOWLINGBOX_ALLEY_PHYSICS_WORLD_H
+#include <Bowlingbox/Alley/Bowlingbox_Alley_export.h>
+#include <Bowlingbox/Alley/Types.h>
 #include <memory>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 
 /// Rigid-body world: static lane, gutters and pit; one ball; ten pins.
 /// Knows nothing about bowling rules or phases. The Lane drives it through
 /// this interface so the physics engine can be swapped (or faked in tests).
-class GAMEBOX_ALLEY_API IPhysicsWorld {
+class BOWLINGBOX_ALLEY_API IPhysicsWorld {
 public:
     virtual ~IPhysicsWorld() = default;
 
@@ -33,8 +33,8 @@ public:
 };
 
 /// The default Bullet3 implementation.
-GAMEBOX_ALLEY_API std::unique_ptr<IPhysicsWorld> makeBulletWorld();
+BOWLINGBOX_ALLEY_API std::unique_ptr<IPhysicsWorld> makeBulletWorld();
 
 }  // namespace Alley
-}  // namespace Gamebox
-#endif  // GAMEBOX_ALLEY_PHYSICS_WORLD_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_ALLEY_PHYSICS_WORLD_H

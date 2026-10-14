@@ -1,7 +1,7 @@
 #include "InputMapper.h"
 #include <wx/defs.h>
 
-using Gamebox::Alley::Phase;
+using Bowlingbox::Alley::Phase;
 
 namespace {
 bool canAim(Phase p) {

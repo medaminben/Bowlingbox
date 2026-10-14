@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.29)
 
 # Project names are only relevant for humans; camel case is okay.
-project(Gamebox VERSION 1.4.0 LANGUAGES CXX)
+project(Bowlingbox VERSION 1.4.0 LANGUAGES CXX)
 
-# Global project name used by library aliases (Gamebox::Core)
+# Global project name used by library aliases (Bowlingbox::Core)
 set(CMAKE_ROOT_NAME ${PROJECT_NAME})
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(Common)
 
 # Libraries to generate / include. Add new names here for scaffold generation.
-set(GAMEBOX_LIBRARIES
+set(BOWLINGBOX_LIBRARIES
     Score
     Core
     Alley
@@ -39,7 +39,7 @@ set(template_dir     ${CMAKE_SOURCE_DIR}/cmake/template)
 if(GENERATE_SCAFFOLD)
     # Existing kata apps stay topic-based; scaffold only creates apps for *new* libs.
     generate_libraries(
-        LIBRARIES_LIST     ${GAMEBOX_LIBRARIES}
+        LIBRARIES_LIST     ${BOWLINGBOX_LIBRARIES}
         LIBRARIES_LOCATION ${libraries_dir}
         APPS_LOCATION      ${applications_dir}
         TEMPLATE_LOCATION  ${template_dir}

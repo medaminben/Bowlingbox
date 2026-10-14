@@ -1,6 +1,6 @@
-# Gamebox
+# Bowlingbox
 
-[![CI](https://github.com/medaminben/Gamebox/actions/workflows/ci.yml/badge.svg)](https://github.com/medaminben/Gamebox/actions/workflows/ci.yml)
+[![CI](https://github.com/medaminben/Bowlingbox/actions/workflows/ci.yml/badge.svg)](https://github.com/medaminben/Bowlingbox/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A C++20 bowling game built from small, testable libraries: a ten-pin score calculator,
@@ -30,10 +30,10 @@ troubleshooting.
 
 | Path | Contents |
 |---|---|
-| [`libraries/Score`](libraries/Score) | `Gamebox::Score`: score calculator (`Bowlingbox`), `IBowlingGame` interface, X / - notation |
-| [`libraries/Core`](libraries/Core) | `Gamebox::Core`: `Result<T, E>` / `Error<E>` types |
-| [`libraries/Alley`](libraries/Alley) | `Gamebox::Alley`: the throw state machine (`Lane`) on top of a swappable physics world (Bullet3) |
-| [`libraries/Render`](libraries/Render) | `Gamebox::Render`: OpenGL 3.3 scene renderer, 2D overlay, scoreboard painter |
+| [`libraries/Score`](libraries/Score) | `Bowlingbox::Score`: `ScoreCalculator` score calculator, `IBowlingGame` interface, X / - notation |
+| [`libraries/Core`](libraries/Core) | `Bowlingbox::Core`: `Result<T, E>` / `Error<E>` types |
+| [`libraries/Alley`](libraries/Alley) | `Bowlingbox::Alley`: the throw state machine (`Lane`) on top of a swappable physics world (Bullet3) |
+| [`libraries/Render`](libraries/Render) | `Bowlingbox::Render`: OpenGL 3.3 scene renderer, 2D overlay, scoreboard painter |
 | [`applications/bowlingGame`](applications/bowlingGame) | `BowlingGL` (wxWidgets + OpenGL), `BowlingConsole`, `BowlingDisplay` (Qt) |
 | [`cmake`](cmake) | Build helpers, dependency fetching, scaffold templates, install/export config |
 | [`3rdparty`](3rdparty) | In-tree GLAD loader and `stb_easy_font` |
@@ -47,7 +47,7 @@ troubleshooting.
 | `BUILD_WX_UI` | `ON` | Build `BowlingGL` (fetches and builds wxWidgets) |
 | `BUILD_QT_UI` | `OFF` | Build `BowlingDisplay` (needs Qt 6 installed) |
 | `BUILD_TESTING` | `ON` | Build the GoogleTest suites |
-| `BUILD_SHARED_LIBS` | `ON` | Build the Gamebox libraries as shared libraries |
+| `BUILD_SHARED_LIBS` | `ON` | Build the Bowlingbox libraries as shared libraries |
 
 The [manual](docs/MANUAL.md#build-options) lists the full set.
 
@@ -60,5 +60,5 @@ The [manual](docs/MANUAL.md#build-options) lists the full set.
 
 ## License
 
-Gamebox is released under the [MIT License](LICENSE). Third-party components keep their own
+Bowlingbox is released under the [MIT License](LICENSE). Third-party components keep their own
 licences; see [3rdparty/README.md](3rdparty/README.md) and the [manual](docs/MANUAL.md#third-party-licences).

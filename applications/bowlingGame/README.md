@@ -1,11 +1,11 @@
 # [Bowling Game](https://codingdojo.org/kata/Bowling/) challenge
 
-Three front-ends for the `Gamebox::Score` score calculator.
+Three front-ends for the `Bowlingbox::Score` score calculator.
 See also the [manual](../../docs/MANUAL.md) and the [architecture](../../docs/ARCHITECTURE.md).
 
 ## BowlingGL (wxWidgets + OpenGL) — play it
 
-Aim, charge and throw; Bullet3 decides which pins fall; Gamebox keeps the score.
+Aim, charge and throw; Bullet3 decides which pins fall; Bowlingbox keeps the score.
 Design: [spec](../../docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md).
 
 | Action | Keyboard | Mouse |
@@ -19,7 +19,7 @@ Design: [spec](../../docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md
 
 Prerequisites (Debian/Ubuntu): `sudo apt install build-essential cmake libgtk-3-dev libgl1-mesa-dev`.
 wxWidgets 3.2.8, Bullet3 3.25, GLM and GoogleTest are downloaded at configure time
-(`GAMEBOX_FETCH_OFFLINE=ON` reuses a populated `build/_deps`).
+(`BOWLINGBOX_FETCH_OFFLINE=ON` reuses a populated `build/_deps`).
 
 ```bash
 cmake -S . -B build
@@ -45,7 +45,7 @@ Front-ends depend on interfaces; the concrete classes are picked in `main` (or a
 
 | Interface | Library | Default implementation | Used by |
 |---|---|---|---|
-| `Score::IScoreSheet` (read) / `Score::IBowlingGame` (+ `roll`, `reset`) | Score | `Score::Bowlingbox` | all three apps, `Alley::Lane` |
+| `Score::IScoreSheet` (read) / `Score::IBowlingGame` (+ `roll`, `reset`) | Score | `Score::ScoreCalculator` | all three apps, `Alley::Lane` |
 | `Alley::IPhysicsWorld` | Alley | Bullet3 (`makeBulletWorld()`) | `Alley::Lane` |
 | `Render::ICanvas2D` | Render | `Render::Overlay` (OpenGL) | `paintScoreboard`, BowlingGL `drawHud` |
 | `Console::ITerminal` | BowlingConsole | `SystemTerminal` (stdin/stdout) | `Console::Screen` |

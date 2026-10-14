@@ -1,14 +1,14 @@
-#ifndef GAMEBOX_SCORE_IBOWLINGGAME_H
-#define GAMEBOX_SCORE_IBOWLINGGAME_H
-#include <Gamebox/Score/Gamebox_Score_export.h>
+#ifndef BOWLINGBOX_SCORE_IBOWLINGGAME_H
+#define BOWLINGBOX_SCORE_IBOWLINGGAME_H
+#include <Bowlingbox/Score/Bowlingbox_Score_export.h>
 #include <vector>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Score {
 
 /// Read-only view of a bowling game. Displays depend on this, not on a
 /// concrete calculator.
-class GAMEBOX_SCORE_API IScoreSheet {
+class BOWLINGBOX_SCORE_API IScoreSheet {
 public:
     virtual ~IScoreSheet() = default;
 
@@ -26,7 +26,7 @@ public:
 };
 
 /// A score sheet that also accepts rolls.
-class GAMEBOX_SCORE_API IBowlingGame : public IScoreSheet {
+class BOWLINGBOX_SCORE_API IBowlingGame : public IScoreSheet {
 public:
     /// Records a roll. Returns false, and changes nothing, when the game is
     /// over or pins is not between 0 and pinsLeft().
@@ -35,5 +35,5 @@ public:
 };
 
 }  // namespace Score
-}  // namespace Gamebox
-#endif  // GAMEBOX_SCORE_IBOWLINGGAME_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_SCORE_IBOWLINGGAME_H

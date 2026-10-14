@@ -1,9 +1,9 @@
-#ifndef GAMEBOX_SCORE_NOTATION_H
-#define GAMEBOX_SCORE_NOTATION_H
-#include <Gamebox/Score/Gamebox_Score_export.h>
+#ifndef BOWLINGBOX_SCORE_NOTATION_H
+#define BOWLINGBOX_SCORE_NOTATION_H
+#include <Bowlingbox/Score/Bowlingbox_Score_export.h>
 #include <string>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Score {
 
 inline constexpr int kFrames = 10;
@@ -24,8 +24,8 @@ constexpr bool isBlank(int value) noexcept {
 
 /// Standard score sheet notation: blank -> "", Strike -> "X", Spare -> "/",
 /// Miss -> "-" (or "0" when isScore), otherwise the number.
-GAMEBOX_SCORE_API std::string notation(int value, bool isScore = false);
+BOWLINGBOX_SCORE_API std::string notation(int value, bool isScore = false);
 
 }  // namespace Score
-}  // namespace Gamebox
-#endif  // GAMEBOX_SCORE_NOTATION_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_SCORE_NOTATION_H

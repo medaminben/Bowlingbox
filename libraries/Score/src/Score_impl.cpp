@@ -1,7 +1,7 @@
 #include "Score_impl.h"
 #include <algorithm>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Score {
 
 /**
@@ -148,4 +148,4 @@ std::vector<int> BowlingSet::rolls() const {
 }
 
 }  // namespace Score
-}  // namespace Gamebox
+}  // namespace Bowlingbox

@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include <Gamebox/Score/IBowlingGame.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
 
 #include "scoreGrid.h"
 #include "terminal.h"
@@ -14,7 +14,7 @@ namespace Console {
 /// Scoring and terminal I/O are injected.
 class Screen {
 public:
-    Screen(std::shared_ptr<Gamebox::Score::IBowlingGame> game, ITerminal& terminal);
+    Screen(std::shared_ptr<Bowlingbox::Score::IBowlingGame> game, ITerminal& terminal);
     void start();
 
 protected:
@@ -43,7 +43,7 @@ protected:
     void setStatus(Status);
     void println(const std::string& text);
 
-    std::shared_ptr<Gamebox::Score::IBowlingGame> _game {nullptr};
+    std::shared_ptr<Bowlingbox::Score::IBowlingGame> _game {nullptr};
     ITerminal& _terminal;
     ScoreGrid _grid {};
     Status _status {Status::FristStart};

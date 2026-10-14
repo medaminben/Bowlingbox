@@ -1,8 +1,8 @@
-#include <Gamebox/Render/ScoreboardLayout.h>
-#include <Gamebox/Score/Notation.h>
+#include <Bowlingbox/Render/ScoreboardLayout.h>
+#include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
 Rect ScoreboardLayout::frameRect(int frame) const {
@@ -27,4 +27,4 @@ std::string glyphFor(int value, bool isScore) {
 }
 
 }  // namespace Render
-}  // namespace Gamebox
+}  // namespace Bowlingbox

@@ -1,20 +1,20 @@
-#ifndef GAMEBOX_ALLEY_H
-#define GAMEBOX_ALLEY_H
-#include <Gamebox/Alley/Gamebox_Alley_export.h>
-#include <Gamebox/Alley/Types.h>
-#include <Gamebox/Core/Core.h>
-#include <Gamebox/Score/IBowlingGame.h>
+#ifndef BOWLINGBOX_ALLEY_H
+#define BOWLINGBOX_ALLEY_H
+#include <Bowlingbox/Alley/Bowlingbox_Alley_export.h>
+#include <Bowlingbox/Alley/Types.h>
+#include <Bowlingbox/Core/Core.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
 #include <memory>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 
 class IPhysicsWorld;
 class LaneImpl;
 
-class GAMEBOX_ALLEY_API Lane {
+class BOWLINGBOX_ALLEY_API Lane {
 public:
-    /// Bullet physics + Gamebox::Score::Bowlingbox.
+    /// Bullet physics + Bowlingbox::Score::ScoreCalculator.
     Lane();
     /// Both collaborators are injected; neither may be null.
     Lane(std::unique_ptr<IPhysicsWorld> world, std::unique_ptr<Score::IBowlingGame> game);
@@ -41,5 +41,5 @@ private:
 };
 
 }  // namespace Alley
-}  // namespace Gamebox
-#endif  // GAMEBOX_ALLEY_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_ALLEY_H

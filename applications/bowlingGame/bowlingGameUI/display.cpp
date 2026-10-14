@@ -6,18 +6,18 @@
 */
 #include "display.h"
 #include "ui_display.h"
-#include <Gamebox/Score/Score.h>
+#include <Bowlingbox/Score/Score.h>
 
 namespace {
 QString cellText(int value, bool isScore = false) {
-    return QString::fromStdString(Gamebox::Score::notation(value, isScore));
+    return QString::fromStdString(Bowlingbox::Score::notation(value, isScore));
 }
 }  // namespace
 
-DisplayF::DisplayF(QWidget* parent, std::unique_ptr<Gamebox::Score::IBowlingGame> game)
+DisplayF::DisplayF(QWidget* parent, std::unique_ptr<Bowlingbox::Score::IBowlingGame> game)
     : QMainWindow(parent),
       ui(new Ui::Display),
-      _game(game ? std::move(game) : std::make_unique<Gamebox::Score::Bowlingbox>()) {
+      _game(game ? std::move(game) : std::make_unique<Bowlingbox::Score::ScoreCalculator>()) {
     ui->setupUi(this);
     organizeLists();
     connectPins();
@@ -40,10 +40,10 @@ void DisplayF::updateGrid() {
     auto scores = _game->scores();
     auto gameScore = _game->score();
 
-    const int none = Gamebox::Score::toInt(Gamebox::Score::Mark::None);
+    const int none = Bowlingbox::Score::toInt(Bowlingbox::Score::Mark::None);
     int first = none, second = none, score = none, last = none;
 
-    for (auto frame_index = 0; frame_index < Gamebox::Score::kFrames; frame_index += 1) {
+    for (auto frame_index = 0; frame_index < Bowlingbox::Score::kFrames; frame_index += 1) {
         first = rolls[2 * frame_index];
         second = rolls[2 * frame_index + 1];
         score = scores[frame_index];
@@ -70,7 +70,7 @@ void DisplayF::throwPins() {
 
     auto left = _game->pinsLeft();
     ui->pinsGroup->setDisabled(false);
-    for (int i = 0; i <= Gamebox::Score::kPins; i++) {
+    for (int i = 0; i <= Bowlingbox::Score::kPins; i++) {
         if (i <= left)
             pinsList.at(i)->show();
         else

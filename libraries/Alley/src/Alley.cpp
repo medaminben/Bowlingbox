@@ -1,12 +1,12 @@
-#include <Gamebox/Alley/Alley.h>
-#include <Gamebox/Alley/PhysicsWorld.h>
-#include <Gamebox/Score/Score.h>
+#include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Alley/PhysicsWorld.h>
+#include <Bowlingbox/Score/Score.h>
 #include "Lane_impl.h"
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 
-Lane::Lane() : Lane(makeBulletWorld(), std::make_unique<Score::Bowlingbox>()) {}
+Lane::Lane() : Lane(makeBulletWorld(), std::make_unique<Score::ScoreCalculator>()) {}
 Lane::Lane(std::unique_ptr<IPhysicsWorld> world, std::unique_ptr<Score::IBowlingGame> game)
     : _impl(std::make_unique<LaneImpl>(std::move(world), std::move(game))) {}
 Lane::~Lane() = default;
@@ -23,4 +23,4 @@ Snapshot Lane::snapshot() const { return _impl->snapshot(); }
 const Score::IScoreSheet& Lane::scoreSheet() const { return _impl->game(); }
 
 }  // namespace Alley
-}  // namespace Gamebox
+}  // namespace Bowlingbox

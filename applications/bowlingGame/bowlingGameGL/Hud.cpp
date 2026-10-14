@@ -1,9 +1,9 @@
 #include "Hud.h"
 #include "HudText.h"
-#include <Gamebox/Render/ScoreboardPainter.h>
+#include <Bowlingbox/Render/ScoreboardPainter.h>
 #include <algorithm>
 
-using namespace Gamebox;
+using namespace Bowlingbox;
 
 void drawHud(Render::ICanvas2D& canvas, const Alley::Snapshot& s, const Score::IScoreSheet& sheet,
              const HudLayout& l) {

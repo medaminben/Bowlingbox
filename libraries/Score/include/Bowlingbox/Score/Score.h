@@ -1,19 +1,19 @@
-#ifndef GAMEBOX_SCORE_H
-#define GAMEBOX_SCORE_H
-#include <Gamebox/Score/Gamebox_Score_export.h>
-#include <Gamebox/Score/IBowlingGame.h>
-#include <Gamebox/Score/Notation.h>
+#ifndef BOWLINGBOX_SCORE_H
+#define BOWLINGBOX_SCORE_H
+#include <Bowlingbox/Score/Bowlingbox_Score_export.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
+#include <Bowlingbox/Score/Notation.h>
 #include <memory>
 #include <vector>
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Score {
 struct BowlingSet;
 
 /// Ten-pin score calculator (codingdojo bowling kata).
-class GAMEBOX_SCORE_API Bowlingbox final : public IBowlingGame {
+class BOWLINGBOX_SCORE_API ScoreCalculator final : public IBowlingGame {
 public:
-    Bowlingbox();
-    ~Bowlingbox() override;
+    ScoreCalculator();
+    ~ScoreCalculator() override;
 
 public:
     bool roll(int pins) override;
@@ -30,6 +30,6 @@ private:
     std::unique_ptr<BowlingSet> _gameSet;
 };
 }  // namespace Score
-}  // namespace Gamebox
+}  // namespace Bowlingbox
 
-#endif  // GAMEBOX_SCORE_H
+#endif  // BOWLINGBOX_SCORE_H

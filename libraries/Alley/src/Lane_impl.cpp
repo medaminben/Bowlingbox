@@ -1,9 +1,9 @@
 #include "Lane_impl.h"
 #include <algorithm>
 #include <cmath>
-#include <Gamebox/Score/Notation.h>
+#include <Bowlingbox/Score/Notation.h>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 namespace {
 constexpr float kPi = 3.14159265358979f;
@@ -19,7 +19,7 @@ Result<> ok() {
     return Result<>(std::monostate {});
 }
 Result<> fail(const char* message) {
-    return Result<>(Gamebox::Core::Error<>(std::string(message)));
+    return Result<>(Bowlingbox::Core::Error<>(std::string(message)));
 }
 }  // namespace
 
@@ -159,4 +159,4 @@ Snapshot LaneImpl::snapshot() const {
 }
 
 }  // namespace Alley
-}  // namespace Gamebox
+}  // namespace Bowlingbox

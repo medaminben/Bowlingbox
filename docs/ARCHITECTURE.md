@@ -1,12 +1,12 @@
-# Gamebox architecture
+# Bowlingbox architecture
 
-This document explains how Gamebox is put together: the libraries, the interfaces between them,
+This document explains how Bowlingbox is put together: the libraries, the interfaces between them,
 how a throw travels through the system, and how the build and tests are organised. For building
 and playing, see the [manual](MANUAL.md).
 
 ## Overview
 
-Gamebox is a set of small C++20 libraries plus thin front-ends. Every library exposes its
+Bowlingbox is a set of small C++20 libraries plus thin front-ends. Every library exposes its
 collaborators as interfaces, and the concrete implementation is chosen in one place (an
 application's `main` or a default constructor). This keeps physics, OpenGL and terminals out of
 the unit tests.
@@ -19,10 +19,10 @@ graph TD
         QT[BowlingDisplay<br/>Qt, optional]
     end
     subgraph Libraries
-        ALLEY[Gamebox::Alley<br/>Lane state machine]
-        RENDER[Gamebox::Render<br/>OpenGL scene + 2D overlay]
-        SCORE[Gamebox::Score<br/>Bowlingbox calculator]
-        CORE[Gamebox::Core<br/>Result / Error]
+        ALLEY[Bowlingbox::Alley<br/>Lane state machine]
+        RENDER[Bowlingbox::Render<br/>OpenGL scene + 2D overlay]
+        SCORE[Bowlingbox::Score<br/>ScoreCalculator]
+        CORE[Bowlingbox::Core<br/>Result / Error]
     end
     subgraph Third-party
         BULLET[Bullet3]
@@ -50,19 +50,19 @@ export set.
 
 ## Libraries
 
-All public headers live under `libraries/<Lib>/include/Gamebox/<Lib>/` and are included as
-`#include <Gamebox/<Lib>/...>`. Private headers stay in `src/`. Each library has a generated
-export header (`Gamebox_<Lib>_export.h`) and builds with hidden symbol visibility, so only
-classes marked `GAMEBOX_<LIB>_API` are exported.
+All public headers live under `libraries/<Lib>/include/Bowlingbox/<Lib>/` and are included as
+`#include <Bowlingbox/<Lib>/...>`. Private headers stay in `src/`. Each library has a generated
+export header (`Bowlingbox_<Lib>_export.h`) and builds with hidden symbol visibility, so only
+classes marked `BOWLINGBOX_<LIB>_API` are exported.
 
-### Gamebox::Score
+### Bowlingbox::Score
 
 The scoring rules of ten-pin bowling (the [codingdojo bowling kata](https://codingdojo.org/kata/Bowling/)).
 
 | Header | Purpose |
 |---|---|
 | `IBowlingGame.h` | `IScoreSheet` (read-only view: `rolls`, `scores`, `score`, `frameScore`, `pinsLeft`, `isOver`) and `IBowlingGame` (adds `roll`, `reset`) |
-| `Score.h` | `Bowlingbox`, the default `IBowlingGame` (pimpl over `BowlingSet`) |
+| `Score.h` | `ScoreCalculator`, the default `IBowlingGame` (pimpl over `BowlingSet`) |
 | `Notation.h` | Constants (`kFrames = 10`, `kPins = 10`, `kRollSlots = 21`), the `Mark` sentinels and `notation()` |
 
 **Roll encoding.** A game is stored as 21 roll slots (9 frames × 2 + 3 for the tenth) and 10
@@ -83,7 +83,7 @@ the game is over. `pinsLeft()` follows the tenth frame's rack and is 0 once the 
 frame's entry in `scores()` stays `Mark::None` until it is final; `score()` and `frameScore()`
 count the balls thrown so far.
 
-### Gamebox::Core
+### Bowlingbox::Core
 
 Shared vocabulary types with no dependencies:
 
@@ -92,7 +92,7 @@ Shared vocabulary types with no dependencies:
   commands that can be refused.
 - `Error<E>`: wraps an error (by default a `std::string`).
 
-### Gamebox::Alley
+### Bowlingbox::Alley
 
 The physical bowling lane and the rules of a single throw.
 
@@ -104,7 +104,7 @@ The physical bowling lane and the rules of a single throw.
 
 `Lane` exposes input (`moveAim`, `rotateAim`, `startCharge`, `release`, `newGame`), time
 (`step(dt)`), and read access (`snapshot()`, `scoreSheet()`). The default constructor wires Bullet3
-and `Bowlingbox`. The two-argument constructor accepts any `IPhysicsWorld` and `IBowlingGame`,
+and `ScoreCalculator`. The two-argument constructor accepts any `IPhysicsWorld` and `IBowlingGame`,
 which is how the tests run without Bullet.
 
 `IPhysicsWorld` knows nothing about bowling rules. It places and launches the ball, resets or
@@ -133,7 +133,7 @@ stateDiagram-v2
   of a frame, fallen pins are removed and standing pins stay where they are. After a strike, a
   spare or the end of a frame, the world is rebuilt with a full rack.
 
-### Gamebox::Render
+### Bowlingbox::Render
 
 OpenGL 3.3 core rendering, independent of any windowing toolkit.
 
@@ -173,7 +173,7 @@ current.
 
 ### BowlingDisplay (`bowlingGameUI`, optional)
 
-A Qt Widgets form that shows a `Bowlingbox`. It is built only with `BUILD_QT_UI=ON`, because Qt is
+A Qt Widgets form that shows a `ScoreCalculator`. It is built only with `BUILD_QT_UI=ON`, because Qt is
 a large external dependency with its own licence.
 
 ## Data flow: one throw in BowlingGL
@@ -186,7 +186,7 @@ sequenceDiagram
     participant LC as LaneCommands
     participant L as Alley::Lane
     participant W as IPhysicsWorld (Bullet)
-    participant S as IBowlingGame (Bowlingbox)
+    participant S as IBowlingGame (ScoreCalculator)
     participant R as Render (Scene + Overlay)
 
     wx->>C: key up (Space)
@@ -214,7 +214,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 
 | Interface | Library | Default implementation | Test double |
 |---|---|---|---|
-| `Score::IScoreSheet` / `Score::IBowlingGame` | Score | `Score::Bowlingbox` | `FakeGame` in `test_Alley.cpp` |
+| `Score::IScoreSheet` / `Score::IBowlingGame` | Score | `Score::ScoreCalculator` | `FakeGame` in `test_Alley.cpp` |
 | `Alley::IPhysicsWorld` | Alley | `makeBulletWorld()` | `FakeWorld` in `test_Alley.cpp` |
 | `Render::ICanvas2D` | Render | `Render::Overlay` (OpenGL) | `RecordingCanvas` in `test_Render.cpp` and `test_Gameplay.cpp` |
 | `Console::ITerminal` | BowlingConsole | `SystemTerminal` | `ScriptedTerminal` in `test_Console.cpp` |
@@ -223,7 +223,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 
 ### Layout and conventions
 
-- The root `CMakeLists.txt` sets the project (`Gamebox`, C++20) and the options, then includes
+- The root `CMakeLists.txt` sets the project (`Bowlingbox`, C++20) and the options, then includes
   `cmake/Common.cmake`.
 - `Common.cmake` sets the language level, loads the helper modules, sets up clang-tidy, offline
   fetching and testing, and pulls in the third-party support modules.
@@ -235,11 +235,11 @@ The canvas never changes game state directly. Every change goes through a `Comma
 
 - `create_library(LIB_NAME … LIB_FILES … PUBLIC_DEPENDENCIES … PRIVATE_DEPENDENCIES … TEST_SOURCES …)`
   does the following:
-  - creates the raw target `gamebox_<lib>` and the alias `Gamebox::<Lib>`
-  - names the output `libGamebox<Lib>`
+  - creates the raw target `bowlingbox_<lib>` and the alias `Bowlingbox::<Lib>`
+  - names the output `libBowlingbox<Lib>`
   - generates the export header
   - installs the target, its headers and its export set
-  - builds `test_gamebox_<lib>` from the test sources
+  - builds `test_bowlingbox_<lib>` from the test sources
 - `create_application(NAME … ENTRY Console|QT_ui|WX_ui …)` creates an executable of the right kind.
   Applications declare their variables in their own `CMakeLists.txt`, and
   `applications/bowlingGame/CMakeLists.txt` creates them in a loop.
@@ -248,7 +248,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 
 ### Scaffold generator (`cmake/modules/LibraryGenerator.cmake`)
 
-With `GENERATE_SCAFFOLD=ON`, any name in `GAMEBOX_LIBRARIES` (root `CMakeLists.txt`) that has no
+With `GENERATE_SCAFFOLD=ON`, any name in `BOWLINGBOX_LIBRARIES` (root `CMakeLists.txt`) that has no
 directory yet is generated from `cmake/template/lib` (header, pimpl, CMake file, test). A matching
 app is generated from `cmake/template/app` (console, Qt or wx entry). Existing directories are
 never touched.
@@ -264,31 +264,31 @@ never touched.
 | GLAD 2, stb_easy_font | in tree | `3rdparty/` | Render (private) |
 | Qt 6 | system | `find_package` (`QtSupport.cmake`) | BowlingDisplay |
 
-Versions are cache variables (`GAMEBOX_BULLET_VERSION`, `GAMEBOX_GLM_VERSION`,
-`GAMEBOX_WX_VERSION`, `GAMEBOX_GTEST_VERSION`).
+Versions are cache variables (`BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
+`BOWLINGBOX_WX_VERSION`, `BOWLINGBOX_GTEST_VERSION`).
 
 ### Install and export
 
 `cmake --install` installs the libraries, their headers and a CMake package
-(`lib/cmake/Gamebox/GameboxConfig.cmake`, versioned with `SameMajorVersion`). Another project can
+(`lib/cmake/Bowlingbox/BowlingboxConfig.cmake`, versioned with `SameMajorVersion`). Another project can
 then use:
 
 ```cmake
-find_package(Gamebox 1.4 REQUIRED)
-target_link_libraries(my_app PRIVATE Gamebox::Score)
+find_package(Bowlingbox 1.4 REQUIRED)
+target_link_libraries(my_app PRIVATE Bowlingbox::Score)
 ```
 
 Bullet, GLAD and stb are linked as `$<BUILD_INTERFACE:…>`, so they are not part of the installed
-interface. Code that includes `Gamebox/Render/Render.h` must find GLM itself.
+interface. Code that includes `Bowlingbox/Render/Render.h` must find GLM itself.
 
 ## Testing
 
 | Executable | Covers |
 |---|---|
-| `test_gamebox_score` | Scoring rules, encoding, notation |
-| `test_gamebox_core` | `Result` / `Error` |
-| `test_gamebox_alley` | State machine with real Bullet (`test_alley`: gutter, strike, 300 game, determinism) and with `FakeWorld` / `FakeGame` (`test_alley_injected`) |
-| `test_gamebox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas |
+| `test_bowlingbox_score` | Scoring rules, encoding, notation |
+| `test_bowlingbox_core` | `Result` / `Error` |
+| `test_bowlingbox_alley` | State machine with real Bullet (`test_alley`: gutter, strike, 300 game, determinism) and with `FakeWorld` / `FakeGame` (`test_alley_injected`) |
+| `test_bowlingbox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas |
 | `test_bowlinggl` | Input mapping, lane commands, follow camera, HUD text and drawing; no window is opened |
 | `test_bowlingconsole` | Console game loop with a scripted terminal: number parsing, out-of-range pins, end of input |
 

@@ -1,8 +1,8 @@
-#include <Gamebox/Render/ScoreboardPainter.h>
+#include <Bowlingbox/Render/ScoreboardPainter.h>
 #include <algorithm>
 #include <string>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
 void paintScoreboard(ICanvas2D& canvas, const std::vector<int>& rolls, const std::vector<int>& scores,
@@ -47,4 +47,4 @@ void paintScoreboard(ICanvas2D& canvas, const std::vector<int>& rolls, const std
 }
 
 }  // namespace Render
-}  // namespace Gamebox
+}  // namespace Bowlingbox

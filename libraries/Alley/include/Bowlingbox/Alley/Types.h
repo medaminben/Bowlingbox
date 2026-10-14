@@ -1,8 +1,8 @@
-#ifndef GAMEBOX_ALLEY_TYPES_H
-#define GAMEBOX_ALLEY_TYPES_H
+#ifndef BOWLINGBOX_ALLEY_TYPES_H
+#define BOWLINGBOX_ALLEY_TYPES_H
 #include <array>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 
 /// Throw state machine phases (see spec §3.2).
@@ -45,5 +45,5 @@ struct Snapshot {
 };
 
 }  // namespace Alley
-}  // namespace Gamebox
-#endif  // GAMEBOX_ALLEY_TYPES_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_ALLEY_TYPES_H

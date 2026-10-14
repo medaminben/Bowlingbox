@@ -1,16 +1,16 @@
-#ifndef GAMEBOX_RENDER_CANVAS2D_H
-#define GAMEBOX_RENDER_CANVAS2D_H
-#include <Gamebox/Render/Gamebox_Render_export.h>
-#include <Gamebox/Render/ScoreboardLayout.h>
+#ifndef BOWLINGBOX_RENDER_CANVAS2D_H
+#define BOWLINGBOX_RENDER_CANVAS2D_H
+#include <Bowlingbox/Render/Bowlingbox_Render_export.h>
+#include <Bowlingbox/Render/ScoreboardLayout.h>
 #include <glm/glm.hpp>
 #include <string_view>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
 /// 2D drawing primitives in pixels, origin top-left. Widgets such as the
 /// scoreboard or the HUD draw through this so they do not depend on OpenGL.
-class GAMEBOX_RENDER_API ICanvas2D {
+class BOWLINGBOX_RENDER_API ICanvas2D {
 public:
     virtual ~ICanvas2D() = default;
     virtual void drawText(std::string_view text, glm::vec2 px, float scale, glm::vec3 rgb) = 0;
@@ -22,5 +22,5 @@ public:
 };
 
 }  // namespace Render
-}  // namespace Gamebox
-#endif  // GAMEBOX_RENDER_CANVAS2D_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_RENDER_CANVAS2D_H

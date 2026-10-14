@@ -3,7 +3,7 @@
 #include <cmath>
 #include <vector>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 namespace {
 constexpr float kPi = 3.14159265358979f;
@@ -259,4 +259,4 @@ std::array<std::pair<float, float>, 10> BulletWorld::pinPositions() {
 }
 
 }  // namespace Alley
-}  // namespace Gamebox
+}  // namespace Bowlingbox

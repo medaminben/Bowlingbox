@@ -8,9 +8,9 @@ set(TST_DISCOVER ON)
 set(TARGET_HEADERS
     src/BulletWorld.h
     src/Lane_impl.h
-    include/Gamebox/Alley/Types.h
-    include/Gamebox/Alley/PhysicsWorld.h
-    include/Gamebox/Alley/Alley.h
+    include/Bowlingbox/Alley/Types.h
+    include/Bowlingbox/Alley/PhysicsWorld.h
+    include/Bowlingbox/Alley/Alley.h
 )
 set(TARGET_SOURCES
     src/BulletWorld.cpp

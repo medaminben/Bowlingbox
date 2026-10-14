@@ -1,16 +1,16 @@
 #include "HudText.h"
-#include <Gamebox/Score/Notation.h>
+#include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
 
-using Gamebox::Alley::Phase;
-using Gamebox::Score::Mark;
-using Gamebox::Score::toInt;
+using Bowlingbox::Alley::Phase;
+using Bowlingbox::Score::Mark;
+using Bowlingbox::Score::toInt;
 
 namespace {
 /// The most recent roll slot that holds something (Strike / Spare marks included).
 int lastRollValue(const std::vector<int>& rolls) {
     for (auto it = rolls.rbegin(); it != rolls.rend(); ++it)
-        if (!Gamebox::Score::isBlank(*it))
+        if (!Bowlingbox::Score::isBlank(*it))
             return *it;
     return toInt(Mark::None);
 }
@@ -39,7 +39,7 @@ std::string phaseName(Phase p) {
     return "";
 }
 
-std::string result(const Gamebox::Alley::Snapshot& s, const Gamebox::Score::IScoreSheet& sheet) {
+std::string result(const Bowlingbox::Alley::Snapshot& s, const Bowlingbox::Score::IScoreSheet& sheet) {
     if (s.phase == Phase::GameOver)
         return "Game over - score " + std::to_string(sheet.score());
     if (s.phase != Phase::FrameDone || s.lastPinsDown < 0)
@@ -48,14 +48,14 @@ std::string result(const Gamebox::Alley::Snapshot& s, const Gamebox::Score::ISco
     // The sheet's mark decides: ten pins on a second ball are a spare.
     if (last == toInt(Mark::Spare))
         return "SPARE!";
-    if (last == toInt(Mark::Strike) || s.lastPinsDown == Gamebox::Score::kPins)
+    if (last == toInt(Mark::Strike) || s.lastPinsDown == Bowlingbox::Score::kPins)
         return "STRIKE!";
     if (s.lastPinsDown == 0)
         return "Gutter";
     return std::to_string(s.lastPinsDown) + " pins";
 }
 
-std::string status(const Gamebox::Alley::Snapshot& s, const Gamebox::Score::IScoreSheet& sheet) {
+std::string status(const Bowlingbox::Alley::Snapshot& s, const Bowlingbox::Score::IScoreSheet& sheet) {
     const auto standing = std::count(s.pinStanding.begin(), s.pinStanding.end(), true);
     return phaseName(s.phase) + "   |   score " + std::to_string(sheet.score()) +
            "   |   pins standing " + std::to_string(standing);

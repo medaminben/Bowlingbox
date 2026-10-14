@@ -1,11 +1,11 @@
-#ifndef GAMEBOX_ALLEY_LANE_IMPL_H
-#define GAMEBOX_ALLEY_LANE_IMPL_H
-#include <Gamebox/Alley/Alley.h>
-#include <Gamebox/Alley/PhysicsWorld.h>
-#include <Gamebox/Score/IBowlingGame.h>
+#ifndef BOWLINGBOX_ALLEY_LANE_IMPL_H
+#define BOWLINGBOX_ALLEY_LANE_IMPL_H
+#include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Alley/PhysicsWorld.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
 #include <memory>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 
 /// Throw state machine. Talks to physics and scoring only through their interfaces.
@@ -42,5 +42,5 @@ private:
 };
 
 }  // namespace Alley
-}  // namespace Gamebox
-#endif  // GAMEBOX_ALLEY_LANE_IMPL_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_ALLEY_LANE_IMPL_H

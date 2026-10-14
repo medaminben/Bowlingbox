@@ -1,7 +1,7 @@
 #include "scoreGrid.h"
 #include "screenTools.h"
 
-using Gamebox::Score::kFrames;
+using Bowlingbox::Score::kFrames;
 
 ////////////////////////////////////////////////////////////////
 // ScoreGrid implementation
@@ -17,11 +17,11 @@ void Console::ScoreGrid::reset() {
     _frames.push_back(Frame(Frame::Type::Last));
 }
 
-void Console::ScoreGrid::update(const Gamebox::Score::IScoreSheet& sheet) {
+void Console::ScoreGrid::update(const Bowlingbox::Score::IScoreSheet& sheet) {
     auto rolls = sheet.rolls();
     auto scores = sheet.scores();
 
-    int first, second, score, last = Gamebox::Score::toInt(Gamebox::Score::Mark::None);
+    int first, second, score, last = Bowlingbox::Score::toInt(Bowlingbox::Score::Mark::None);
     for (auto frame_index = 0; frame_index < kFrames; frame_index += 1) {
         first = rolls[2 * frame_index];
         second = rolls[2 * frame_index + 1];

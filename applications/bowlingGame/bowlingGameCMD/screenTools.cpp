@@ -1,5 +1,5 @@
 #include "screenTools.h"
-#include <Gamebox/Score/Notation.h>
+#include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
 #include <cctype>
 
@@ -23,7 +23,7 @@ std::string toConsole(const int& i) {
 }
 /// @brief convert value to a 3 chars string for console
 /// @param value eather pins number, game state or score,
-/// encoded as in Gamebox::Score::Mark
+/// encoded as in Bowlingbox::Score::Mark
 /// @return a 3 chars string of the value
 std::string valueToConsole(const int& value, const bool& isScore) {
     // the highest number is equal to the
@@ -32,7 +32,7 @@ std::string valueToConsole(const int& value, const bool& isScore) {
     // is wrong input
     if (value / 1000 > 1)
         return "   ";
-    const std::string text = Gamebox::Score::notation(value, isScore);
+    const std::string text = Bowlingbox::Score::notation(value, isScore);
     switch (text.length()) {
         case 0:
             return "   ";

@@ -1,7 +1,7 @@
 #ifndef SCORE_GRID_H
 #define SCORE_GRID_H
-#include <Gamebox/Score/IBowlingGame.h>
-#include <Gamebox/Score/Notation.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
+#include <Bowlingbox/Score/Notation.h>
 #include <string>
 #include <vector>
 
@@ -24,7 +24,7 @@ public:
     void resetFrame();
     std::vector<std::string> getFrame() const;
     void setFrame(const int& frame_score, const int& first_roll, const int& second_roll,
-                  const int& last_roll = Gamebox::Score::toInt(Gamebox::Score::Mark::None));
+                  const int& last_roll = Bowlingbox::Score::toInt(Bowlingbox::Score::Mark::None));
 
 protected:
     Type _type = Type::Regular;
@@ -41,7 +41,7 @@ class ScoreGrid {
 public:
     ScoreGrid();
     void reset();
-    void update(const Gamebox::Score::IScoreSheet& sheet);
+    void update(const Bowlingbox::Score::IScoreSheet& sheet);
     /// Rows of frames separated by newlines; wraps at 5, 2 or 1 frames per row.
     std::string render(int width) const;
 

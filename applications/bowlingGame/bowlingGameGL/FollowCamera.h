@@ -1,7 +1,7 @@
 #ifndef BOWLINGGL_FOLLOW_CAMERA_H
 #define BOWLINGGL_FOLLOW_CAMERA_H
-#include <Gamebox/Alley/Types.h>
-#include <Gamebox/Render/Render.h>
+#include <Bowlingbox/Alley/Types.h>
+#include <Bowlingbox/Render/Render.h>
 
 /// Camera rig: waits behind the foul line, follows the ball down the lane
 /// while it is rolling and eases back afterwards.
@@ -11,8 +11,8 @@ public:
     static constexpr float kHeight = 1.8f;
     static constexpr float kLookAhead = 9.f;
 
-    void update(const Gamebox::Alley::Snapshot& s, float dt);
-    void applyTo(Gamebox::Render::Camera& camera) const;
+    void update(const Bowlingbox::Alley::Snapshot& s, float dt);
+    void applyTo(Bowlingbox::Render::Camera& camera) const;
     float z() const { return _z; }
 
 private:

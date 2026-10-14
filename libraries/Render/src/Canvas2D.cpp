@@ -1,6 +1,6 @@
-#include <Gamebox/Render/Canvas2D.h>
+#include <Bowlingbox/Render/Canvas2D.h>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Render {
 
 void ICanvas2D::strokeRect(const Rect& r, float t, glm::vec4 rgba) {
@@ -11,4 +11,4 @@ void ICanvas2D::strokeRect(const Rect& r, float t, glm::vec4 rgba) {
 }
 
 }  // namespace Render
-}  // namespace Gamebox
+}  // namespace Bowlingbox

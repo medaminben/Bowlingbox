@@ -1,11 +1,11 @@
-#ifndef GAMEBOX_ALLEY_BULLET_WORLD_H
-#define GAMEBOX_ALLEY_BULLET_WORLD_H
-#include <Gamebox/Alley/PhysicsWorld.h>
+#ifndef BOWLINGBOX_ALLEY_BULLET_WORLD_H
+#define BOWLINGBOX_ALLEY_BULLET_WORLD_H
+#include <Bowlingbox/Alley/PhysicsWorld.h>
 #include <array>
 #include <memory>
 #include <utility>
 
-namespace Gamebox {
+namespace Bowlingbox {
 namespace Alley {
 
 /// Bullet3 implementation of IPhysicsWorld.
@@ -42,5 +42,5 @@ private:
 };
 
 }  // namespace Alley
-}  // namespace Gamebox
-#endif  // GAMEBOX_ALLEY_BULLET_WORLD_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_ALLEY_BULLET_WORLD_H

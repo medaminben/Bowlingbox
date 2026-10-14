@@ -1,13 +1,13 @@
-#include <Gamebox/Render/Geometry.h>
-#include <Gamebox/Render/ScoreboardLayout.h>
-#include <Gamebox/Render/ScoreboardPainter.h>
+#include <Bowlingbox/Render/Geometry.h>
+#include <Bowlingbox/Render/ScoreboardLayout.h>
+#include <Bowlingbox/Render/ScoreboardPainter.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
 
-using namespace Gamebox::Render;
+using namespace Bowlingbox::Render;
 
 namespace {
 void expectWellFormed(const MeshData& m) {
@@ -65,7 +65,7 @@ TEST(test_render_geometry, pin_spans_from_base_to_top_relative_to_com) {
     EXPECT_NEAR(maxY(m), 0.26f, 1e-5f);
 }
 
-TEST(test_render_scoreboard, glyphs_follow_gamebox_encoding) {
+TEST(test_render_scoreboard, glyphs_follow_bowlingbox_encoding) {
     EXPECT_EQ(glyphFor(-4), "");
     EXPECT_EQ(glyphFor(-3), "");
     EXPECT_EQ(glyphFor(-2), "X");
