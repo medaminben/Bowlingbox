@@ -9,6 +9,15 @@ console, optional Qt).
 
 ![BowlingGL](docs/Bowlingbox_%20Neon%20Strike.png)
 
+## How it started
+
+Bowlingbox began as the [Bowling Game kata](https://codingdojo.org/kata/Bowling/): given the
+pins knocked down by each roll, compute the score of a ten-pin game. The answer to that kata is
+the [`Score`](libraries/Score) library, and the rest of the project is built around it. Physics,
+rendering and the three front-ends all feed rolls into the same `Bowlingbox::Score` calculator
+and display what it returns. The [bowling apps README](applications/bowlingGame/README.md)
+describes the front-ends.
+
 ## Quick start
 
 Debian/Ubuntu:
@@ -22,9 +31,10 @@ ctest --test-dir build
 ./build/bin/BowlingConsole   # text game
 ```
 
-CMake 3.29 or newer is required. wxWidgets, Bullet3, GLM and GoogleTest are downloaded during
-the first configure. The [manual](docs/MANUAL.md) covers controls, every build option, and
-troubleshooting.
+CMake 3.29 or newer is required. Bullet3, GLM and GoogleTest are downloaded during the first
+configure. An installed wxWidgets 3.2 (`sudo apt install libwxgtk3.2-dev`) is used if present;
+otherwise wxWidgets is downloaded and built too. The [manual](docs/MANUAL.md) covers controls,
+every build option, and troubleshooting.
 
 ## Repository layout
 
@@ -44,7 +54,7 @@ troubleshooting.
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` (fetches and builds wxWidgets) |
+| `BUILD_WX_UI` | `ON` | Build `BowlingGL` (system wxWidgets, or fetched and built) |
 | `BUILD_QT_UI` | `OFF` | Build `BowlingDisplay` (needs Qt 6 installed) |
 | `BUILD_TESTING` | `ON` | Build the GoogleTest suites |
 | `BUILD_SHARED_LIBS` | `ON` | Build the Bowlingbox libraries as shared libraries |
