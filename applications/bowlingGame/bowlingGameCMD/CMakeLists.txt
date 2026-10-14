@@ -64,4 +64,16 @@ set(PROJECT_LIST
     PARENT_SCOPE
 )
 
+# Window-free tests: the game loop against a scripted terminal.
+if(BUILD_TESTING)
+    build_gtest_executable(
+        NAME     test_bowlingconsole
+        SRC      ${THIS_DIR}/bowlingScreen.cpp ${THIS_DIR}/scoreGrid.cpp ${THIS_DIR}/screenTools.cpp
+                 ${THIS_DIR}/test/test_Console.cpp
+        DEPENDS  ${CMAKE_ROOT_NAME}::Score GTest::gtest GTest::gtest_main
+        DISCOVER ON
+    )
+    target_include_directories(test_bowlingconsole PRIVATE ${THIS_DIR})
+endif()
+
 
