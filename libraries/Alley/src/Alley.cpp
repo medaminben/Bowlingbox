@@ -1,10 +1,14 @@
-#include <Sandbox/Alley/Alley.h>
+#include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Alley/PhysicsWorld.h>
+#include <Bowlingbox/Score/Score.h>
 #include "Lane_impl.h"
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Alley {
 
-Lane::Lane() : _impl(std::make_unique<LaneImpl>()) {}
+Lane::Lane() : Lane(makeBulletWorld(), std::make_unique<Score::ScoreCalculator>()) {}
+Lane::Lane(std::unique_ptr<IPhysicsWorld> world, std::unique_ptr<Score::IBowlingGame> game)
+    : _impl(std::make_unique<LaneImpl>(std::move(world), std::move(game))) {}
 Lane::~Lane() = default;
 
 Result<> Lane::moveAim(float d) { return _impl->moveAim(d); }
@@ -16,11 +20,7 @@ Result<> Lane::newGame() { return _impl->newGame(); }
 void Lane::step(float dt) noexcept { _impl->step(dt); }
 
 Snapshot Lane::snapshot() const { return _impl->snapshot(); }
-std::vector<int> Lane::rolls() const { return _impl->game().rolls(); }
-std::vector<int> Lane::frameScores() const { return _impl->game().scores(); }
-int Lane::totalScore() const { return _impl->game().score(); }
-bool Lane::isGameOver() const { return _impl->game().isOver(); }
-int Lane::pinsLeft() const { return _impl->game().pinsLeft(); }
+const Score::IScoreSheet& Lane::scoreSheet() const { return _impl->game(); }
 
 }  // namespace Alley
-}  // namespace Sandbox
+}  // namespace Bowlingbox

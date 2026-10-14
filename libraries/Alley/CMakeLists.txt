@@ -6,12 +6,14 @@ set(TST_DISCOVER ON)
 # Manage project files
 ###############################################################
 set(TARGET_HEADERS
-    src/World.h
+    src/BulletWorld.h
     src/Lane_impl.h
-    include/Sandbox/Alley/Alley.h
+    include/Bowlingbox/Alley/Types.h
+    include/Bowlingbox/Alley/PhysicsWorld.h
+    include/Bowlingbox/Alley/Alley.h
 )
 set(TARGET_SOURCES
-    src/World.cpp
+    src/BulletWorld.cpp
     src/Lane_impl.cpp
     src/Alley.cpp
 )
@@ -23,7 +25,7 @@ set(PRIVATE_DEPS
 )
 set(PUBLIC_DEPS
     ${CMAKE_ROOT_NAME}::Core
-    ${CMAKE_ROOT_NAME}::Gamebox
+    ${CMAKE_ROOT_NAME}::Score
 )
 set(TARGET_FILES ${TARGET_HEADERS} ${TARGET_SOURCES})
 ###############################################################

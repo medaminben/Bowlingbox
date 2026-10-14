@@ -1,8 +1,8 @@
-#ifndef SANDBOX_RENDER_GLMESH_H
-#define SANDBOX_RENDER_GLMESH_H
-#include <Sandbox/Render/Geometry.h>
+#ifndef BOWLINGBOX_RENDER_GLMESH_H
+#define BOWLINGBOX_RENDER_GLMESH_H
+#include <Bowlingbox/Render/Geometry.h>
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Render {
 
 /// VAO/VBO/EBO for a MeshData: location 0 = position, location 1 = normal.
@@ -20,5 +20,5 @@ private:
 };
 
 }  // namespace Render
-}  // namespace Sandbox
-#endif  // SANDBOX_RENDER_GLMESH_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_RENDER_GLMESH_H

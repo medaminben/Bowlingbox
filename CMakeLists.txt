@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.29)
 
 # Project names are only relevant for humans; camel case is okay.
-project(Sandbox VERSION 1.4.0 LANGUAGES CXX)
+project(Bowlingbox VERSION 1.4.0 LANGUAGES CXX)
 
-# Global project name used by library aliases (Sandbox::Core)
+# Global project name used by library aliases (Bowlingbox::Core)
 set(CMAKE_ROOT_NAME ${PROJECT_NAME})
 
 # ---------------------------------------------------------------------------
@@ -11,13 +11,10 @@ set(CMAKE_ROOT_NAME ${PROJECT_NAME})
 # ---------------------------------------------------------------------------
 option(BUILD_SHARED_LIBS     "Build project libraries as shared libraries" ON)
 option(BUILD_APPS            "Build applications"                          ON)
-option(BUILD_DESIGN          "Build Design pattern related apps"           ON)
-option(BUILD_METAPROGRAMMING "Build meta programming related topics"       ON)
 option(BUILD_QT_UI           "Build Qt based applications"                 OFF)
 option(BUILD_WX_UI           "Build wxWidgets based applications"          ON)
 option(BUILD_VERBOSE_OUTPUT  "Build with verbose output"                   OFF)
 option(BUILD_TESTING         "Build tests"                                 ON)
-option(BUILD_BOOST_3RD       "Build boost based libs and apps"             ON)
 option(ENABLE_COVERAGE       "Enable code coverage instrumentation"        OFF)
 option(ENABLE_CLANG_TIDY     "Run clang-tidy during compilation"           OFF)
 option(GENERATE_SCAFFOLD     "Generate missing libraries from templates"   ON)
@@ -28,8 +25,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(Common)
 
 # Libraries to generate / include. Add new names here for scaffold generation.
-set(SANDBOX_LIBRARIES
-    Gamebox
+set(BOWLINGBOX_LIBRARIES
+    Score
     Core
     Alley
     Render
@@ -42,7 +39,7 @@ set(template_dir     ${CMAKE_SOURCE_DIR}/cmake/template)
 if(GENERATE_SCAFFOLD)
     # Existing kata apps stay topic-based; scaffold only creates apps for *new* libs.
     generate_libraries(
-        LIBRARIES_LIST     ${SANDBOX_LIBRARIES}
+        LIBRARIES_LIST     ${BOWLINGBOX_LIBRARIES}
         LIBRARIES_LOCATION ${libraries_dir}
         APPS_LOCATION      ${applications_dir}
         TEMPLATE_LOCATION  ${template_dir}

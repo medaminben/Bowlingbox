@@ -1,14 +1,4 @@
-# Architecture detection and target helpers.
-
-macro(get_project_arch)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(PROJECT_ARCH_TARGET "amd64")
-    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set(PROJECT_ARCH_TARGET "i386")
-    else()
-        message(WARNING "Unknown architecture!")
-    endif()
-endmacro()
+# Target helpers.
 
 function(check_project_name)
     set(options)
@@ -32,7 +22,7 @@ macro(add_project name name_list)
     list(APPEND ${name_list} ${name})
 endmacro()
 
-# Convert "Sandbox::Core" -> "sandbox_core" for add_library().
+# Convert "Bowlingbox::Core" -> "bowlingbox_core" for add_library().
 macro(get_raw_target_name qualified_name out_var)
     string(REPLACE "::" "_" ${out_var} ${qualified_name})
     string(TOLOWER ${${out_var}} ${out_var})
@@ -92,7 +82,7 @@ function(create_library)
         PUBLIC  ${parameter_PUBLIC_DEPENDENCIES}
     )
 
-    sandbox_set_warnings(${LIBRARY_NAME_RAW})
+    bowlingbox_set_warnings(${LIBRARY_NAME_RAW})
 
     set_target_properties(${LIBRARY_NAME_RAW} PROPERTIES
         OUTPUT_NAME "${CMAKE_ROOT_NAME}${parameter_LIB_NAME}"
@@ -180,7 +170,7 @@ function(create_application)
         if(DEFINED app_DEPENDENCIES AND NOT app_DEPENDENCIES STREQUAL "")
             target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
         endif()
-        sandbox_set_warnings(${app_NAME})
+        bowlingbox_set_warnings(${app_NAME})
         install(TARGETS ${app_NAME}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         )
@@ -194,7 +184,7 @@ function(create_application)
             WIN32_EXECUTABLE TRUE
             MACOSX_BUNDLE TRUE
         )
-        sandbox_set_warnings(${app_NAME})
+        bowlingbox_set_warnings(${app_NAME})
         install(TARGETS ${app_NAME}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -208,7 +198,7 @@ function(create_application)
             WIN32_EXECUTABLE TRUE
             MACOSX_BUNDLE TRUE
         )
-        sandbox_set_warnings(${app_NAME})
+        bowlingbox_set_warnings(${app_NAME})
         install(TARGETS ${app_NAME}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}

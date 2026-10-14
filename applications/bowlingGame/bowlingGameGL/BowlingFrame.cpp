@@ -55,7 +55,7 @@ void BowlingFrame::OnControls(wxCommandEvent&) {
 }
 
 void BowlingFrame::OnAbout(wxCommandEvent&) {
-    wxMessageBox("Bowling GL\nwxWidgets + OpenGL front-end for the Gamebox score calculator.\n"
+    wxMessageBox("Bowling GL\nwxWidgets + OpenGL front-end for the Bowlingbox score calculator.\n"
                  "Physics: Bullet3.",
                  "About", wxOK | wxICON_INFORMATION, this);
 }

@@ -1,9 +1,9 @@
-#ifndef SANDBOX_RENDER_CONTEXT_DATA_H
-#define SANDBOX_RENDER_CONTEXT_DATA_H
+#ifndef BOWLINGBOX_RENDER_CONTEXT_DATA_H
+#define BOWLINGBOX_RENDER_CONTEXT_DATA_H
 #include "GlShader.h"
 #include <memory>
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Render {
 
 struct ContextData {
@@ -14,5 +14,5 @@ struct ContextData {
 };
 
 }  // namespace Render
-}  // namespace Sandbox
-#endif  // SANDBOX_RENDER_CONTEXT_DATA_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_RENDER_CONTEXT_DATA_H

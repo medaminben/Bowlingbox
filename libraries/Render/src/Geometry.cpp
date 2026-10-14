@@ -1,7 +1,7 @@
-#include <Sandbox/Render/Geometry.h>
+#include <Bowlingbox/Render/Geometry.h>
 #include <cmath>
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Render {
 namespace {
 constexpr float kPi = 3.14159265358979f;
@@ -100,4 +100,4 @@ MeshData pinData(float height, float maxRadius, float comHeight, int segments) {
 }
 
 }  // namespace Render
-}  // namespace Sandbox
+}  // namespace Bowlingbox

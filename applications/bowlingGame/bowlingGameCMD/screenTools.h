@@ -14,11 +14,5 @@ std::string formatTitle(const int&, const std::string&);
 std::string giveAbout(const std::string&);
 
 bool isNumber(const std::string&);
-
-void print(std::string);
-
-int getConsoleWidth();
-
-bool clearScreen();
 }  // namespace ScreenTools
 #endif  // SCREEN_TOOLS_H

@@ -52,7 +52,7 @@ set(${EXECUTABLE_NAME}_RSC
 # by the target, it will add them  automatically
 # to the compiler and linker command lines.
 set(${EXECUTABLE_NAME}_DEPS
-    ${CMAKE_ROOT_NAME}::Gamebox
+    ${CMAKE_ROOT_NAME}::Score
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Core

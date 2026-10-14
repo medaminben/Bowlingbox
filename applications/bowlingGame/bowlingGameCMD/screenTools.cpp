@@ -1,11 +1,9 @@
 #include "screenTools.h"
-#include <iostream>
+#include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
+#include <cctype>
 
 namespace ScreenTools {
-auto print(std::string message) -> void {
-    std::cout << message << "\n";
-}
 /// @brief  convert int to a 3 chars string
 /// @param i int to convert, pins number or score
 /// @return
@@ -23,10 +21,9 @@ std::string toConsole(const int& i) {
             return i_str;
     }
 }
-/// @brief convert value to string for console
-/// @param value eather pins number, bonus case or score.
-/// the game states are tolerates as negative numbers see
-/// @enum Gamebox::Bowlingbox::Bonus
+/// @brief convert value to a 3 chars string for console
+/// @param value eather pins number, game state or score,
+/// encoded as in Bowlingbox::Score::Mark
 /// @return a 3 chars string of the value
 std::string valueToConsole(const int& value, const bool& isScore) {
     // the highest number is equal to the
@@ -35,22 +32,16 @@ std::string valueToConsole(const int& value, const bool& isScore) {
     // is wrong input
     if (value / 1000 > 1)
         return "   ";
-    if (isScore && value == 0)
-        return toConsole(value);
-    // extract corner caeses: game states
-    switch (value) {       //                                                        .-------.
-        case -4:           // empty, usually after a strike in regular frame | X |___|
-            return "   ";  // a special case of none (not set arbitrary)
-        case -3:           // not set yet (not played)
+    const std::string text = Bowlingbox::Score::notation(value, isScore);
+    switch (text.length()) {
+        case 0:
             return "   ";
-        case -2:  // strike
-            return " X ";
-        case -1:  // spare
-            return " / ";
-        case 0:  // miss
-            return " - ";
-        default:  // numbers call toConsole
-            return toConsole(value);
+        case 1:
+            return " " + text + " ";
+        case 2:
+            return " " + text;
+        default:
+            return text;
     }
 }
 std::string generateBar(const int& length, const std::string& stone, const bool& with_return) {

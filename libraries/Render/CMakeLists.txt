@@ -9,19 +9,24 @@ set(TARGET_HEADERS
     src/GlShader.h
     src/GlMesh.h
     src/ContextData.h
-    include/Sandbox/Render/Geometry.h
-    include/Sandbox/Render/ScoreboardLayout.h
-    include/Sandbox/Render/Render.h
+    include/Bowlingbox/Render/Geometry.h
+    include/Bowlingbox/Render/Canvas2D.h
+    include/Bowlingbox/Render/ScoreboardLayout.h
+    include/Bowlingbox/Render/ScoreboardPainter.h
+    include/Bowlingbox/Render/Render.h
 )
 set(TARGET_SOURCES
     src/Geometry.cpp
+    src/Canvas2D.cpp
     src/ScoreboardLayout.cpp
+    src/ScoreboardPainter.cpp
     src/GlShader.cpp
     src/GlMesh.cpp
     src/Render.cpp
 )
 set(TARGET_RSC)
 set(PRIVATE_DEPS
+    ${CMAKE_ROOT_NAME}::Score
     $<BUILD_INTERFACE:glad::glad>
     $<BUILD_INTERFACE:stb::easy_font>
 )

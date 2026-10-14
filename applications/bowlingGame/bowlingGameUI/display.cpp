@@ -6,38 +6,21 @@
 */
 #include "display.h"
 #include "ui_display.h"
-#include <Sandbox/Gamebox/Gamebox.h>
+#include <Bowlingbox/Score/Score.h>
 
 namespace {
-QString valueToConsole(const int& value) {
-    // the highest number is equal to the
-    // maximum score that can be achieved
-    // which is 300, so any higher number
-    // is wrong input
-    if (value / 1000 > 1)
-        return "   ";
-    // extract corner caeses: game states
-    switch (value) {
-        case -4:  // Empty
-        case -3:  // not set
-            return QString(" ");
-        case -2:  // strike
-            return QString("X");
-        case -1:  // spare
-            return QString("/");
-        case 0:  // Miss
-            return QString("-");
-        default:  // numbers call toConsole
-            return QString::number(value);
-    }
+QString cellText(int value, bool isScore = false) {
+    return QString::fromStdString(Bowlingbox::Score::notation(value, isScore));
 }
 }  // namespace
 
-DisplayF::DisplayF(QWidget* parent) : QMainWindow(parent), ui(new Ui::Display) {
-    _game = std::make_unique<Sandbox::Gamebox::Bowlingbox>();
+DisplayF::DisplayF(QWidget* parent, std::unique_ptr<Bowlingbox::Score::IBowlingGame> game)
+    : QMainWindow(parent),
+      ui(new Ui::Display),
+      _game(game ? std::move(game) : std::make_unique<Bowlingbox::Score::ScoreCalculator>()) {
     ui->setupUi(this);
     organizeLists();
-    _game->reset();
+    connectPins();
     refresh();
 }
 
@@ -57,21 +40,22 @@ void DisplayF::updateGrid() {
     auto scores = _game->scores();
     auto gameScore = _game->score();
 
-    int first = -3, second = -3, score = -3, last = -3;
+    const int none = Bowlingbox::Score::toInt(Bowlingbox::Score::Mark::None);
+    int first = none, second = none, score = none, last = none;
 
-    for (auto frame_index = 0; frame_index < 10; frame_index += 1) {
+    for (auto frame_index = 0; frame_index < Bowlingbox::Score::kFrames; frame_index += 1) {
         first = rolls[2 * frame_index];
         second = rolls[2 * frame_index + 1];
         score = scores[frame_index];
 
-        frameList.at(2 * frame_index)->setText(valueToConsole(first));
-        frameList.at(2 * frame_index + 1)->setText(valueToConsole(second));
+        frameList.at(2 * frame_index)->setText(cellText(first));
+        frameList.at(2 * frame_index + 1)->setText(cellText(second));
 
         if (frame_index == 9) {
             last = rolls[2 * frame_index + 2];
-            frameList.at(2 * frame_index + 2)->setText(valueToConsole(last));
+            frameList.at(2 * frame_index + 2)->setText(cellText(last));
         }
-        scoreList.at(frame_index)->setText(valueToConsole(score));
+        scoreList.at(frame_index)->setText(cellText(score, true));
     }
     ui->lblScore->setText(QString::number(gameScore));
 }
@@ -86,7 +70,7 @@ void DisplayF::throwPins() {
 
     auto left = _game->pinsLeft();
     ui->pinsGroup->setDisabled(false);
-    for (int i = 0; i <= 10; i++) {
+    for (int i = 0; i <= Bowlingbox::Score::kPins; i++) {
         if (i <= left)
             pinsList.at(i)->show();
         else
@@ -153,48 +137,10 @@ void DisplayF::refresh() {
 
 // #######################################################
 // Buttons Signals
-void DisplayF::on_btn_0_clicked() {
-    roll(0);
-}
-
-void DisplayF::on_btn_1_clicked() {
-    roll(1);
-}
-
-void DisplayF::on_btn_2_clicked() {
-    roll(2);
-}
-
-void DisplayF::on_btn_3_clicked() {
-    roll(3);
-}
-
-void DisplayF::on_btn_4_clicked() {
-    roll(4);
-}
-
-void DisplayF::on_btn_5_clicked() {
-    roll(5);
-}
-
-void DisplayF::on_btn_6_clicked() {
-    roll(6);
-}
-
-void DisplayF::on_btn_7_clicked() {
-    roll(7);
-}
-
-void DisplayF::on_btn_8_clicked() {
-    roll(8);
-}
-
-void DisplayF::on_btn_9_clicked() {
-    roll(9);
-}
-
-void DisplayF::on_btn_10_clicked() {
-    roll(10);
+void DisplayF::connectPins() {
+    // button i rolls i pins
+    for (int pins = 0; pins < pinsList.size(); ++pins)
+        connect(pinsList.at(pins), &QPushButton::clicked, this, [this, pins] { roll(pins); });
 }
 
 void DisplayF::on_btn_restart_clicked() {

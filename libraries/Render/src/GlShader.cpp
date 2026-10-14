@@ -3,7 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Render {
 namespace {
 Result<unsigned> compile(GLenum type, const char* src) {
@@ -16,7 +16,7 @@ Result<unsigned> compile(GLenum type, const char* src) {
         char log[2048] = {};
         glGetShaderInfoLog(shader, sizeof log, nullptr, log);
         glDeleteShader(shader);
-        return Sc::Error<>(std::string(type == GL_VERTEX_SHADER ? "vertex: " : "fragment: ") + log);
+        return Bowlingbox::Core::Error<>(std::string(type == GL_VERTEX_SHADER ? "vertex: " : "fragment: ") + log);
     }
     return static_cast<unsigned>(shader);
 }
@@ -25,11 +25,11 @@ Result<unsigned> compile(GLenum type, const char* src) {
 Result<std::unique_ptr<GlShader>> GlShader::build(const char* vertexSrc, const char* fragmentSrc) {
     auto vs = compile(GL_VERTEX_SHADER, vertexSrc);
     if (vs.isError())
-        return Sc::Error<>(vs.error());
+        return Bowlingbox::Core::Error<>(vs.error());
     auto fs = compile(GL_FRAGMENT_SHADER, fragmentSrc);
     if (fs.isError()) {
         glDeleteShader(vs());
-        return Sc::Error<>(fs.error());
+        return Bowlingbox::Core::Error<>(fs.error());
     }
     const GLuint vsId = vs(), fsId = fs();
     const GLuint program = glCreateProgram();
@@ -44,7 +44,7 @@ Result<std::unique_ptr<GlShader>> GlShader::build(const char* vertexSrc, const c
         char log[2048] = {};
         glGetProgramInfoLog(program, sizeof log, nullptr, log);
         glDeleteProgram(program);
-        return Sc::Error<>(std::string("link: ") + log);
+        return Bowlingbox::Core::Error<>(std::string("link: ") + log);
     }
     return std::unique_ptr<GlShader>(new GlShader(program));
 }
@@ -73,4 +73,4 @@ void GlShader::setVec4(const char* name, const glm::vec4& v) const {
 }
 
 }  // namespace Render
-}  // namespace Sandbox
+}  // namespace Bowlingbox

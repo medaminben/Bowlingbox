@@ -33,9 +33,9 @@ if(ENABLE_CLANG_TIDY)
     endif()
 endif()
 
-option(SB_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
+option(BOWLINGBOX_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
 
-if(SB_FETCH_OFFLINE)
+if(BOWLINGBOX_FETCH_OFFLINE)
     set(FETCHCONTENT_FULLY_DISCONNECTED ON)
     message(STATUS "Fetch offline mode: requires pre-populated _deps")
 else()
@@ -54,16 +54,13 @@ if(BUILD_TESTING)
     include(TestUtils)
 endif()
 
-include(BulletSupport)   # Sandbox::Alley always needs it
-include(GlmSupport)      # Sandbox::Render always needs it
+include(BulletSupport)   # Bowlingbox::Alley always needs it
+include(GlmSupport)      # Bowlingbox::Render always needs it
 if(BUILD_QT_UI)
     include(QtSupport)
 endif()
 if(BUILD_WX_UI)
     include(WxSupport)
-endif()
-if(BUILD_BOOST_3RD)
-    include(BoostSupport)
 endif()
 if(BUILD_VERBOSE_OUTPUT)
     dump_cmake_vars(configLogEnd.log)

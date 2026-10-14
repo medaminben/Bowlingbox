@@ -1,17 +1,17 @@
-#ifndef SANDBOX_ALLEY_LANE_IMPL_H
-#define SANDBOX_ALLEY_LANE_IMPL_H
-#include <Sandbox/Alley/Alley.h>
-#include <Sandbox/Gamebox/Gamebox.h>
-#include "World.h"
+#ifndef BOWLINGBOX_ALLEY_LANE_IMPL_H
+#define BOWLINGBOX_ALLEY_LANE_IMPL_H
+#include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Alley/PhysicsWorld.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
 #include <memory>
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Alley {
 
-/// Throw state machine + bridge to the Gamebox score calculator.
+/// Throw state machine. Talks to physics and scoring only through their interfaces.
 class LaneImpl {
 public:
-    LaneImpl();
+    LaneImpl(std::unique_ptr<IPhysicsWorld> world, std::unique_ptr<Score::IBowlingGame> game);
 
     Result<> moveAim(float delta);
     Result<> rotateAim(float delta);
@@ -21,7 +21,7 @@ public:
 
     void step(float dt) noexcept;
     Snapshot snapshot() const;
-    Gamebox::Bowlingbox& game() const { return *_game; }
+    const Score::IScoreSheet& game() const { return *_game; }
 
 private:
     bool canAim() const { return _phase == Phase::Aiming || _phase == Phase::Charging; }
@@ -29,8 +29,10 @@ private:
     void finishThrow();      // Settling -> FrameDone (or GameOver on rejected roll)
     void prepareNextBall();  // FrameDone -> Aiming
 
-    std::unique_ptr<Gamebox::Bowlingbox> _game;
-    World _world;
+    int fallenPins() const;  // knocked over but still in the world
+
+    std::unique_ptr<IPhysicsWorld> _world;
+    std::unique_ptr<Score::IBowlingGame> _game;
     Phase _phase = Phase::Aiming;
     float _aimOffset = 0.f;
     float _aimAngle = 0.f;
@@ -40,5 +42,5 @@ private:
 };
 
 }  // namespace Alley
-}  // namespace Sandbox
-#endif  // SANDBOX_ALLEY_LANE_IMPL_H
+}  // namespace Bowlingbox
+#endif  // BOWLINGBOX_ALLEY_LANE_IMPL_H

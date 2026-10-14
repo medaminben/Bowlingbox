@@ -1,7 +1,8 @@
-#include <Sandbox/Render/ScoreboardLayout.h>
+#include <Bowlingbox/Render/ScoreboardLayout.h>
+#include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
 
-namespace Sandbox {
+namespace Bowlingbox {
 namespace Render {
 
 Rect ScoreboardLayout::frameRect(int frame) const {
@@ -22,20 +23,8 @@ Rect ScoreboardLayout::scoreRect(int frame) const {
 }
 
 std::string glyphFor(int value, bool isScore) {
-    switch (value) {
-        case -4:
-        case -3:
-            return "";
-        case -2:
-            return "X";
-        case -1:
-            return "/";
-        case 0:
-            return isScore ? "0" : "-";
-        default:
-            return std::to_string(value);
-    }
+    return Score::notation(value, isScore);
 }
 
 }  // namespace Render
-}  // namespace Sandbox
+}  // namespace Bowlingbox
