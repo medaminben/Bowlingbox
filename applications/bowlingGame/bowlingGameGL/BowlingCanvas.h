@@ -1,11 +1,13 @@
 #ifndef BOWLINGGL_BOWLING_CANVAS_H
 #define BOWLINGGL_BOWLING_CANVAS_H
 #include "Command.h"
+#include "FixedStep.h"
 #include "FollowCamera.h"
 #include <Bowlingbox/Alley/Alley.h>
 #include <Bowlingbox/Render/Render.h>
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
+#include <chrono>
 #include <functional>
 #include <memory>
 
@@ -42,6 +44,9 @@ private:
     Bowlingbox::Alley::Lane _lane;
     wxTimer _timer;
     wxPoint _lastMouse;
+    FixedStep _clock;
+    std::chrono::steady_clock::time_point _lastTick = std::chrono::steady_clock::now();
+    wxString _status;  // last text sent to onStatus
     bool _failed = false;
 };
 #endif  // BOWLINGGL_BOWLING_CANVAS_H

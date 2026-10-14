@@ -1,5 +1,8 @@
 #include "SceneAdapter.h"
 #include <glm/gtc/quaternion.hpp>
+#include <array>
+#include <cstddef>
+#include <tuple>
 
 using namespace Bowlingbox;
 
@@ -20,9 +23,10 @@ Render::Transform toTransform(const Alley::Pose& p) {
 Render::SceneDescription toScene(const Alley::Snapshot& s) {
     Render::SceneDescription d;
     d.ball = toTransform(s.ball);
-    for (int i = 0; i < 10; ++i) {
-        d.pins[static_cast<std::size_t>(i)] = toTransform(s.pins[static_cast<std::size_t>(i)]);
-        d.pinVisible[static_cast<std::size_t>(i)] = s.pinInPlay[static_cast<std::size_t>(i)];
+    static_assert(std::tuple_size_v<decltype(d.pins)> == std::tuple_size_v<decltype(s.pins)>);
+    for (std::size_t i = 0; i < s.pins.size(); ++i) {
+        d.pins[i] = toTransform(s.pins[i]);
+        d.pinVisible[i] = s.pinInPlay[i];
     }
     d.showAimGuide = s.phase == Alley::Phase::Aiming || s.phase == Alley::Phase::Charging;
     d.aimOffset = s.aimOffset;

@@ -1,3 +1,4 @@
+#include "FixedStep.h"
 #include "FollowCamera.h"
 #include "Hud.h"
 #include "HudText.h"
@@ -66,11 +67,11 @@ TEST(test_follow_camera, follows_a_rolling_ball_but_not_past_the_deck) {
     s.ball.position = {0.f, 0.1f, 8.f};
     for (int i = 0; i < 600; ++i)
         cam.update(s, 1.f / 60.f);
-    EXPECT_NEAR(cam.z(), 8.f - 3.5f, 1e-3f);
+    EXPECT_NEAR(cam.z(), 8.f - FollowCamera::kBehindBall, 1e-3f);
     s.ball.position = {0.f, 0.1f, 100.f};
     for (int i = 0; i < 600; ++i)
         cam.update(s, 1.f / 60.f);
-    EXPECT_NEAR(cam.z(), Alley::kLane.length - 5.5f, 1e-3f);
+    EXPECT_NEAR(cam.z(), Alley::kLane.length - FollowCamera::kDeckMargin, 1e-3f);
 }
 
 // ------------------------------------------------------------ HudText
@@ -131,4 +132,42 @@ TEST(test_hud, draws_scoreboard_hint_and_result_without_gl) {
     RecordingCanvas aiming;
     drawHud(aiming, snapshotIn(Phase::Aiming), sheet, {1280, 800, 144, 80});
     EXPECT_TRUE(aiming.drew(HudText::hint(Phase::Aiming)));
+}
+
+// ------------------------------------------------------------ FixedStep
+TEST(test_fixed_step, half_steps_accumulate) {
+    FixedStep clock;
+    EXPECT_EQ(clock.advance(FixedStep::kDt / 2), 0);
+    EXPECT_EQ(clock.advance(FixedStep::kDt / 2), 1);
+}
+
+TEST(test_fixed_step, a_jittery_16ms_timer_still_runs_60_steps_per_second) {
+    FixedStep clock;
+    int steps = 0;
+    for (int i = 0; i < 1000; ++i)
+        steps += clock.advance(i % 2 == 0 ? 0.012f : 0.020f);  // 16 ms on average
+    EXPECT_NEAR(steps, 960, 1);                                  // 16 s of game time
+}
+
+TEST(test_fixed_step, long_stall_runs_at_most_five_steps_and_drops_the_rest) {
+    FixedStep clock;
+    EXPECT_EQ(clock.advance(2.f), FixedStep::kMaxSteps);
+    EXPECT_EQ(clock.advance(0.f), 0);
+    EXPECT_EQ(clock.advance(-1.f), 0);  // a clock going backwards is ignored
+}
+
+// ------------------------------------------------------------ HUD layout and help
+TEST(test_hud, layout_reserves_top_and_bottom_bands) {
+    const HudLayout l = hudLayout(1000, 800);
+    EXPECT_EQ(l.width, 1000);
+    EXPECT_EQ(l.height, 800);
+    EXPECT_EQ(l.topPx, 144);
+    EXPECT_EQ(l.bottomPx, 80);
+    EXPECT_EQ(l.middlePx(), 576);
+}
+
+TEST(test_hud_text, controls_help_names_every_binding) {
+    const std::string help = HudText::controlsHelp();
+    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q"})
+        EXPECT_NE(help.find(key), std::string::npos) << key;
 }

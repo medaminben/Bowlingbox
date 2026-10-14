@@ -12,5 +12,7 @@ std::string phaseName(Bowlingbox::Alley::Phase phase);
 std::string result(const Bowlingbox::Alley::Snapshot& s, const Bowlingbox::Score::IScoreSheet& sheet);
 /// Status bar line.
 std::string status(const Bowlingbox::Alley::Snapshot& s, const Bowlingbox::Score::IScoreSheet& sheet);
+/// Text of the Help ▸ Controls dialog.
+std::string controlsHelp();
 }  // namespace HudText
 #endif  // BOWLINGGL_HUD_TEXT_H

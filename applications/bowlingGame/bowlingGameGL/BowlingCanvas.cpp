@@ -8,10 +8,6 @@
 using namespace Bowlingbox;
 using Alley::Phase;
 
-namespace {
-constexpr float kDt = 1.f / 60.f;
-}  // namespace
-
 BowlingCanvas::BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs)
     : wxGLCanvas(parent, attrs, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS),
       _timer(this) {
@@ -99,12 +95,19 @@ void BowlingCanvas::OnSize(wxSizeEvent& e) {
 }
 
 void BowlingCanvas::OnTimer(wxTimerEvent&) {
-    _lane.step(kDt);
+    const auto now = std::chrono::steady_clock::now();
+    const int steps = _clock.advance(std::chrono::duration<float>(now - _lastTick).count());
+    _lastTick = now;
+    for (int i = 0; i < steps; ++i)
+        _lane.step(FixedStep::kDt);
     const auto s = _lane.snapshot();
-    _follow.update(s, kDt);
+    _follow.update(s, static_cast<float>(steps) * FixedStep::kDt);
     _follow.applyTo(_camera);
-    if (onStatus)
-        onStatus(wxString::FromUTF8(HudText::status(s, _lane.scoreSheet())));
+    const wxString status = wxString::FromUTF8(HudText::status(s, _lane.scoreSheet()));
+    if (onStatus && status != _status) {
+        _status = status;
+        onStatus(status);
+    }
     Refresh(false);
 }
 
@@ -149,16 +152,13 @@ void BowlingCanvas::apply(Command command) {
 }
 
 void BowlingCanvas::renderFrame() {
-    const int w = _ctx->width(), h = _ctx->height();
-    const int topPx = static_cast<int>(h * 0.18f);
-    const int bottomPx = static_cast<int>(h * 0.10f);
-    const int midPx = h - topPx - bottomPx;
+    const HudLayout layout = hudLayout(_ctx->width(), _ctx->height());
     const auto s = _lane.snapshot();
 
     _ctx->beginFrame({0.02f, 0.03f, 0.08f});  // kClearColor — splash backdrop
-    _camera.setViewport(w, midPx);
-    _scene->draw(_camera, SceneAdapter::toScene(s), bottomPx, midPx);
-    _overlay->begin(w, h);
-    drawHud(*_overlay, s, _lane.scoreSheet(), {w, h, topPx, bottomPx});
+    _camera.setViewport(layout.width, layout.middlePx());
+    _scene->draw(_camera, SceneAdapter::toScene(s), layout.bottomPx, layout.middlePx());
+    _overlay->begin(layout.width, layout.height);
+    drawHud(*_overlay, s, _lane.scoreSheet(), layout);
     _ctx->endFrame();
 }
