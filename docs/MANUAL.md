@@ -179,13 +179,16 @@ BowlingConsole is a score keeper for real games: type the number of pins each ba
 
 | Input | When | Effect |
 |---|---|---|
-| `p` | menu | start a game |
+| `p` | anywhere | start a new game |
 | `0` … `n` | in a game | record a roll; `n` is the number of pins still standing |
-| `r` | in a game | restart the game |
+| `r` | anywhere | restart the game |
 | `q` | anywhere | quit |
 
-Anything else is rejected with "Invalid choice!". Pin counts larger than the number of pins standing are rejected the same way. The game ends when input ends (for example when stdin is a pipe). After each roll the score grid is redrawn with
-the current total. When the tenth frame is complete, the final score is shown.
+Blanks around the input are ignored. Anything else is rejected with "Invalid choice!": a pin count larger than
+the number of pins standing, a number before a game is started, or a number after the game is over.
+The program also ends when input ends (for example when stdin is a pipe). After each roll the score
+grid is redrawn with the current total; it shows 10, 5, 2 or 1 frames per row depending on the
+terminal width. When the tenth frame is complete, the final score is shown.
 
 ## 5. BowlingDisplay (Qt)
 

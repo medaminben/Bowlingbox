@@ -8,10 +8,6 @@
 using namespace Bowlingbox;
 using Alley::Phase;
 
-namespace {
-constexpr float kDt = 1.f / 60.f;
-}  // namespace
-
 BowlingCanvas::BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs)
     : wxGLCanvas(parent, attrs, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS),
       _timer(this) {
@@ -51,7 +47,7 @@ BowlingCanvas::~BowlingCanvas() {
 }
 
 void BowlingCanvas::newGame() {
-    apply(Command::NewGame);
+    apply({Command::Type::NewGame});
 }
 
 bool BowlingCanvas::ensureRenderer() {
@@ -99,18 +95,25 @@ void BowlingCanvas::OnSize(wxSizeEvent& e) {
 }
 
 void BowlingCanvas::OnTimer(wxTimerEvent&) {
-    _lane.step(kDt);
+    const auto now = std::chrono::steady_clock::now();
+    const int steps = _clock.advance(std::chrono::duration<float>(now - _lastTick).count());
+    _lastTick = now;
+    for (int i = 0; i < steps; ++i)
+        _lane.step(FixedStep::kDt);
     const auto s = _lane.snapshot();
-    _follow.update(s, kDt);
+    _follow.update(s, static_cast<float>(steps) * FixedStep::kDt);
     _follow.applyTo(_camera);
-    if (onStatus)
-        onStatus(wxString::FromUTF8(HudText::status(s, _lane.scoreSheet())));
+    const wxString status = wxString::FromUTF8(HudText::status(s, _lane.scoreSheet()));
+    if (onStatus && status != _status) {
+        _status = status;
+        onStatus(status);
+    }
     Refresh(false);
 }
 
 void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
     const Command c = InputMapper::keyDown(e.GetKeyCode(), e.ControlDown(), _lane.snapshot().phase);
-    if (c == Command::None)
+    if (c.type == Command::Type::None)
         e.Skip();
     else
         apply(c);
@@ -118,7 +121,7 @@ void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
 
 void BowlingCanvas::OnKeyUp(wxKeyEvent& e) {
     const Command c = InputMapper::keyUp(e.GetKeyCode(), _lane.snapshot().phase);
-    if (c == Command::None)
+    if (c.type == Command::Type::None)
         e.Skip();
     else
         apply(c);
@@ -128,25 +131,18 @@ void BowlingCanvas::OnMouse(wxMouseEvent& e) {
     const Phase phase = _lane.snapshot().phase;
     if (e.LeftDown() || e.RightDown()) {
         SetFocus();
-        _lastMouse = e.GetPosition();
         apply(InputMapper::mouseDown(e.LeftDown(), phase));
     } else if (e.LeftUp() || e.RightUp()) {
         apply(InputMapper::mouseUp(e.LeftUp(), phase));
-    } else if (e.Dragging() && e.RightIsDown()) {
+    } else if (e.Moving() || e.Dragging()) {
         const int dx = e.GetPosition().x - _lastMouse.x;
-        _lastMouse = e.GetPosition();
-        if (dx != 0 && phase == Phase::Aiming)
-            _lane.rotateAim(InputMapper::mouseDxToAngle(dx));
-    } else if (e.Moving()) {
-        const int dx = e.GetPosition().x - _lastMouse.x;
-        _lastMouse = e.GetPosition();
-        if (dx != 0 && phase == Phase::Aiming)
-            _lane.moveAim(InputMapper::mouseDxToOffset(dx, GetClientSize().x));
+        apply(InputMapper::mouseMove(dx, e.LeftIsDown(), e.RightIsDown(), GetClientSize().x, phase));
     }
+    _lastMouse = e.GetPosition();  // every event, so a left-drag leaves no stale origin
 }
 
 void BowlingCanvas::apply(Command command) {
-    if (command == Command::Quit) {
+    if (command.type == Command::Type::Quit) {
         if (onQuit) onQuit();
         return;
     }
@@ -156,16 +152,13 @@ void BowlingCanvas::apply(Command command) {
 }
 
 void BowlingCanvas::renderFrame() {
-    const int w = _ctx->width(), h = _ctx->height();
-    const int topPx = static_cast<int>(h * 0.18f);
-    const int bottomPx = static_cast<int>(h * 0.10f);
-    const int midPx = h - topPx - bottomPx;
+    const HudLayout layout = hudLayout(_ctx->width(), _ctx->height());
     const auto s = _lane.snapshot();
 
     _ctx->beginFrame({0.02f, 0.03f, 0.08f});  // kClearColor — splash backdrop
-    _camera.setViewport(w, midPx);
-    _scene->draw(_camera, SceneAdapter::toScene(s), bottomPx, midPx);
-    _overlay->begin(w, h);
-    drawHud(*_overlay, s, _lane.scoreSheet(), {w, h, topPx, bottomPx});
+    _camera.setViewport(layout.width, layout.middlePx());
+    _scene->draw(_camera, SceneAdapter::toScene(s), layout.bottomPx, layout.middlePx());
+    _overlay->begin(layout.width, layout.height);
+    drawHud(*_overlay, s, _lane.scoreSheet(), layout);
     _ctx->endFrame();
 }

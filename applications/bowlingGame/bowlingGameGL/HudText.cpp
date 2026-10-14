@@ -61,4 +61,11 @@ std::string status(const Bowlingbox::Alley::Snapshot& s, const Bowlingbox::Score
            "   |   pins standing " + std::to_string(standing);
 }
 
+std::string controlsHelp() {
+    return "Left / Right or mouse move: position the ball\n"
+           "A / D or right-drag: aim angle\n"
+           "Hold Space or left button: charge, release to throw\n"
+           "N: new game    Esc / Ctrl+Q: quit";
+}
+
 }  // namespace HudText

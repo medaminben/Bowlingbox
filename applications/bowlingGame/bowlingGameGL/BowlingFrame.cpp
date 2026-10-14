@@ -1,5 +1,6 @@
 #include "BowlingFrame.h"
 #include "BowlingCanvas.h"
+#include "HudText.h"
 #include <wx/glcanvas.h>
 
 BowlingFrame::BowlingFrame()
@@ -47,11 +48,7 @@ void BowlingFrame::OnQuit(wxCommandEvent&) {
 }
 
 void BowlingFrame::OnControls(wxCommandEvent&) {
-    wxMessageBox("Left / Right or mouse move: position the ball\n"
-                 "A / D or right-drag: aim angle\n"
-                 "Hold Space or left button: charge, release to throw\n"
-                 "N: new game    Esc / Ctrl+Q: quit",
-                 "Controls", wxOK | wxICON_INFORMATION, this);
+    wxMessageBox(wxString::FromUTF8(HudText::controlsHelp()), "Controls", wxOK | wxICON_INFORMATION, this);
 }
 
 void BowlingFrame::OnAbout(wxCommandEvent&) {

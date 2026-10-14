@@ -2,6 +2,7 @@
 #define BOWLINGBOX_SCORE_H
 #include <Bowlingbox/Score/Bowlingbox_Score_export.h>
 #include <Bowlingbox/Score/IBowlingGame.h>
+#include <Bowlingbox/Score/Frames.h>
 #include <Bowlingbox/Score/Notation.h>
 #include <memory>
 #include <vector>

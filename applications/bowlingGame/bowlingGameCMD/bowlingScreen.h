@@ -1,53 +1,27 @@
 #ifndef BOWLING_SCREEN_H
 #define BOWLING_SCREEN_H
 #include <memory>
-#include <string>
 
 #include <Bowlingbox/Score/IBowlingGame.h>
 
-#include "scoreGrid.h"
+#include "session.h"
 #include "terminal.h"
 
 namespace Console {
 
-/// Game flow of the console front-end: banner, grid, menu, input.
-/// Scoring and terminal I/O are injected.
+/// Console front-end: draws the banner, score sheet and menu, and feeds input
+/// lines to a Session. Scoring and terminal I/O are injected.
 class Screen {
 public:
     Screen(std::shared_ptr<Bowlingbox::Score::IBowlingGame> game, ITerminal& terminal);
+    /// Runs until "q" or the end of input.
     void start();
 
-protected:
-    enum class Status {
-        FristStart = 0,
-        TryStart = 1,
-        Started = 2,
-        Running = 3,
-        End = 4,
-        Quit = 5,
-        Typo = 6
-    };
-    bool isTryStart();
-    bool isStarted();
-    bool isRunning();
-    bool isExit();
-    bool isTypo();
-    bool isGame();
+private:
+    void draw();
 
-    void resetGame();
-
-    void plotIntr();
-    void plotGrid();
-    void plotMenu();
-    void evaluate();
-    void setStatus(Status);
-    void println(const std::string& text);
-
-    std::shared_ptr<Bowlingbox::Score::IBowlingGame> _game {nullptr};
+    Session _session;
     ITerminal& _terminal;
-    ScoreGrid _grid {};
-    Status _status {Status::FristStart};
-    std::string _lastMessage {};
 };
 }  // namespace Console
 

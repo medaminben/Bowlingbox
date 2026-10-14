@@ -1,52 +1,18 @@
 #ifndef SCORE_GRID_H
 #define SCORE_GRID_H
+#include <Bowlingbox/Score/Frames.h>
 #include <Bowlingbox/Score/IBowlingGame.h>
-#include <Bowlingbox/Score/Notation.h>
+#include <array>
 #include <string>
-#include <vector>
 
 namespace Console {
 
-/// ASCII art for one frame of the score sheet.
-class Frame {
-public:
-    enum class Type { Regular = 0, Last = 1 };
-    enum class Order { First = 1, Second = 2, Last };
-    Frame(Type type = Type::Regular);
+/// Five text lines for one frame box: 13 columns, 19 for the tenth frame.
+std::array<std::string, 5> drawFrame(const Bowlingbox::Score::FrameView& frame);
 
-public:
-    void setRoll(const Order&, const int&);
-    void setScore(const int&);
+/// The ten frame boxes, each preceded by a space, wrapped to fit `width`
+/// columns: 10, 5, 2 or 1 frames per row.
+std::string renderScoreSheet(const Bowlingbox::Score::IScoreSheet& sheet, int width);
 
-public:
-    void updateRolls();
-    void updateScore();
-    void resetFrame();
-    std::vector<std::string> getFrame() const;
-    void setFrame(const int& frame_score, const int& first_roll, const int& second_roll,
-                  const int& last_roll = Bowlingbox::Score::toInt(Bowlingbox::Score::Mark::None));
-
-protected:
-    Type _type = Type::Regular;
-
-    std::string _firstRoll {"   "};
-    std::string _secondRoll {"   "};
-    std::string _framescore {"   "};
-    std::string _lastRoll {"   "};
-    std::vector<std::string> _frame {};
-};
-
-/// The ten frames of a game, laid out to fit a terminal width.
-class ScoreGrid {
-public:
-    ScoreGrid();
-    void reset();
-    void update(const Bowlingbox::Score::IScoreSheet& sheet);
-    /// Rows of frames separated by newlines; wraps at 5, 2 or 1 frames per row.
-    std::string render(int width) const;
-
-private:
-    std::vector<Frame> _frames {};
-};
 }  // namespace Console
 #endif  // SCORE_GRID_H

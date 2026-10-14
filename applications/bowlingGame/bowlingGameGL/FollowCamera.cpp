@@ -6,8 +6,8 @@ using Bowlingbox::Alley::Phase;
 void FollowCamera::update(const Bowlingbox::Alley::Snapshot& s, float dt) {
     float target = kHomeZ;
     if (s.phase == Phase::Rolling || s.phase == Phase::Settling || s.phase == Phase::FrameDone)
-        target = std::clamp(s.ball.position[2] - 3.5f, kHomeZ, Bowlingbox::Alley::kLane.length - 5.5f);
-    _z += (target - _z) * std::min(1.f, 6.f * dt);
+        target = std::clamp(s.ball.position[2] - kBehindBall, kHomeZ, Bowlingbox::Alley::kLane.length - kDeckMargin);
+    _z += (target - _z) * std::min(1.f, kEaseRate * dt);
 }
 
 void FollowCamera::applyTo(Bowlingbox::Render::Camera& camera) const {

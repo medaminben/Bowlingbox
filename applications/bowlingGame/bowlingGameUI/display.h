@@ -2,49 +2,46 @@
   @file display.h
   @author Mohamed Lamine Ben Hassine
   @mail mohamed.ben-hassine@mailfence.com
-  @details the declaration of  display class
+  @details the declaration of the Qt score sheet window
 */
 
 #ifndef DISPLAY_H
 #define DISPLAY_H
-#include <QMainWindow>
-#include <QList>
-#include <QPushButton>
 #include <QLabel>
+#include <QList>
+#include <QMainWindow>
+#include <QPushButton>
 
 #include <Bowlingbox/Score/IBowlingGame.h>
 #include <memory>
+
 namespace Ui {
 class Display;
 }
 
-class DisplayF : public QMainWindow {
+namespace BowlingDisplay {
+
+/// Qt score sheet: one button per pin count, the 21 roll cells and the 10 frame scores.
+class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     /// `game` defaults to a Bowlingbox::Score::ScoreCalculator.
-    explicit DisplayF(QWidget* parent = nullptr,
-                      std::unique_ptr<Bowlingbox::Score::IBowlingGame> game = nullptr);
-    ~DisplayF();
+    explicit MainWindow(QWidget* parent = nullptr,
+                        std::unique_ptr<Bowlingbox::Score::IBowlingGame> game = nullptr);
+    ~MainWindow() override;
 
 private:
-    void updateGrid();
-    void throwPins();
-    void roll(const int&);
-    void organizeLists();
-    void connectPins();
+    void roll(int pins);
+    void restart();
     void refresh();
-public slots:
-    void on_btn_restart_clicked();
+    void updateGrid();
+    void updatePinButtons();
 
-public:
-    Ui::Display* ui;
-
-private:
-    QList<QPushButton*> pinsList;
-    QList<QLabel*> frameList;
-    QList<QLabel*> scoreList;
-
-private:
+    std::unique_ptr<Ui::Display> _ui;
     std::unique_ptr<Bowlingbox::Score::IBowlingGame> _game;
+    QList<QPushButton*> _pinButtons;  // _pinButtons[i] rolls i pins
+    QList<QLabel*> _rollLabels;       // the 21 roll slots, in Score encoding order
+    QList<QLabel*> _scoreLabels;      // the 10 frame totals
 };
+}  // namespace BowlingDisplay
 #endif  // DISPLAY_H
