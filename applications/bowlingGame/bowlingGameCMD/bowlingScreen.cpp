@@ -1,5 +1,6 @@
 #include "bowlingScreen.h"
 #include "screenTools.h"
+#include <charconv>
 ////////////////////////////////////////////////////////////////
 // Screen class implementation
 ////////////////////////////////////////////////////////////////
@@ -80,7 +81,12 @@ void Console::Screen::plotMenu() {
 }
 
 void Console::Screen::evaluate() {
-    const std::string choice = _terminal.readLine();
+    const auto line = _terminal.readLine();
+    if (!line) {  // end of input: nothing more will come
+        setStatus(Status::Quit);
+        return;
+    }
+    const std::string& choice = *line;
 
     _lastMessage = "Your choice: " + choice + "\n";
 
@@ -96,9 +102,10 @@ void Console::Screen::evaluate() {
     }
 
     if (isGame()) {  // the game is already started or running
-        if (ScreenTools::isNumber(choice)) {
-            int pins = std::stoi(choice);
-
+        int pins = -1;
+        const char* const end = choice.data() + choice.size();
+        const auto [parsedEnd, error] = std::from_chars(choice.data(), end, pins);
+        if (error == std::errc() && parsedEnd == end) {  // a whole number that fits an int
             if (pins >= 0 && pins <= maxPins) {  // in interval
 
                 _game->roll(pins);

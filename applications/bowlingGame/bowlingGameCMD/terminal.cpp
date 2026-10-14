@@ -39,9 +39,10 @@ void SystemTerminal::write(const std::string& text) {
     std::cout << text;
 }
 
-std::string SystemTerminal::readLine() {
+std::optional<std::string> SystemTerminal::readLine() {
     std::string line;
-    std::getline(std::cin, line);
+    if (!std::getline(std::cin, line))
+        return std::nullopt;
     return line;
 }
 

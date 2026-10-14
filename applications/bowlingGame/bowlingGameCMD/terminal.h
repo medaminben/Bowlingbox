@@ -1,6 +1,7 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 #include <string>
+#include <optional>
 
 namespace Console {
 /// Text I/O seen by the console game. Lets the game run against a real
@@ -11,7 +12,8 @@ public:
     virtual int width() const = 0;
     virtual bool clear() = 0;
     virtual void write(const std::string& text) = 0;
-    virtual std::string readLine() = 0;
+    /// Next line of input, or std::nullopt at end of input (closed or piped stdin).
+    virtual std::optional<std::string> readLine() = 0;
 };
 
 /// stdin / stdout with platform specific width and clear.
@@ -20,7 +22,7 @@ public:
     int width() const override;
     bool clear() override;
     void write(const std::string& text) override;
-    std::string readLine() override;
+    std::optional<std::string> readLine() override;
 };
 }  // namespace Console
 #endif  // TERMINAL_H
