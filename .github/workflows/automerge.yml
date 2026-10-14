@@ -59,10 +59,19 @@ jobs:
               return;
             }
 
+            // Merge only the commit CI tested. If the PR moved on since, the
+            // newer commit gets its own CI run and its own automerge attempt.
+            const testedSha = context.payload.workflow_run.head_sha;
+            if (pr.head.sha !== testedSha) {
+              core.info(`PR #${prNumber} head ${pr.head.sha} is not the tested ${testedSha} — skipping.`);
+              return;
+            }
+
             await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
               merge_method: 'squash',
+              sha: testedSha,  // GitHub refuses the merge if the head moved after this check
             });
             core.info(`Merged PR #${prNumber} (squash) after successful CI.`);
