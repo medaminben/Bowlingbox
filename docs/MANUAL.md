@@ -33,8 +33,16 @@ sudo apt install build-essential cmake git ninja-build \
   (`BUILD_WX_UI=ON`).
 - Qt 6 is needed only with `BUILD_QT_UI=ON`.
 
-wxWidgets 3.2.8, Bullet3 3.25, GLM 1.0.1 and GoogleTest 1.15.2 are downloaded and built during
-configure. You do not install them yourself.
+Bullet3 3.25, GLM 1.0.1 and GoogleTest 1.15.2 are downloaded and built during configure. You do
+not install them yourself.
+
+wxWidgets is taken from the system when an installed wxWidgets 3.2 or newer is found (a CMake
+package, or `wx-config`). If none is found, wxWidgets 3.2.8 is downloaded and built from source.
+To use the system package on Debian/Ubuntu:
+
+```bash
+sudo apt install libwxgtk3.2-dev
+```
 
 ## 2. Building
 
@@ -46,8 +54,8 @@ cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
-The first configure and build take several minutes, because wxWidgets and Bullet are compiled from
-source. Later builds are incremental.
+The first configure and build take several minutes, because Bullet (and wxWidgets, when it is not
+installed on the system) is compiled from source. Later builds are incremental.
 
 Executables are written to `<build-dir>/bin/` (`build/bin/` with the commands above):
 
@@ -65,7 +73,8 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Fetch wxWidgets and build `BowlingGL` |
+| `BUILD_WX_UI` | `ON` | Build `BowlingGL` (uses the system wxWidgets, or fetches it) |
+| `GAMEBOX_USE_SYSTEM_WX` | `ON` | Use an installed wxWidgets if found; `OFF` always builds it from source |
 | `BUILD_QT_UI` | `OFF` | Build `BowlingDisplay`; needs Qt 6 |
 | `BUILD_TESTING` | `ON` | Fetch GoogleTest and build the test executables |
 | `BUILD_SHARED_LIBS` | `ON` | Gamebox libraries as shared (`.so` / `.dll`) instead of static |
