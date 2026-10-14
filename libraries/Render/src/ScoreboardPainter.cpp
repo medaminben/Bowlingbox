@@ -1,4 +1,5 @@
 #include <Bowlingbox/Render/ScoreboardPainter.h>
+#include <Bowlingbox/Score/Frames.h>
 #include <algorithm>
 #include <string>
 
@@ -24,22 +25,18 @@ void paintScoreboard(ICanvas2D& canvas, const std::vector<int>& rolls, const std
         canvas.drawText(s, {r.x + (r.w - size.x) / 2, r.y + (r.h - size.y) / 2}, textScale, ink);
     };
 
-    for (int f = 0; f < 10; ++f) {
-        const Rect fr = layout.frameRect(f);
+    for (const Score::FrameView& frame : Score::frames(rolls, scores)) {
+        const Rect fr = layout.frameRect(frame.index);
         canvas.strokeRect(fr, t, line);
-        const int cells = f == 9 ? 3 : 2;
-        for (int c = 0; c < cells; ++c) {
-            const int roll = 2 * f + c;
-            const Rect rc = layout.rollCellRect(roll);
+        for (int c = 0; c < frame.rollCount; ++c) {
+            const Rect rc = layout.rollCellRect(2 * frame.index + c);
             if (c > 0)
                 canvas.drawRect({rc.x, rc.y}, {t, rc.h}, line);
-            if (roll < static_cast<int>(rolls.size()))
-                centred(rc, glyphFor(rolls[static_cast<std::size_t>(roll)]));
+            centred(rc, glyphFor(frame.rolls[static_cast<std::size_t>(c)]));
         }
-        const Rect sr = layout.scoreRect(f);
+        const Rect sr = layout.scoreRect(frame.index);
         canvas.drawRect({sr.x, sr.y}, {sr.w, t}, line);
-        if (f < static_cast<int>(scores.size()))
-            centred(sr, glyphFor(scores[static_cast<std::size_t>(f)], true));
+        centred(sr, glyphFor(frame.score, true));
     }
     const Rect totalRect {layout.originX + layout.totalWidth() + layout.cell * 0.5f, layout.originY,
                           layout.cell * 4.f, layout.cell * 2.f};
