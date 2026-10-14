@@ -66,17 +66,17 @@ Context::~Context() = default;
 Result<std::unique_ptr<Context>> Context::create() {
     const int version = gladLoaderLoadGL();
     if (version == 0)
-        return Sc::Error<>("could not load OpenGL function pointers (is a GL context current?)");
+        return Gamebox::Core::Error<>("could not load OpenGL function pointers (is a GL context current?)");
     const int major = GLAD_VERSION_MAJOR(version), minor = GLAD_VERSION_MINOR(version);
     if (major * 10 + minor < 33)
-        return Sc::Error<>("OpenGL 3.3 core required, got " + std::to_string(major) + "." +
+        return Gamebox::Core::Error<>("OpenGL 3.3 core required, got " + std::to_string(major) + "." +
                            std::to_string(minor));
     auto lit = GlShader::build(kLitVs, kLitFs);
     if (lit.isError())
-        return Sc::Error<>("lit shader: " + lit.error());
+        return Gamebox::Core::Error<>("lit shader: " + lit.error());
     auto flat = GlShader::build(kFlatVs, kFlatFs);
     if (flat.isError())
-        return Sc::Error<>("flat shader: " + flat.error());
+        return Gamebox::Core::Error<>("flat shader: " + flat.error());
     std::unique_ptr<Context> ctx(new Context());
     ctx->_d->lit = lit();
     ctx->_d->flat = flat();

@@ -33,9 +33,9 @@ if(ENABLE_CLANG_TIDY)
     endif()
 endif()
 
-option(SB_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
+option(GAMEBOX_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
 
-if(SB_FETCH_OFFLINE)
+if(GAMEBOX_FETCH_OFFLINE)
     set(FETCHCONTENT_FULLY_DISCONNECTED ON)
     message(STATUS "Fetch offline mode: requires pre-populated _deps")
 else()

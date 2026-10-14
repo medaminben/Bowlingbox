@@ -12,7 +12,7 @@ FetchContent_Declare(
 
 # Bullet's option() calls must not override these (CMP0077 NEW is set in Common.cmake).
 # BUILD_SHARED_LIBS is restored afterwards so Gamebox libraries stay shared.
-set(_sandbox_saved_shared ${BUILD_SHARED_LIBS})
+set(_gamebox_saved_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 foreach(opt
@@ -24,9 +24,9 @@ endforeach()
 
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 FetchContent_MakeAvailable(bullet3)
-set(BUILD_SHARED_LIBS ${_sandbox_saved_shared})
+set(BUILD_SHARED_LIBS ${_gamebox_saved_shared})
 
-add_library(sandbox_bullet INTERFACE)
-target_link_libraries(sandbox_bullet INTERFACE BulletDynamics BulletCollision LinearMath)
-target_include_directories(sandbox_bullet SYSTEM INTERFACE ${bullet3_SOURCE_DIR}/src)
-add_library(Bullet::Bullet ALIAS sandbox_bullet)
+add_library(gamebox_bullet INTERFACE)
+target_link_libraries(gamebox_bullet INTERFACE BulletDynamics BulletCollision LinearMath)
+target_include_directories(gamebox_bullet SYSTEM INTERFACE ${bullet3_SOURCE_DIR}/src)
+add_library(Bullet::Bullet ALIAS gamebox_bullet)
