@@ -186,6 +186,12 @@ TEST(test_hud_text, controls_help_names_every_binding) {
         EXPECT_NE(help.find(key), std::string::npos) << key;
 }
 
+TEST(test_hud_text, hint_offers_the_theme_key_only_while_standing_still) {
+    EXPECT_NE(HudText::hint(Phase::Aiming).find("T theme"), std::string::npos);
+    EXPECT_NE(HudText::hint(Phase::GameOver).find("T: theme"), std::string::npos);
+    EXPECT_EQ(HudText::hint(Phase::Charging), "release to throw");
+}
+
 TEST(test_hud_text, unknown_theme_message_lists_every_name) {
     EXPECT_EQ(HudText::unknownThemeMessage("space"), "unknown theme 'space'; use neon, classic or outdoor");
     EXPECT_EQ(HudText::unknownThemeMessage(""), "unknown theme ''; use neon, classic or outdoor");

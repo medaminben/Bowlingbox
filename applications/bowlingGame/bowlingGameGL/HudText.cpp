@@ -22,9 +22,9 @@ namespace HudText {
 
 std::string hint(Phase p) {
     switch (p) {
-        case Phase::Aiming:   return "<- -> move   A D angle   hold Space to charge";
+        case Phase::Aiming:   return "<- -> move  A D angle  Space charge  T theme";  // no wider than before: fits beside the power bar
         case Phase::Charging: return "release to throw";
-        case Phase::GameOver: return "N: new game   Esc: quit";
+        case Phase::GameOver: return "N: new game   T: theme   Esc: quit";
         default:              return "";
     }
 }
