@@ -12,6 +12,21 @@ include(BuildLocation)
 include(CompilerWarnings)
 include(Coverage)
 
+# Installer builds link the GCC runtime into every module, so BowlingGL.exe and
+# the Bowlingbox DLLs import no libstdc++/libgcc/winpthread DLLs. On PE targets
+# -static only changes how -l names are searched; import libraries passed by
+# full path (our libBowlingbox*.dll.a) and the system import archives still link.
+option(BOWLINGBOX_STATIC_RUNTIME "Link the GCC runtime statically (MinGW GCC only)" OFF)
+if(BOWLINGBOX_STATIC_RUNTIME)
+    if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS    " -static-libgcc -static-libstdc++ -static")
+        string(APPEND CMAKE_SHARED_LINKER_FLAGS " -static-libgcc -static-libstdc++ -static")
+    else()
+        message(WARNING "BOWLINGBOX_STATIC_RUNTIME applies to MinGW GCC only; ignored for "
+                        "${CMAKE_CXX_COMPILER_ID} on ${CMAKE_SYSTEM_NAME}")
+    endif()
+endif()
+
 # Fetched projects must honour our normal variables in their option() calls
 # (CMP0077) and must not drop them when creating cache entries (CMP0126).
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
