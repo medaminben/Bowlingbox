@@ -6,7 +6,6 @@ See also the [manual](../../docs/MANUAL.md) and the [architecture](../../docs/AR
 ## BowlingGL (wxWidgets + OpenGL) — play it
 
 Aim, charge and throw; Bullet3 decides which pins fall; Bowlingbox keeps the score.
-Design: [spec](../../docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md).
 
 | Action | Keyboard | Mouse |
 |---|---|---|

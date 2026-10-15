@@ -66,7 +66,6 @@ The [manual](docs/MANUAL.md#build-options) lists the full set.
 - [Manual](docs/MANUAL.md): building, playing, troubleshooting, developer workflow
 - [Architecture](docs/ARCHITECTURE.md): libraries, interfaces, data flow, build system
 - [Bowling apps](applications/bowlingGame/README.md): per-app notes and the manual test checklist
-- [BowlingGL design spec](docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md)
 
 ## License
 
