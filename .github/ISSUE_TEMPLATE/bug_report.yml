@@ -1,0 +1,48 @@
+name: Bug report
+description: Something builds, runs or scores wrong.
+labels: [bug]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - BowlingGL (3D game)
+        - BowlingConsole
+        - BowlingDisplay
+        - Score library
+        - Alley / Render / Core library
+        - Build / CMake / install
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. cmake -S . -B build ...
+        2. ./build/bin/BowlingGL
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Bowlingbox version or commit, OS, compiler, CMake, wxWidgets, GPU driver (for BowlingGL).
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Build output, test failures or a backtrace.
+      render: text
