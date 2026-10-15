@@ -1,6 +1,8 @@
 #include "HudText.h"
+#include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
+#include <cstddef>
 
 using Bowlingbox::Alley::Phase;
 using Bowlingbox::Score::Mark;
@@ -67,6 +69,17 @@ std::string controlsHelp() {
            "Hold Space or left button: charge, release to throw\n"
            "T: change the scenery\n"
            "N: new game    Esc / Ctrl+Q: quit";
+}
+
+std::string unknownThemeMessage(std::string_view name) {
+    std::string names;
+    const auto& ids = Bowlingbox::Render::kThemes;
+    for (std::size_t i = 0; i < ids.size(); ++i) {
+        if (i > 0)
+            names += i + 1 == ids.size() ? " or " : ", ";
+        names += Bowlingbox::Render::theme(ids[i]).name;
+    }
+    return "unknown theme '" + std::string(name) + "'; use " + names;
 }
 
 }  // namespace HudText

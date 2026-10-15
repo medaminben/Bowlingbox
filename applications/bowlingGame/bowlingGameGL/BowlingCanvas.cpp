@@ -51,6 +51,15 @@ void BowlingCanvas::newGame() {
     apply({Command::Type::NewGame});
 }
 
+void BowlingCanvas::setTheme(Render::ThemeId id) {
+    _theme = id;
+    if (_scene)
+        _scene->setTheme(id);  // CPU only, no GL context needed
+    if (onThemeChanged)
+        onThemeChanged(id);
+    Refresh(false);
+}
+
 bool BowlingCanvas::ensureRenderer() {
     if (_ctx)
         return true;
@@ -66,7 +75,7 @@ bool BowlingCanvas::ensureRenderer() {
         return false;
     }
     _ctx = created();
-    _scene = std::make_unique<Render::SceneRenderer>(*_ctx, SceneAdapter::geometry(Alley::kLane));
+    _scene = std::make_unique<Render::SceneRenderer>(*_ctx, SceneAdapter::geometry(Alley::kLane), _theme);
     _overlay = std::make_unique<Render::Overlay>(*_ctx);
     resizeContext();
     return true;
@@ -146,6 +155,10 @@ void BowlingCanvas::OnMouse(wxMouseEvent& e) {
 void BowlingCanvas::apply(Command command) {
     if (command.type == Command::Type::Quit) {
         if (onQuit) onQuit();
+        return;
+    }
+    if (command.type == Command::Type::CycleTheme) {
+        setTheme(Render::nextTheme(_theme));
         return;
     }
     auto r = LaneCommands::execute(command, _lane);

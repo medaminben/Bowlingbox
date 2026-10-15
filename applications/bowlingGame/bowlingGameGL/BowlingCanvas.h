@@ -4,6 +4,7 @@
 #include "FixedStep.h"
 #include "FollowCamera.h"
 #include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Render/Render.h>
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
@@ -20,6 +21,10 @@ public:
     ~BowlingCanvas() override;
 
     void newGame();
+    /// Stores the theme; applies it now if the renderer exists, else when it is created.
+    void setTheme(Bowlingbox::Render::ThemeId id);
+    Bowlingbox::Render::ThemeId theme() const { return _theme; }
+    std::function<void(Bowlingbox::Render::ThemeId)> onThemeChanged;  // menu sync
     std::function<void(const wxString&)> onStatus;  // status bar text
     std::function<void()> onQuit;                   // close the frame
 
@@ -49,5 +54,6 @@ private:
     std::chrono::steady_clock::time_point _lastTick = std::chrono::steady_clock::now();
     wxString _status;  // last text sent to onStatus
     bool _failed = false;
+    Bowlingbox::Render::ThemeId _theme = Bowlingbox::Render::ThemeId::NeonHall;
 };
 #endif  // BOWLINGGL_BOWLING_CANVAS_H
