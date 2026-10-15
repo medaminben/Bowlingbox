@@ -3,7 +3,7 @@
 
 /// A player intent, independent of the input device that produced it.
 struct Command {
-    enum class Type { None, MoveAim, RotateAim, StartCharge, Release, NewGame, Quit };
+    enum class Type { None, MoveAim, RotateAim, StartCharge, Release, NewGame, CycleTheme, Quit };
     Type type = Type::None;
     float amount = 0.f;  // MoveAim: metres, RotateAim: degrees; unused otherwise
 

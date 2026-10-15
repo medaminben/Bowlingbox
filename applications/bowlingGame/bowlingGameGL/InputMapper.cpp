@@ -17,6 +17,8 @@ Command keyDown(int keyCode, bool ctrl, Phase phase) {
         return {Type::Quit};
     if (keyCode == 'N' || keyCode == 'n')
         return {Type::NewGame};
+    if (keyCode == 'T' || keyCode == 't')
+        return {Type::CycleTheme};
     switch (keyCode) {
         case WXK_LEFT:
             return canAim(phase) ? Command {Type::MoveAim, -kKeyOffsetStep} : Command {};
