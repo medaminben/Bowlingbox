@@ -51,6 +51,18 @@ TEST(test_lane_commands, reports_rejections_and_ignores_non_lane_commands) {
     EXPECT_TRUE(LaneCommands::execute({Command::Type::None}, lane).isValue());
 }
 
+TEST(test_lane_commands, cycle_theme_leaves_the_lane_alone) {
+    Alley::Lane lane;
+    ASSERT_TRUE(LaneCommands::execute({Command::Type::MoveAim, 0.1f}, lane).isValue());
+    const Alley::Snapshot before = lane.snapshot();
+    EXPECT_TRUE(LaneCommands::execute({Command::Type::CycleTheme}, lane).isValue());
+    const Alley::Snapshot after = lane.snapshot();
+    EXPECT_EQ(after.phase, before.phase);
+    EXPECT_FLOAT_EQ(after.aimOffset, before.aimOffset);
+    EXPECT_FLOAT_EQ(after.aimAngle, before.aimAngle);
+    EXPECT_FLOAT_EQ(after.power, before.power);
+}
+
 // ------------------------------------------------------------ FollowCamera
 TEST(test_follow_camera, stays_home_while_aiming) {
     FollowCamera cam;
@@ -168,6 +180,6 @@ TEST(test_hud, layout_reserves_top_and_bottom_bands) {
 
 TEST(test_hud_text, controls_help_names_every_binding) {
     const std::string help = HudText::controlsHelp();
-    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q"})
+    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q", "T: change the scenery"})
         EXPECT_NE(help.find(key), std::string::npos) << key;
 }

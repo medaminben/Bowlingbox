@@ -9,6 +9,7 @@ Result<> execute(Command command, Bowlingbox::Alley::Lane& lane) {
         case Command::Type::StartCharge: return lane.startCharge();
         case Command::Type::Release:     return lane.release();
         case Command::Type::NewGame:     return lane.newGame();
+        case Command::Type::CycleTheme:
         case Command::Type::Quit:
         case Command::Type::None:
             break;

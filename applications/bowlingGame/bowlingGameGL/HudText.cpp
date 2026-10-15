@@ -65,6 +65,7 @@ std::string controlsHelp() {
     return "Left / Right or mouse move: position the ball\n"
            "A / D or right-drag: aim angle\n"
            "Hold Space or left button: charge, release to throw\n"
+           "T: change the scenery\n"
            "N: new game    Esc / Ctrl+Q: quit";
 }
 
