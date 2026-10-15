@@ -110,11 +110,14 @@ if ($SkipInstaller) {
 }
 
 function Get-ProjectVersion {
-  $text = Get-Content (Join-Path $RepoRoot "CMakeLists.txt") -Raw
-  $match = [regex]::Match($text, 'project\(\s*Bowlingbox\s+VERSION\s+([^\s)]+)')
-  if (-not $match.Success) { throw "No 'project(Bowlingbox VERSION x.y.z' in CMakeLists.txt." }
-  $version = $match.Groups[1].Value
-  if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected project version '$version'." }
+  # The version CMake configured: cmake/GitVersion.cmake resolves it from the
+  # nearest vX.Y.Z tag (fallback in that file), and project() records it here.
+  $cache = Join-Path $BuildDir "CMakeCache.txt"
+  if (-not (Test-Path $cache)) { throw "No $cache; configure the build first." }
+  $match = Select-String -Path $cache -Pattern '^CMAKE_PROJECT_VERSION:[A-Z]+=(.*)$' | Select-Object -First 1
+  if (-not $match) { throw "CMAKE_PROJECT_VERSION not found in $cache." }
+  $version = $match.Matches[0].Groups[1].Value.Trim()
+  if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected project version '$version' in $cache." }
   return $version
 }
 

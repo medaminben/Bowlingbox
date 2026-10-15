@@ -37,8 +37,9 @@ gh run watch "$(gh run list --workflow windows-installer.yml --limit 1 --json da
 gh run download --name BowlingBox_Setup --dir build/windows/dist
 ```
 
-The workflow is manual until versioning is automated; the version is
-`project(Bowlingbox VERSION …)` in `CMakeLists.txt`.
+The workflow is manual for now. The version is the one CMake configures: the
+nearest `vX.Y.Z` tag, which `.github/workflows/version.yml` creates for every
+merged pull request (see `cmake/GitVersion.cmake`).
 
 ## Building on a Windows PC
 

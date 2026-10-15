@@ -3,7 +3,7 @@
 ; Built by scripts\build_windows_installer.ps1, which passes StageDir (the
 ; staged BowlingBox install component), ArtDir (wizard BMPs generated from
 ; docs\Neon-Bowling-phone.png), OutputDir and MyAppVersion (from
-; project(Bowlingbox VERSION ...) in CMakeLists.txt).
+; the configured CMAKE_PROJECT_VERSION, i.e. the nearest vX.Y.Z git tag).
 ;
 ; Bowling Box keeps no user data in its folder: an upgrade overwrites the
 ; program files and an uninstall removes them.
