@@ -27,6 +27,10 @@ if(BOWLINGBOX_STATIC_RUNTIME)
     endif()
 endif()
 
+# Install component holding exactly what the Windows installer ships:
+# BowlingGL, the Bowlingbox DLLs, LICENSE and THIRD_PARTY_NOTICES.txt.
+set(BOWLINGBOX_RUNTIME_COMPONENT BowlingBox)
+
 # Fetched projects must honour our normal variables in their option() calls
 # (CMP0077) and must not drop them when creating cache entries (CMP0126).
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
