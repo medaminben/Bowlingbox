@@ -73,6 +73,11 @@ foreach ($binary in $binaries) {
   if ($LASTEXITCODE -ne 0) { throw "$Objdump -p failed on $($binary.Name)" }
   $imports = @($dump | Select-String '^\s*DLL Name:\s*(\S+)' |
     ForEach-Object { $_.Matches[0].Groups[1].Value })
+  # Every Windows .exe and .dll imports at least KERNEL32. None found means the
+  # objdump output was not understood, not that the file is clean.
+  if ($imports.Count -eq 0) {
+    $errors.Add("$($binary.Name): no imports parsed from '$Objdump -p' output; the import check cannot vouch for it")
+  }
   foreach ($import in $imports) {
     if (Test-Like $import $RuntimePatterns) {
       $errors.Add("$($binary.Name) imports $import; BOWLINGBOX_STATIC_RUNTIME should have linked it statically")

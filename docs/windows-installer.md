@@ -65,6 +65,11 @@ DLLs, and none may import `libstdc++`, `libgcc`, `libwinpthread` or `libssp`.
 A new import fails the build with its name; add it to the list only if it is a
 part of every Windows 10/11 installation.
 
+`scripts\test_verify_installer_stage.ps1` (run by the workflow after the build)
+proves the check still rejects a stale file, an objdump output it cannot parse,
+and a foreign import. It also runs on Linux with PowerShell 7 and binutils
+against a downloaded `BowlingBox_stage` artifact.
+
 ### Regenerating THIRD_PARTY_NOTICES.txt
 
 After changing `licenses/glm.txt`, `glad.txt` or `mingw-w64.txt`, rebuild the

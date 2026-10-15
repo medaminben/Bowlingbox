@@ -52,21 +52,16 @@ jobs:
             -FetchContentDir "${{ github.workspace }}/.cache/fetchcontent" `
             -InnoSetupDir "${env:ProgramFiles(x86)}\Inno Setup 6"
 
-      # The stage check must reject a file outside the shipped set; prove it
-      # does, so a broken check cannot pass every build.
-      - name: Stage check rejects an extra file
+      # The stage check must reject what it exists to reject: a stale file, an
+      # objdump output it cannot parse, and a foreign import, each by name.
+      - name: Test the stage check
         shell: pwsh
         env:
           MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
-          $probe = Join-Path $env:RUNNER_TEMP "stage-probe"
-          Copy-Item build/windows/installer/stage/bin $probe -Recurse
-          Copy-Item (Join-Path $probe "libBowlingboxCore.dll") (Join-Path $probe "stale.dll")
-          ./scripts/verify_installer_stage.ps1 -AppDir $probe `
+          ./scripts/test_verify_installer_stage.ps1 `
+            -AppDir build/windows/installer/stage/bin `
             -Objdump (Join-Path $env:MSYS2_LOCATION "ucrt64\bin\objdump.exe")
-          if ($LASTEXITCODE -eq 0) { throw "verify_installer_stage.ps1 accepted stale.dll" }
-          Write-Host "Rejected as expected."
-          exit 0
 
       - name: Upload staged folder
         uses: actions/upload-artifact@v4
