@@ -188,3 +188,74 @@ TEST(test_environment, neighbour_lanes_have_board_stripes) {
         EXPECT_EQ(striped, 2 * t.neighbourLanesPerSide) << t.name;
     }
 }
+
+namespace {
+template <typename Pred>
+long countProps(const std::vector<Prop>& props, Pred pred) {
+    return static_cast<long>(std::count_if(props.begin(), props.end(), pred));
+}
+bool near(float a, float b) {
+    return std::abs(a - b) < 1e-4f;
+}
+}  // namespace
+
+TEST(test_environment_decor, only_neon_hall_hangs_glowing_pin_icons) {
+    for (ThemeId id : kThemes) {
+        const auto props = buildProps(theme(id), kG);
+        const auto icons = countProps(props, [](const Prop& p) {
+            return p.shape == Shape::Pin && p.transform.position.y > 1.f;
+        });
+        EXPECT_EQ(icons, theme(id).props.wallScreens ? 4 : 0) << theme(id).name;
+        for (const Prop& p : props)
+            if (p.shape == Shape::Pin && p.transform.position.y > 1.f) {
+                EXPECT_TRUE(p.pinBand);
+                EXPECT_TRUE(p.material.emissive);
+            }
+    }
+}
+
+TEST(test_environment_decor, neon_hall_has_pillars_strips_lights_and_screens) {
+    const auto props = buildProps(theme(ThemeId::NeonHall), kG);
+    EXPECT_EQ(countProps(props, [](const Prop& p) {
+                  return p.shape == Shape::Box && near(p.transform.scale.x, 0.4f) && near(p.transform.scale.z, 0.4f);
+              }),
+              12);  // pillars: 6 per side wall
+    // 4 wall strips + 1 masking strip + 14 ceiling panels + 4 screen panels
+    EXPECT_EQ(countProps(props, [](const Prop& p) { return p.shape == Shape::Box && p.material.emissive; }), 23);
+    EXPECT_EQ(countProps(props, [](const Prop& p) { return p.shape == Shape::Cone; }), 0);
+}
+
+TEST(test_environment_decor, classic_alley_has_ceiling_lights_and_a_score_monitor) {
+    const auto props = buildProps(theme(ThemeId::ClassicAlley), kG);
+    // 14 ceiling panels + 1 monitor screen
+    EXPECT_EQ(countProps(props, [](const Prop& p) { return p.shape == Shape::Box && p.material.emissive; }), 15);
+    EXPECT_EQ(countProps(props, [](const Prop& p) {
+                  return p.shape == Shape::Box && near(p.transform.position.x, 0.f) &&
+                         near(p.transform.position.y, 2.9f) && near(p.transform.position.z, kG.laneLength + 0.2f);
+              }),
+              1);
+    EXPECT_EQ(countProps(props, [](const Prop& p) {
+                  return p.shape == Shape::Box && near(p.transform.scale.x, 0.4f) && near(p.transform.scale.z, 0.4f);
+              }),
+              0);  // no pillars
+}
+
+TEST(test_environment_decor, outdoor_terrace_has_fences_and_sixteen_trees_below_six_and_a_half_metres) {
+    const auto props = buildProps(theme(ThemeId::Outdoor), kG);
+    EXPECT_EQ(countProps(props, [](const Prop& p) { return p.shape == Shape::Cylinder; }), 16);
+    EXPECT_EQ(countProps(props, [](const Prop& p) { return p.shape == Shape::Cone; }), 16);
+    EXPECT_EQ(countProps(props, [](const Prop& p) {
+                  return p.shape == Shape::Box && near(p.transform.scale.x, 0.1f) && near(p.transform.scale.y, 1.f);
+              }),
+              38);  // 19 posts per side
+    EXPECT_EQ(countProps(props, [](const Prop& p) {
+                  return p.shape == Shape::Box && near(p.transform.scale.z, 36.f);
+              }),
+              4);  // two rails per side
+    EXPECT_EQ(countProps(props, [](const Prop& p) { return p.material.emissive; }), 0);
+    float top = std::numeric_limits<float>::lowest();
+    for (const Prop& p : props)
+        top = std::max(top, bounds(p, kG).max.y);
+    EXPECT_LE(top, 6.5f);
+    EXPECT_NEAR(top, 6.25f, 1e-3f);  // the tallest tree
+}
