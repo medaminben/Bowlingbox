@@ -165,7 +165,7 @@ serves every prop, and `bounds()` uses the same extents as the meshes.
 | Unit | Responsibility |
 |---|---|
 | `main.cpp` | wx entry point; forces `GDK_BACKEND=x11` on Wayland (wxGLCanvas needs GLX) |
-| `BowlingFrame` | Window, menu (Game ▸ New/Quit, Help ▸ Controls/About), status bar |
+| `BowlingFrame` | Window, menu (Game ▸ New/Quit, View ▸ Theme, Help ▸ Controls/About), status bar |
 | `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the timer, forwards wx events |
 | `FixedStep` | Turns irregular timer ticks into 1/60 s physics steps; drops the backlog after a stall |
 | `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `Quit` |

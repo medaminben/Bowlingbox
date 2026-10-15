@@ -28,6 +28,20 @@ ctest --test-dir build
 ./build/bin/BowlingGL
 ```
 
+On Wayland, the app picks `GDK_BACKEND=x11` automatically (GLX via XWayland). Override with
+`GDK_BACKEND=wayland ./build/bin/BowlingGL` only if you know your stack supports it.
+
+Manual checklist after changes to Alley/Render/app:
+1. Launch: lane, 10 pins, ball and an empty scoreboard are visible.
+2. Throw from offset ≈ 0.078 m with ~80 % power: strike.
+3. Throw at the far edge (hold `→`): gutter, `-` in the scoreboard.
+4. Partial hit, then second ball: the standing pins stay where they were.
+5. Resize the window: scoreboard and lane rescale.
+6. `N` during a roll restarts; `Esc` exits with nothing on stderr.
+7. `--theme=neon`, `--theme=classic`, `--theme=outdoor`: each starts in that scenery; `--theme=space` warns and starts Neon Hall.
+8. Press `T` three times: Neon → Classic → Outdoor → Neon, and View ▸ Theme follows; choosing from the menu works too.
+9. In every theme: a gutter ball at full offset and flying pins stay visible; the aim guide is translucent and the pin necks are red; the frame rate stays smooth.
+
 ### Scenery
 
 Three themes surround the lane. Pick one at start or switch while playing (`T` or View ▸ Theme):
@@ -44,20 +58,6 @@ Three themes surround the lane. Pick one at start or switch while playing (`T` o
 
 An unknown name prints the valid ones and starts Neon Hall. The decor is drawn only; it never
 touches the physics.
-
-On Wayland, the app picks `GDK_BACKEND=x11` automatically (GLX via XWayland). Override with
-`GDK_BACKEND=wayland ./build/bin/BowlingGL` only if you know your stack supports it.
-
-Manual checklist after changes to Alley/Render/app:
-1. Launch: lane, 10 pins, ball and an empty scoreboard are visible.
-2. Throw from offset ≈ 0.078 m with ~80 % power: strike.
-3. Throw at the far edge (hold `→`): gutter, `-` in the scoreboard.
-4. Partial hit, then second ball: the standing pins stay where they were.
-5. Resize the window: scoreboard and lane rescale.
-6. `N` during a roll restarts; `Esc` exits with nothing on stderr.
-7. `--theme=neon`, `--theme=classic`, `--theme=outdoor`: each starts in that scenery; `--theme=space` warns and starts Neon Hall.
-8. Press `T` three times: Neon → Classic → Outdoor → Neon, and View ▸ Theme follows; choosing from the menu works too.
-9. In every theme: a gutter ball at full offset and flying pins stay visible; the aim guide is translucent and the pin necks are red; the frame rate stays smooth.
 
 ## Architecture
 
