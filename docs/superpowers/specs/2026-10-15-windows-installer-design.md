@@ -27,7 +27,7 @@ the pattern of the VLMS repository's `windows-installer.yml`.
 ## Installed layout
 
 ```
-%LOCALAPPDATA%\Programs\Bowling Box\      ({userpf}, per-user install)
+%LOCALAPPDATA%\Programs\Bowling Box\      ({autopf} in per-user mode)
   BowlingGL.exe              GL app + static wxWidgets + static MinGW runtime
   libBowlingboxScore.dll     ┐
   libBowlingboxCore.dll      │ our libraries (each with a static MinGW runtime)
@@ -72,19 +72,42 @@ The Linux CI configuration does not change.
 
 ### `BOWLINGBOX_STATIC_RUNTIME` (new option, `cmake/Common.cmake`, default OFF)
 
-When it is ON and the compiler is MinGW GCC, the option adds
-`-static-libgcc -static-libstdc++ -static` to `CMAKE_EXE_LINKER_FLAGS` and
-`CMAKE_SHARED_LINKER_FLAGS`. Every module, the exe and each of our four DLLs,
-then carries its own copy of the runtime, and none imports `libstdc++-6.dll`,
-`libgcc_s_seh-1.dll` or `libwinpthread-1.dll`. Elsewhere the option does nothing
-and prints a warning.
+**Requirement.** When it is ON and the compiler is MinGW GCC, the exe, each of
+our four DLLs and the test executables link the GCC runtime statically. None of
+them imports `libstdc++-6.dll`, `libgcc_s_seh-1.dll`, `libwinpthread-1.dll` or
+`libssp-0.dll`. The stage verification enforces this. On other compilers the
+option does nothing and prints a warning.
+
+**Mechanism.** It adds `-static-libgcc -static-libstdc++ -static` to
+`CMAKE_EXE_LINKER_FLAGS` and `CMAKE_SHARED_LINKER_FLAGS`. On PE targets, `-static`
+only changes how `-l` names are searched (`.a` before `.dll.a` or `.dll`). Import
+libraries passed by full path, as CMake passes `libBowlingbox*.dll.a`, still link.
+The Windows system libraries resolve to MinGW's import archives
+(`libkernel32.a`, `libopengl32.a`), so those DLLs are still imported. Bare
+`-static` is used rather than a `-Wl,-Bstatic -lwinpthread -Wl,-Bdynamic`
+sandwich because GCC's driver appends libstdc++ and its own implicit `-lpthread`
+after the user's flags. A sandwich placed earlier is scanned before anything
+needs winpthread, and the driver's later `-lpthread` then resolves to the DLL.
+The plan's first Windows task proves the link on the runner. If bare `-static`
+fails there, the fallback is the sandwich placed in
+`CMAKE_CXX_STANDARD_LIBRARIES`, which comes at the end of the link line, checked
+by the same stage verification.
+
+**GoogleTest is linked statically.** It is third-party, and with
+`BUILD_SHARED_LIBS=ON` it would otherwise build as a DLL. `cmake/GTestSupport.cmake`
+saves and restores `BUILD_SHARED_LIBS` around `FetchContent_MakeAvailable`, the way
+`BulletSupport.cmake` does. The Linux CI also gets a static GoogleTest, which
+changes nothing visible there.
 
 **Known trade-off.** With one runtime copy per module, std types and exceptions
 cross DLL boundaries between separate libstdc++ copies. On x64 MinGW this works:
 unwinding is SEH, `operator new` and `delete` both reach the shared UCRT heap, and
 `type_info` compares by name. The unit tests below run against exactly this build
 and exercise those boundaries. If they ever show a problem, the fallback is to
-turn the option off for shared libraries and ship the three runtime DLLs.
+turn the option off for **every** module (the exe and all four DLLs) and ship
+`libstdc++-6.dll`, `libgcc_s_seh-1.dll` and `libwinpthread-1.dll` beside them.
+Then there is one runtime copy for the whole process. Turning it off only for the
+DLLs would leave the exe with its own copy, and the boundary would remain.
 
 ### `cmake/WxSupport.cmake` (source-build branch only)
 
@@ -101,9 +124,9 @@ The Linux branch keeps its current settings.
 ### Only BowlingGL is built
 
 `cmake --build build/windows --target BowlingGL <unit test targets>`. The
-console and display apps are configured but never compiled. BowlingConsole's
-POSIX `terminal.cpp` would not compile with MinGW, and nothing builds it. No
-`if(WIN32)` guards are added to the app directories.
+console and display apps are configured but never compiled, because they are
+not part of the release (a product decision; `terminal.cpp` has a `_WIN32` path).
+No `if(WIN32)` guards are added to the app directories.
 
 ### Install component `BowlingBox`
 
@@ -146,7 +169,7 @@ listed in `licenses/README.md`. `licenses/` (currently untracked) is committed
 with this work. `licenses/README.md` gains a Windows section describing the
 reduced wx feature set and the static MinGW runtime.
 
-## Installer: `installer/bowlingbox.iss` (Inno Setup 6)
+## Installer: `installer/bowlingbox.iss` (Inno Setup 6.3 or newer)
 
 A cut-down version of VLMS's `vlms.iss`, without its existing-install,
 backup and what's-new code. Bowling Box keeps no user data in its folder, so an
@@ -156,8 +179,10 @@ upgrade overwrites the files and an uninstall removes them.
 - `AppName=Bowling Box`. `AppVersion` and `VersionInfoVersion` come from
   `/DMyAppVersion`, which the script reads from `project(Bowlingbox VERSION x.y.z)`.
 - `AppPublisher=Bowling Box`.
-- `DefaultDirName={userpf}\Bowling Box`, `DisableProgramGroupPage=yes`,
-  `PrivilegesRequired=lowest`, `PrivilegesRequiredOverridesAllowed=commandline`.
+- `DefaultDirName={autopf}\Bowling Box`, `DisableProgramGroupPage=yes`,
+  `PrivilegesRequired=lowest`, with no `PrivilegesRequiredOverridesAllowed`. The
+  install is always per-user. `{autopf}` resolves to `{userpf}` in that mode, and
+  stays correct if an all-users mode is ever allowed.
 - `ArchitecturesAllowed` and `ArchitecturesInstallIn64BitMode` set to `x64compatible`.
 - `Compression=lzma2/ultra64`, `SolidCompression=yes`, `WizardStyle=modern`.
 - `CloseApplications=yes`, `RestartApplications=no`.
@@ -176,7 +201,7 @@ upgrade overwrites the files and an uninstall removes them.
 `docs/Neon-Bowling-phone.png` (941×1672, portrait key art with the logo) is the
 only source. It is committed with this work (currently untracked).
 `scripts/make_installer_art.ps1` derives 24-bit BMPs with .NET `System.Drawing`,
-so nothing extra needs installing. Inno Setup reads BMP in every 6.x version.
+so nothing extra needs installing.
 
 - **Large image** (Welcome and Finished pages): cropped to the 164:314 aspect
   around the horizontal centre, then resized with high-quality bicubic to
@@ -191,18 +216,26 @@ The output goes to `build/windows/installer/art/` and is not committed.
 ## Build script: `scripts/build_windows_installer.ps1`
 
 It runs in CI and on a Windows PC with MSYS2 (UCRT64 packages as in the
-workflow) and Inno Setup 6. Parameters: `-BuildDir` (default
+workflow) and Inno Setup 6.3 or newer. Parameters: `-BuildDir` (default
 `build/windows`), `-Msys2Root` (default `C:\msys64`, or `$env:MSYS2_LOCATION`),
-`-InnoSetupDir`, `-SkipBuild`, `-SkipTests`, `-SkipInstaller`.
+`-InnoSetupDir`, `-FetchContentDir`, `-SkipBuild`, `-SkipTests`, `-SkipInstaller`.
 `$ErrorActionPreference = "Stop"`, and every native call checks `$LASTEXITCODE`.
 
 1. **Configure**: `cmake -S . -B build/windows -G Ninja -C cmake/windows-installer.cmake`,
-   with `ucrt64\bin` first on `PATH`.
+   plus `-DFETCHCONTENT_BASE_DIR=…` when `-FetchContentDir` is given (CI always
+   passes it), with `ucrt64\bin` first on `PATH`.
 2. **Build**: target `BowlingGL` and the window-free unit-test targets (the four
    library tests and `test_bowlinggl`). The plan takes the exact target names from
-   `create_library` and `build_gtest_executable`. `test_bowlingconsole` (POSIX)
+   `create_library` and `build_gtest_executable`. `test_bowlingconsole` (not shipped)
    and `test_bowlingdisplay` (gui) are not built.
-3. **Test**: `ctest` limited by `-R` to those test executables, `--output-on-failure`.
+3. **Test**: `ctest --label-regex unit --output-on-failure --no-tests=error`, the
+   same filter as the Linux CI. `-R` can't select by executable: `gtest_discover_tests`
+   registers GoogleTest case names, not `test_…` executable names. `--no-tests=error`
+   turns a filter that matches nothing into a failure instead of a silent pass.
+   `test_bowlingconsole` and `test_bowlingdisplay` are not built. The
+   `<target>_NOT_BUILT` placeholders that `gtest_discover_tests` registers for
+   unbuilt executables carry no labels, so the filter skips them. The plan checks
+   this on the first run (`ctest -N --label-regex unit` lists only built tests).
 4. **Stage**: wipe `build/windows/installer/stage`, then
    `cmake --install … --component BowlingBox`. The app folder is `stage\bin`.
 5. **Verify the stage** (see below).
@@ -216,7 +249,9 @@ workflow) and Inno Setup 6. Parameters: `-BuildDir` (default
 
 - **Required files**: `BowlingGL.exe`, the four `libBowlingbox*.dll`, `LICENSE`,
   `THIRD_PARTY_NOTICES.txt`.
-- **Nothing extra**: no `.a`, `.h`, `.cmake`, test executables, or other `.exe`.
+- **Nothing extra**: the only `.exe` is `BowlingGL.exe`, and the only `.dll` files
+  are the four `libBowlingbox*.dll`. Any other `.exe`, `.dll`, `.a`, `.h` or `.cmake`
+  fails the build.
 - **Imports**: `objdump -p` on every `.exe` and `.dll`. Each `DLL Name:` entry must
   be either a staged file or on an allowlist of Windows system DLLs, matched
   case-insensitively: `KERNEL32`, `USER32`, `GDI32`, `OPENGL32`, `COMCTL32`,
@@ -225,8 +260,8 @@ workflow) and Inno Setup 6. Parameters: `-BuildDir` (default
   `IMM32`, `MSIMG32`, `ucrtbase`, `api-ms-win-*`. The plan settles the final list
   from the first real build. An import that is neither fails the build with its
   name and the importing file.
-- **No MinGW runtime DLL imports**: `libstdc++*`, `libgcc*`, `libwinpthread*`
-  fail explicitly, with a message pointing at `BOWLINGBOX_STATIC_RUNTIME`.
+- **No MinGW runtime DLL imports**: `libstdc++*`, `libgcc*`, `libwinpthread*` and
+  `libssp*` fail explicitly, with a message pointing at `BOWLINGBOX_STATIC_RUNTIME`.
 
 ## Workflow: `.github/workflows/windows-installer.yml`
 
@@ -242,9 +277,13 @@ One job on `windows-latest`, with `timeout-minutes: 90`:
 2. `msys2/setup-msys2@v2`, `msystem: UCRT64`, installing `mingw-w64-ucrt-x86_64-gcc`,
    `-cmake`, `-ninja` and `-binutils`.
 3. `actions/cache@v4` for `.cache/fetchcontent` (keyed on `cmake/*Support.cmake`
-   and `cmake/windows-installer.cmake`), passed as `FETCHCONTENT_BASE_DIR`. This
-   saves downloads. The wxWidgets compile itself is not cached.
-4. `choco install innosetup -y`.
+   and `cmake/windows-installer.cmake`). The script passes it to the configure
+   step as `-DFETCHCONTENT_BASE_DIR=<workspace>/.cache/fetchcontent` (FetchContent
+   reads the cache variable, not an environment variable). This saves downloads.
+   The wxWidgets compile itself is not cached.
+4. `choco install innosetup -y`. The script then checks that `ISCC.exe` is 6.3 or
+   newer (needed for `x64compatible` and the multi-resolution wizard images) and
+   fails otherwise.
 5. `pwsh ./scripts/build_windows_installer.ps1`, with `MSYS2_LOCATION` from step 2.
 6. `actions/upload-artifact@v4`, artifact name `BowlingBox_Setup`, path
    `build/windows/dist/BowlingBox_Setup_*.exe`, `if-no-files-found: error`.
@@ -275,5 +314,5 @@ One job on `windows-latest`, with `timeout-minutes: 90`:
 - Version automation and release uploads.
 - An application icon or version resource in `BowlingGL.exe`.
 - Code signing.
-- BowlingConsole on Windows (porting `terminal.cpp`).
+- BowlingConsole and BowlingDisplay on Windows (not part of the release).
 - 32-bit or ARM64 builds.
