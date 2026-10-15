@@ -2,6 +2,7 @@
 #define BOWLINGBOX_RENDER_H
 #include <Bowlingbox/Render/Bowlingbox_Render_export.h>
 #include <Bowlingbox/Render/Canvas2D.h>
+#include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Render/ScoreboardLayout.h>
 #include <Bowlingbox/Core/Core.h>
 #include <glm/glm.hpp>
@@ -13,19 +14,6 @@
 
 namespace Bowlingbox {
 namespace Render {
-
-struct BOWLINGBOX_RENDER_API Transform {
-    glm::vec3 position {0.f};
-    glm::quat rotation {1.f, 0.f, 0.f, 0.f};  // w, x, y, z
-    glm::vec3 scale {1.f};
-    glm::mat4 matrix() const;
-};
-
-/// Physical sizes (metres); copied from Alley::kLane by the application.
-struct SceneGeometry {
-    float laneHalfWidth, laneLength, approach, gutterWidth, gutterDepth;
-    float ballRadius, pinHeight, pinMaxRadius, pinComHeight;
-};
 
 struct SceneDescription {
     Transform ball;
@@ -68,11 +56,13 @@ private:
     float _aspect = 16.f / 9.f;
 };
 
-/// Lane, gutters, ball, pins, aim guide.
+/// Background gradient, theme props, lane, gutters, ball, pins, aim guide.
 class BOWLINGBOX_RENDER_API SceneRenderer {
 public:
-    SceneRenderer(Context& ctx, const SceneGeometry& geometry);
+    SceneRenderer(Context& ctx, const SceneGeometry& geometry, ThemeId theme = ThemeId::NeonHall);
     ~SceneRenderer();
+    /// Switches decor and colours. Rebuilds the prop list on the CPU; makes no GL calls.
+    void setTheme(ThemeId theme);
     void draw(const Camera& camera, const SceneDescription& scene, int viewportY, int viewportH);
 
 private:

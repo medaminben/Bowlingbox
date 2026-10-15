@@ -67,3 +67,11 @@ TEST(test_input_mapper, zero_width_canvas_does_not_move_the_ball) {
     EXPECT_EQ(InputMapper::mouseMove(50, false, false, 0, Phase::Aiming), cmd(Type::None));
     EXPECT_EQ(InputMapper::mouseMove(50, false, false, -1, Phase::Aiming), cmd(Type::None));
 }
+
+TEST(test_input_mapper, t_cycles_the_theme_in_every_phase) {
+    for (Phase p : {Phase::Aiming, Phase::Charging, Phase::Rolling, Phase::Settling, Phase::FrameDone,
+                    Phase::GameOver}) {
+        EXPECT_EQ(InputMapper::keyDown('T', false, p), cmd(Type::CycleTheme));
+        EXPECT_EQ(InputMapper::keyDown('t', false, p), cmd(Type::CycleTheme));
+    }
+}

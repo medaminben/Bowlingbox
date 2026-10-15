@@ -1,6 +1,8 @@
 #include "HudText.h"
+#include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Score/Notation.h>
 #include <algorithm>
+#include <cstddef>
 
 using Bowlingbox::Alley::Phase;
 using Bowlingbox::Score::Mark;
@@ -20,9 +22,9 @@ namespace HudText {
 
 std::string hint(Phase p) {
     switch (p) {
-        case Phase::Aiming:   return "<- -> move   A D angle   hold Space to charge";
+        case Phase::Aiming:   return "<- -> move  A D angle  Space charge  T theme";  // no wider than before: fits beside the power bar
         case Phase::Charging: return "release to throw";
-        case Phase::GameOver: return "N: new game   Esc: quit";
+        case Phase::GameOver: return "N: new game   T: theme   Esc: quit";
         default:              return "";
     }
 }
@@ -65,7 +67,19 @@ std::string controlsHelp() {
     return "Left / Right or mouse move: position the ball\n"
            "A / D or right-drag: aim angle\n"
            "Hold Space or left button: charge, release to throw\n"
+           "T: change the scenery\n"
            "N: new game    Esc / Ctrl+Q: quit";
+}
+
+std::string unknownThemeMessage(std::string_view name) {
+    std::string names;
+    const auto& ids = Bowlingbox::Render::kThemes;
+    for (std::size_t i = 0; i < ids.size(); ++i) {
+        if (i > 0)
+            names += i + 1 == ids.size() ? " or " : ", ";
+        names += Bowlingbox::Render::theme(ids[i]).name;
+    }
+    return "unknown theme '" + std::string(name) + "'; use " + names;
 }
 
 }  // namespace HudText

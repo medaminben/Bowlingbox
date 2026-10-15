@@ -14,6 +14,7 @@ Aim, charge and throw; Bullet3 decides which pins fall; Bowlingbox keeps the sco
 | Charge power | hold Space | hold left button |
 | Throw | release Space | release left button |
 | New game | N or Ctrl+N | Game ▸ New Game |
+| Change scenery | T | View ▸ Theme |
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
 Prerequisites (Debian/Ubuntu): `sudo apt install build-essential cmake libgtk-3-dev libgl1-mesa-dev`.
@@ -37,6 +38,26 @@ Manual checklist after changes to Alley/Render/app:
 4. Partial hit, then second ball: the standing pins stay where they were.
 5. Resize the window: scoreboard and lane rescale.
 6. `N` during a roll restarts; `Esc` exits with nothing on stderr.
+7. `--theme=neon`, `--theme=classic`, `--theme=outdoor`: each starts in that scenery; `--theme=space` warns and starts Neon Hall.
+8. Press `T` three times: Neon → Classic → Outdoor → Neon, and View ▸ Theme follows; choosing from the menu works too.
+9. In every theme: a gutter ball at full offset and flying pins stay visible; the aim guide is translucent and the pin necks are red; the frame rate stays smooth.
+
+### Scenery
+
+Three themes surround the lane. Pick one at start or switch while playing (`T` or View ▸ Theme):
+
+| Theme | `--theme=` | Look |
+|---|---|---|
+| Neon Hall (default) | `neon` | Dark-blue hall, cyan and purple neon, glowing pin screens, two lanes on each side |
+| Classic Alley | `classic` | Warm, bright hall with ceiling lights and a score monitor above the pins |
+| Outdoor | `outdoor` | Terrace under the sky with fences and trees, one lane on each side |
+
+```bash
+./build/bin/BowlingGL --theme=classic
+```
+
+An unknown name prints the valid ones and starts Neon Hall. The decor is drawn only; it never
+touches the physics.
 
 ## Architecture
 
@@ -61,6 +82,8 @@ BowlingGL: `BowlingCanvas` only owns GL resources, the timer and wx events. `Fix
 ticks into 1/60 s physics steps. Keyboard and mouse input both go `InputMapper` →
 `Command {type, amount}` → `LaneCommands::execute`. The camera is `FollowCamera`, the HUD is
 `drawHud` + `HudText`, and `hudLayout()` sizes its bands.
+`Render::buildProps()` lays out each theme's decor as plain data (`Environment.h`), so the
+corridor and camera clearances are tested without GL; `SceneRenderer` draws it with fog and glow.
 
 BowlingConsole: `Console::Session` holds the game flow (menu, playing, game over) with no I/O;
 `Console::Screen` draws it on an `ITerminal` with `banner()` and `renderScoreSheet()`.
