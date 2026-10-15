@@ -35,8 +35,10 @@ uniform vec3 uFogColor; uniform float uFogStart; uniform float uFogEnd;
 out vec4 FragColor;
 void main() {
     vec4 base = (vLocalY >= uBandRange.x && vLocalY <= uBandRange.y) ? uBandColor : uColor;
-    if (uStripes)  // boards 0.025 m wide, alternating +-6 %
-        base.rgb *= mod(floor(vLocalX / 0.025), 2.0) < 1.0 ? 1.06 : 0.94;
+    if (uStripes) {  // boards 0.025 m wide, +-6 %, faded out where a pixel is wider than a board
+        float amp = 0.06 * clamp(1.0 - fwidth(vLocalX) / 0.025, 0.0, 1.0);
+        base.rgb *= mod(floor(vLocalX / 0.025), 2.0) < 1.0 ? 1.0 + amp : 1.0 - amp;
+    }
     vec3 rgb;
     if (uEmissive) {
         rgb = base.rgb;

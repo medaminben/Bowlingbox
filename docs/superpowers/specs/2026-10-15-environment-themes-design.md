@@ -246,8 +246,10 @@ uniform float uAmbient; uniform bool uEmissive; uniform bool uFog; uniform bool 
 uniform vec3 uFogColor; uniform float uFogStart; uniform float uFogEnd;
 void main() {
     vec4 base = (vLocalY >= uBandRange.x && vLocalY <= uBandRange.y) ? uBandColor : uColor;
-    if (uStripes)  // boards 0.025 m wide, alternating ±6 %
-        base.rgb *= mod(floor(vLocalX / 0.025), 2.0) < 1.0 ? 1.06 : 0.94;
+    if (uStripes) {  // boards 0.025 m wide, +-6 %, faded out where a pixel is wider than a board
+        float amp = 0.06 * clamp(1.0 - fwidth(vLocalX) / 0.025, 0.0, 1.0);
+        base.rgb *= mod(floor(vLocalX / 0.025), 2.0) < 1.0 ? 1.0 + amp : 1.0 - amp;
+    }
     vec3 rgb;
     if (uEmissive) {
         rgb = base.rgb;
@@ -268,7 +270,7 @@ The fog distance is taken per fragment from the interpolated view position, beca
 - **Pins:** the band (`uBandRange`, `uBandColor`) works as today. A `Prop` with `pinBand` uses the
   theme's `pinBand` colour and today's neck range.
 - **Fog:** on for everything except the aim guide, which keeps its 0.40 alpha and stays unfogged.
-- **Stripes:** on only for the main and neighbour lane boxes.
+- **Stripes:** on only for the main and neighbour lane boxes, faded out where a pixel is wider than a board.
 - **Background:** a new `sky` shader draws one full-viewport triangle with depth testing and depth
   writes off, from `backgroundBottom` at the bottom of the 3D viewport to `backgroundTop` at the top.
   `ContextData` owns it next to `lit` and `flat`.
