@@ -124,6 +124,10 @@ void BowlingCanvas::OnTimer(wxTimerEvent&) {
 
 void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
     const Command c = InputMapper::keyDown(e.GetKeyCode(), e.ControlDown(), _lane.snapshot().phase);
+    if (c.type == Command::Type::CycleTheme) {
+        if (_themeKeyHeld) return;  // auto-repeat would otherwise flash through themes
+        _themeKeyHeld = true;
+    }
     if (c.type == Command::Type::None)
         e.Skip();
     else
@@ -131,6 +135,7 @@ void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
 }
 
 void BowlingCanvas::OnKeyUp(wxKeyEvent& e) {
+    if (e.GetKeyCode() == 'T' || e.GetKeyCode() == 't') _themeKeyHeld = false;
     const Command c = InputMapper::keyUp(e.GetKeyCode(), _lane.snapshot().phase);
     if (c.type == Command::Type::None)
         e.Skip();

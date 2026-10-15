@@ -55,5 +55,6 @@ private:
     wxString _status;  // last text sent to onStatus
     bool _failed = false;
     Bowlingbox::Render::ThemeId _theme = Bowlingbox::Render::ThemeId::NeonHall;
+    bool _themeKeyHeld = false;  // auto-repeat would otherwise flash through themes
 };
 #endif  // BOWLINGGL_BOWLING_CANVAS_H

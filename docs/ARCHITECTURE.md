@@ -168,7 +168,7 @@ serves every prop, and `bounds()` uses the same extents as the meshes.
 | `BowlingFrame` | Window, menu (Game ▸ New/Quit, View ▸ Theme, Help ▸ Controls/About), status bar |
 | `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the timer, forwards wx events |
 | `FixedStep` | Turns irregular timer ticks into 1/60 s physics steps; drops the backlog after a stall |
-| `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `Quit` |
+| `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `CycleTheme`, `Quit` |
 | `InputMapper` | Pure functions: key, button or mouse move + current `Phase` → `Command` |
 | `LaneCommands` | `execute(Command, Lane&)` → `Result<>` |
 | `FollowCamera` | Waits behind the foul line, follows the ball down the lane, eases back |

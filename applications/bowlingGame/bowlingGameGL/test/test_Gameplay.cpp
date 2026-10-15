@@ -3,6 +3,8 @@
 #include "Hud.h"
 #include "HudText.h"
 #include "LaneCommands.h"
+#include "SceneAdapter.h"
+#include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <algorithm>
@@ -187,4 +189,41 @@ TEST(test_hud_text, controls_help_names_every_binding) {
 TEST(test_hud_text, unknown_theme_message_lists_every_name) {
     EXPECT_EQ(HudText::unknownThemeMessage("space"), "unknown theme 'space'; use neon, classic or outdoor");
     EXPECT_EQ(HudText::unknownThemeMessage(""), "unknown theme ''; use neon, classic or outdoor");
+}
+
+TEST(test_scene_adapter, geometry_copies_every_lane_dimension) {
+    const auto g = SceneAdapter::geometry(Alley::kLane);
+    const auto& l = Alley::kLane;
+    EXPECT_FLOAT_EQ(g.laneHalfWidth, l.halfWidth);
+    EXPECT_FLOAT_EQ(g.laneLength, l.length);
+    EXPECT_FLOAT_EQ(g.approach, l.approach);
+    EXPECT_FLOAT_EQ(g.gutterWidth, l.gutterWidth);
+    EXPECT_FLOAT_EQ(g.gutterDepth, l.gutterDepth);
+    EXPECT_FLOAT_EQ(g.ballRadius, l.ballRadius);
+    EXPECT_FLOAT_EQ(g.pinHeight, l.pinHeight);
+    EXPECT_FLOAT_EQ(g.pinMaxRadius, l.pinMaxRadius);
+    EXPECT_FLOAT_EQ(g.pinComHeight, l.pinComHeight);
+    EXPECT_FLOAT_EQ(g.pinSpacing, l.pinSpacing);
+    EXPECT_FLOAT_EQ(g.headPinZ, l.headPinZ);
+}
+
+TEST(test_scene_adapter, decor_clears_the_play_area_of_the_real_lane) {
+    const auto g = SceneAdapter::geometry(Alley::kLane);
+    const Render::Aabb zones[] = {
+        {{-0.82f, -0.14f, -4.f}, {0.82f, 0.8f, 19.f}},                         // play corridor
+        {{-0.82f, -0.14f, -4.f}, {0.82f, 2.2f, Alley::kLane.length}},          // sight corridor
+        {{-0.6f, 1.4f, -4.f}, {0.6f, 2.4f, 13.5f}},                            // camera box
+    };
+    for (const Render::ThemeId id : Render::kThemes) {
+        const auto& th = Render::theme(id);
+        const auto props = Render::buildProps(th, g);
+        for (std::size_t i = 0; i < props.size(); ++i) {
+            const Render::Aabb b = Render::bounds(props[i], g);
+            for (const auto& z : zones) {
+                const bool overlap = b.min.x < z.max.x && b.max.x > z.min.x && b.min.y < z.max.y &&
+                                     b.max.y > z.min.y && b.min.z < z.max.z && b.max.z > z.min.z;
+                EXPECT_FALSE(overlap) << "theme " << th.name << " prop " << i;
+            }
+        }
+    }
 }
