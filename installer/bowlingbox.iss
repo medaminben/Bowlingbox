@@ -8,6 +8,11 @@
 ; Bowling Box keeps no user data in its folder: an upgrade overwrites the
 ; program files and an uninstall removes them.
 
+; x64compatible and the multi-resolution wizard images need Inno Setup 6.3.
+#if Ver < EncodeVer(6,3,0)
+  #error Inno Setup 6.3 or newer is required
+#endif
+
 #ifndef StageDir
   #define StageDir "..\build\windows\installer\stage\bin"
 #endif

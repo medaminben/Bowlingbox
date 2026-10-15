@@ -127,11 +127,8 @@ function Resolve-Iscc {
   $candidates += "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
   $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
   if (-not $iscc) { throw "Inno Setup 6.3+ not found. Install it (choco install innosetup) or pass -InnoSetupDir." }
-  # x64compatible and the multi-resolution wizard images need 6.3.
-  $info = (Get-Item $iscc).VersionInfo
-  if ([version]::new($info.FileMajorPart, $info.FileMinorPart) -lt [version]"6.3") {
-    throw "Inno Setup $($info.FileVersion) at $iscc is too old; 6.3 or newer is required."
-  }
+  # ISCC.exe carries no version resource; installer\bowlingbox.iss checks the
+  # compiler version itself (#if Ver < EncodeVer(6,3,0)).
   return $iscc
 }
 
