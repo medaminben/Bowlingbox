@@ -183,3 +183,8 @@ TEST(test_hud_text, controls_help_names_every_binding) {
     for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q", "T: change the scenery"})
         EXPECT_NE(help.find(key), std::string::npos) << key;
 }
+
+TEST(test_hud_text, unknown_theme_message_lists_every_name) {
+    EXPECT_EQ(HudText::unknownThemeMessage("space"), "unknown theme 'space'; use neon, classic or outdoor");
+    EXPECT_EQ(HudText::unknownThemeMessage(""), "unknown theme ''; use neon, classic or outdoor");
+}
