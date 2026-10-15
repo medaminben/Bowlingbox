@@ -2,8 +2,9 @@
 # and wx::gl. Lookup order:
 #   1. an installed CMake package (wxWidgetsConfig.cmake, e.g. a wx built with CMake)
 #   2. the system wx-config (e.g. Debian/Ubuntu libwxgtk3.2-dev)
-#   3. FetchContent: download and build it statically from source. The host then
-#      needs GTK3 development headers (libgtk-3-dev) and OpenGL headers (libgl1-mesa-dev).
+#   3. FetchContent: download and build it statically from source. On Linux the
+#      host then needs GTK3 development headers (libgtk-3-dev) and OpenGL headers
+#      (libgl1-mesa-dev); on Windows (MinGW) nothing beyond the compiler.
 # Set BOWLINGBOX_USE_SYSTEM_WX=OFF to skip 1 and 2 and always build from source.
 include(FetchContent)
 find_package(OpenGL REQUIRED)
@@ -64,11 +65,24 @@ foreach(feature wxUSE_WEBVIEW wxUSE_MEDIACTRL wxUSE_STC wxUSE_RIBBON wxUSE_RICHT
                 wxUSE_LIBSDL wxUSE_LIBTIFF wxUSE_LIBLZMA wxUSE_HELP)
     set(${feature} OFF CACHE BOOL "" FORCE)
 endforeach()
-foreach(lib wxUSE_LIBPNG wxUSE_LIBJPEG wxUSE_EXPAT wxUSE_REGEX)
-    set(${lib} builtin CACHE STRING "" FORCE)
-endforeach()
-find_package(ZLIB REQUIRED)
-set(wxUSE_ZLIB sys CACHE STRING "" FORCE)
+if(WIN32)
+    # BowlingGL uses no wx JPEG, XML or regex classes. Leaving them out keeps
+    # libjpeg, Expat and PCRE2 (whose licences need binary notices) out of the
+    # Windows installer. wx turns wxUSE_XML off with Expat. wxMSW cannot drop
+    # PNG (its Tango art provider and wxUSE_SVG require it); libpng needs no
+    # binary notice. Windows has no system zlib, so wx builds its own.
+    foreach(lib wxUSE_LIBJPEG wxUSE_EXPAT wxUSE_REGEX)
+        set(${lib} OFF CACHE STRING "" FORCE)
+    endforeach()
+    set(wxUSE_LIBPNG builtin CACHE STRING "" FORCE)
+    set(wxUSE_ZLIB   builtin CACHE STRING "" FORCE)
+else()
+    foreach(lib wxUSE_LIBPNG wxUSE_LIBJPEG wxUSE_EXPAT wxUSE_REGEX)
+        set(${lib} builtin CACHE STRING "" FORCE)
+    endforeach()
+    find_package(ZLIB REQUIRED)
+    set(wxUSE_ZLIB sys CACHE STRING "" FORCE)
+endif()
 
 FetchContent_MakeAvailable(wxWidgets)
 

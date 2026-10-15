@@ -31,3 +31,14 @@ install(
     NAMESPACE ${CMAKE_ROOT_NAME}::
     DESTINATION ${BOWLINGBOX_INSTALL_CMAKEDIR}
 )
+
+# Windows installer: the licence files ship beside BowlingGL.exe.
+if(WIN32)
+    install(
+        FILES
+            "${CMAKE_SOURCE_DIR}/LICENSE"
+            "${CMAKE_SOURCE_DIR}/installer/THIRD_PARTY_NOTICES.txt"
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        COMPONENT ${BOWLINGBOX_RUNTIME_COMPONENT}
+    )
+endif()

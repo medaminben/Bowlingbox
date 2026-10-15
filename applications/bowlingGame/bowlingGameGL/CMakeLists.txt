@@ -22,6 +22,7 @@ bowlingbox_set_warnings(bowlinggl_core)
 create_application(
     NAME         BowlingGL
     ENTRY        WX_ui
+    COMPONENT    ${BOWLINGBOX_RUNTIME_COMPONENT}
     SOURCES      BowlingCanvas.h BowlingCanvas.cpp
                  BowlingFrame.h BowlingFrame.cpp
                  main.cpp

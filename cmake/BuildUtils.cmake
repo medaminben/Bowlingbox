@@ -76,6 +76,7 @@ function(create_library)
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                COMPONENT ${BOWLINGBOX_RUNTIME_COMPONENT}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
@@ -125,7 +126,7 @@ function(create_application)
     endif()
 
     set(options)
-    set(single_value_args NAME ENTRY UI)
+    set(single_value_args NAME ENTRY UI COMPONENT)
     set(list_args HEADERS SOURCES RESOURCES BUILD_ARGS DEPENDENCIES)
     cmake_parse_arguments(PARSE_ARGV 0 app
         "${options}" "${single_value_args}" "${list_args}")
@@ -156,8 +157,14 @@ function(create_application)
         )
     endif()
     bowlingbox_set_warnings(${app_NAME})
+    # COMPONENT puts the app into a named install component (the Windows
+    # installer stages BOWLINGBOX_RUNTIME_COMPONENT only).
+    set(_component_args)
+    if(app_COMPONENT)
+        set(_component_args COMPONENT ${app_COMPONENT})
+    endif()
     install(TARGETS ${app_NAME}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ${_component_args}
+        BUNDLE  DESTINATION ${CMAKE_INSTALL_BINDIR} ${_component_args}
     )
 endfunction()
