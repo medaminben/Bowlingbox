@@ -36,7 +36,8 @@ configure. An installed wxWidgets 3.2 (`sudo apt install libwxgtk3.2-dev`) is us
 otherwise wxWidgets is downloaded and built too. The [manual](docs/MANUAL.md) covers controls,
 every build option, and troubleshooting.
 
-On Windows, install Bowling Box with the installer from the **Windows installer** workflow;
+On Windows, install Bowling Box with `BowlingBox_Setup_<version>.exe` from the
+[latest release](https://github.com/medaminben/Bowlingbox/releases/latest);
 [docs/windows-installer.md](docs/windows-installer.md) explains how it is built.
 
 ## Repository layout

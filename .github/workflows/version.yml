@@ -1,7 +1,8 @@
 # Gives every pull request merged into main a semantic version (vX.Y.Z tag + GitHub release).
 # The pull request's label picks the bump: semver:major, semver:minor, semver:patch, or
 # semver:none for no release. Without a semver label the bump is patch. CMake reads the
-# version from the latest tag (cmake/GitVersion.cmake).
+# version from the latest tag (cmake/GitVersion.cmake). Each release then gets the Windows
+# installer attached (windows-installer.yml, called below).
 name: Version
 
 on:
@@ -54,6 +55,8 @@ jobs:
     concurrency:
       group: version-release  # one release at a time, so two merges never get the same version
       cancel-in-progress: false
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}  # empty when nothing was released
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -62,6 +65,7 @@ jobs:
           fetch-depth: 0  # tags
 
       - name: Tag and release
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ inputs.pr_number || github.event.pull_request.number }}
@@ -89,4 +93,16 @@ jobs:
           url=$(jq -r '.url' <<<"$pr_json")
           gh release create "$tag" --target "$sha" --title "$tag" \
             --notes "$title ([#$PR]($url)), $bump release."
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Released $tag for PR #$PR ($bump)." >> "$GITHUB_STEP_SUMMARY"
+
+  # Builds the Windows installer from the new tag and attaches it to the release. Called
+  # directly: a tag or release created with GITHUB_TOKEN starts no other workflow.
+  installer:
+    needs: release
+    if: needs.release.outputs.tag != ''
+    permissions:
+      contents: write
+    uses: ./.github/workflows/windows-installer.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}

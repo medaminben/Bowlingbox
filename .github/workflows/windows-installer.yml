@@ -1,12 +1,26 @@
 name: Windows installer
 
-# Manual for now; building on each vX.Y.Z tag from version.yml is a follow-up.
+# version.yml calls this for every release it creates, with the new tag; the installer is
+# then attached to that release. Run it by hand with no tag for a build of the current ref
+# (workflow artifact only), or with an existing vX.Y.Z tag to attach one to that release.
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: vX.Y.Z release to build and attach the installer to
+        type: string
+        required: true
   workflow_dispatch:
+    inputs:
+      tag:
+        description: vX.Y.Z release to attach the installer to (empty = artifact only)
+        type: string
+        required: false
 
+# One build per tag or ref; a second release never cancels the first one's build.
 concurrency:
-  group: windows-installer
-  cancel-in-progress: true
+  group: windows-installer-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -15,11 +29,14 @@ jobs:
   build-installer:
     runs-on: windows-latest
     timeout-minutes: 90
+    permissions:
+      contents: write  # gh release upload
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0  # tags, for the version CMake reads
 
       - name: Setup MSYS2 (UCRT64 GCC, CMake, Ninja, binutils)
@@ -78,3 +95,22 @@ jobs:
           name: BowlingBox_Setup
           path: build/windows/dist/BowlingBox_Setup_*.exe
           if-no-files-found: error
+
+      # The installer must carry the release's version: CMake read it from the checked-out
+      # tag, so a mismatch means the wrong commit was built.
+      - name: Attach installer to release
+        if: inputs.tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          $installer = "build/windows/dist/BowlingBox_Setup_$($env:TAG.TrimStart('v')).exe"
+          if (-not (Test-Path $installer)) {
+            Get-ChildItem build/windows/dist | Format-Table Name -AutoSize
+            throw "Expected $installer for release $env:TAG."
+          }
+          gh release upload $env:TAG $installer --clobber
+          if ($LASTEXITCODE -ne 0) { throw "gh release upload failed for $env:TAG" }
+          "Attached $(Split-Path $installer -Leaf) to release $env:TAG." >> $env:GITHUB_STEP_SUMMARY
