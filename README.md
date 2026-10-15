@@ -5,7 +5,7 @@
 
 A C++20 bowling game built from small, testable libraries: a ten-pin score calculator,
 a Bullet3 physics lane, an OpenGL renderer, and three front-ends (wxWidgets/OpenGL,
-console, optional Qt).
+console, and a wxWidgets score display).
 
 ![BowlingGL](docs/Bowlingbox_%20Neon%20Strike.png)
 
@@ -44,9 +44,10 @@ every build option, and troubleshooting.
 | [`libraries/Core`](libraries/Core) | `Bowlingbox::Core`: `Result<T, E>` / `Error<E>` types |
 | [`libraries/Alley`](libraries/Alley) | `Bowlingbox::Alley`: the throw state machine (`Lane`) on top of a swappable physics world (Bullet3) |
 | [`libraries/Render`](libraries/Render) | `Bowlingbox::Render`: OpenGL 3.3 scene renderer, 2D overlay, scoreboard painter |
-| [`applications/bowlingGame`](applications/bowlingGame) | `BowlingGL` (wxWidgets + OpenGL), `BowlingConsole`, `BowlingDisplay` (Qt) |
+| [`applications/bowlingGame`](applications/bowlingGame) | `BowlingGL` (wxWidgets + OpenGL), `BowlingConsole`, `BowlingDisplay` (wxWidgets) |
 | [`cmake`](cmake) | Build helpers, dependency fetching, scaffold templates, install/export config |
 | [`3rdparty`](3rdparty) | In-tree GLAD loader and `stb_easy_font` |
+| [`licenses`](licenses) | Third-party licence list and texts |
 | [`docs`](docs) | Architecture, manual, design specs and plans |
 
 ## Main build options
@@ -54,8 +55,7 @@ every build option, and troubleshooting.
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` (system wxWidgets, or fetched and built) |
-| `BUILD_QT_UI` | `OFF` | Build `BowlingDisplay` (needs Qt 6 installed) |
+| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (system wxWidgets, or fetched and built) |
 | `BUILD_TESTING` | `ON` | Build the GoogleTest suites |
 | `BUILD_SHARED_LIBS` | `ON` | Build the Bowlingbox libraries as shared libraries |
 
@@ -66,9 +66,8 @@ The [manual](docs/MANUAL.md#build-options) lists the full set.
 - [Manual](docs/MANUAL.md): building, playing, troubleshooting, developer workflow
 - [Architecture](docs/ARCHITECTURE.md): libraries, interfaces, data flow, build system
 - [Bowling apps](applications/bowlingGame/README.md): per-app notes and the manual test checklist
-- [BowlingGL design spec](docs/superpowers/specs/2026-10-13-bowling-gl-game-design.md)
 
 ## License
 
 Bowlingbox is released under the [MIT License](LICENSE). Third-party components keep their own
-licences; see [3rdparty/README.md](3rdparty/README.md) and the [manual](docs/MANUAL.md#third-party-licences).
+licences; [licenses/](licenses/README.md) lists them with their full licence texts.

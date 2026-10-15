@@ -4,5 +4,5 @@ compile_commands.json
 .cache/
 *.user
 
-# superpowers brainstorming session scratch (docs/superpowers/ specs and plans stay tracked)
+# superpowers session scratch
 /.superpowers/

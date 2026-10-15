@@ -115,8 +115,8 @@ function(create_library)
 endfunction()
 
 # ---------------------------------------------------------------------------
-# create_application — executable of kind ENTRY (Console, QT_ui or WX_ui).
-# Callers guard QT_ui / WX_ui apps with if(BUILD_QT_UI) / if(BUILD_WX_UI).
+# create_application — executable of kind ENTRY (Console or WX_ui).
+# Callers guard WX_ui apps with if(BUILD_WX_UI).
 # ---------------------------------------------------------------------------
 function(create_application)
     # Empty keyword args (e.g. UI with no value) are allowed for app scaffolds.
@@ -134,12 +134,9 @@ function(create_application)
         message(WARNING "unparsed argument: ${arg}")
     endforeach()
 
-    set(_entries Console QT_ui WX_ui)
+    set(_entries Console WX_ui)
     if(NOT app_ENTRY IN_LIST _entries)
         message(FATAL_ERROR "${app_NAME}: ENTRY must be one of ${_entries}, got '${app_ENTRY}'")
-    endif()
-    if(app_ENTRY STREQUAL "QT_ui" AND NOT BUILD_QT_UI)
-        message(FATAL_ERROR "${app_NAME}: ENTRY QT_ui needs BUILD_QT_UI=ON; guard the call with if(BUILD_QT_UI)")
     endif()
     if(app_ENTRY STREQUAL "WX_ui" AND NOT BUILD_WX_UI)
         message(FATAL_ERROR "${app_NAME}: ENTRY WX_ui needs BUILD_WX_UI=ON; guard the call with if(BUILD_WX_UI)")
@@ -150,11 +147,7 @@ function(create_application)
         list(APPEND PROJECT_FILES ${app_UI})
     endif()
 
-    if(app_ENTRY STREQUAL "QT_ui")
-        qt_add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
-    else()
-        add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
-    endif()
+    add_executable(${app_NAME} ${app_BUILD_ARGS} ${PROJECT_FILES})
     target_link_libraries(${app_NAME} PRIVATE ${app_DEPENDENCIES})
     if(NOT app_ENTRY STREQUAL "Console")
         set_target_properties(${app_NAME} PROPERTIES

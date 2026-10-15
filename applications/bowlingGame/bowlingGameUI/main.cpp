@@ -1,16 +1,17 @@
 /**
   @file main.cpp
-  @author Mohamed Lamine Ben Hassine
-  @mail mohamed.ben-hassine@mailfence.com
   @details entry point to the app
 */
-#include "display.h"
-#include <QApplication>
+#include "ScoreSheetFrame.h"
+#include <wx/wx.h>
 
-int main(int argc, char* argv[]) {
-    QApplication a(argc, argv);
-    BowlingDisplay::MainWindow w;
-    w.show();
+class DisplayApp : public wxApp {
+public:
+    bool OnInit() override {
+        auto* window = new BowlingDisplay::MainWindow();
+        window->Show();
+        return true;
+    }
+};
 
-    return a.exec();
-}
+wxIMPLEMENT_APP(DisplayApp);

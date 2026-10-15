@@ -130,22 +130,6 @@ function(generate_library)
             ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Wx_UI/${lib_NAME}_Wx_UI.cpp)
     endif()
 
-    if(Qt${QT_VERSION_MAJOR}_FOUND)
-        file(APPEND ${lib_APPS_DIR}/${lib_NAME}/CMakeLists.txt
-            "\nadd_subdirectory(${lib_NAME}_Qt_UI)\n")
-
-        configure_file(${lib_CFG_SRC}/app/lib_qt_ui_CMakeLists.txt.in
-            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Qt_UI/CMakeLists.txt)
-        configure_file(${lib_CFG_SRC}/app/lib_Qt_UI.cpp.in
-            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Qt_UI/${lib_NAME}_Qt_UI.cpp)
-        configure_file(${lib_CFG_SRC}/app/lib_mainwindow.cpp.in
-            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Qt_UI/mainwindow.cpp)
-        configure_file(${lib_CFG_SRC}/app/lib_mainwindow.h.in
-            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Qt_UI/mainwindow.h)
-        configure_file(${lib_CFG_SRC}/app/lib_mainwindow.ui.in
-            ${lib_APPS_DIR}/${lib_NAME}/${lib_NAME}_Qt_UI/mainwindow.ui)
-    endif()
-
     if(NOT EXISTS ${lib_APPS_DIR}/CMakeLists.txt)
         file(WRITE ${lib_APPS_DIR}/CMakeLists.txt
             "# Auto-generated; do not hand-edit unless you know the consequences.\n")

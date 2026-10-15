@@ -16,7 +16,7 @@ graph TD
     subgraph Applications
         GL[BowlingGL<br/>wxWidgets + OpenGL]
         CON[BowlingConsole]
-        QT[BowlingDisplay<br/>Qt, optional]
+        DISP[BowlingDisplay<br/>wxWidgets]
     end
     subgraph Libraries
         ALLEY[Bowlingbox::Alley<br/>Lane state machine]
@@ -35,7 +35,8 @@ graph TD
     GL --> RENDER
     GL --> WX
     CON --> SCORE
-    QT --> SCORE
+    DISP --> SCORE
+    DISP --> WX
     ALLEY --> SCORE
     ALLEY --> CORE
     ALLEY -. private .-> BULLET
@@ -77,7 +78,7 @@ frame totals. A slot is either a pin count or a `Mark` sentinel:
 | `Spare` | -1 | `/` |
 | `Miss` | 0 | `-` (or `0` in a score cell) |
 
-Every display (Render, console, Qt) calls `notation()`, so they all show the same marks.
+Every display (Render, console, BowlingDisplay) calls `notation()`, so they all show the same marks.
 
 **Rules enforced.** `roll()` refuses negative counts, counts above `pinsLeft()` and any roll after
 the game is over. `pinsLeft()` follows the tenth frame's rack and is 0 once the game is over. A
@@ -175,12 +176,12 @@ current.
 receives an `IBowlingGame` and an `ITerminal` (`SystemTerminal` uses stdin/stdout), draws
 `banner()`, `renderScoreSheet()` and the session's message and prompt, and feeds it input lines.
 
-### BowlingDisplay (`bowlingGameUI`, optional)
+### BowlingDisplay (`bowlingGameUI`)
 
-A Qt Widgets form that shows a `ScoreCalculator`. It is built only with `BUILD_QT_UI=ON`, because Qt is
-a large external dependency with its own licence.
-`BowlingDisplay::MainWindow` finds its widgets by name in `display.ui` and draws the sheet from
-`Score::frames()`.
+A wxWidgets frame that shows a `ScoreCalculator`. It is built with `BUILD_WX_UI=ON`, next to BowlingGL,
+and links `wx::core` and `wx::base` (not OpenGL). The window is laid out in C++ with sizers.
+`BowlingDisplay::MainWindow` names every widget so `wxWindow::FindWindowByName` finds it, and draws
+the sheet from `Score::frames()`.
 
 ## Data flow: one throw in BowlingGL
 
@@ -246,9 +247,9 @@ The canvas never changes game state directly. Every change goes through a `Comma
   - generates the export header
   - installs the target, its headers and its export set
   - builds `test_bowlingbox_<lib>` from the test sources
-- `create_application(NAME … ENTRY Console|QT_ui|WX_ui …)` creates an executable of the right kind.
-  It stops with an error for an unknown ENTRY or a disabled toolkit, so each app directory calls it
-  directly, inside `if(BUILD_QT_UI)` / `if(BUILD_WX_UI)` for toolkit apps. The app's logic goes in
+- `create_application(NAME … ENTRY Console|WX_ui …)` creates an executable of the right kind.
+  It stops with an error for an unknown ENTRY or a disabled toolkit, so each wx app directory calls it
+  directly, inside `if(BUILD_WX_UI)`. The app's logic goes in
   a static `<app>_core` library that the executable and its test both link.
 - `build_gtest_executable(NAME test_… SRC … DEPENDS … DISCOVER ON)` registers the tests with
   `gtest_discover_tests` and labels them `unit`. Names must start with `test_` and be lowercase.
@@ -257,7 +258,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 
 With `GENERATE_SCAFFOLD=ON`, any name in `BOWLINGBOX_LIBRARIES` (root `CMakeLists.txt`) that has no
 directory yet is generated from `cmake/template/lib` (header, pimpl, CMake file, test). A matching
-app is generated from `cmake/template/app` (console, Qt or wx entry). Existing directories are
+app is generated from `cmake/template/app` (console or wx entry). Existing directories are
 never touched.
 
 ### Dependencies
@@ -266,10 +267,9 @@ never touched.
 |---|---|---|---|
 | Bullet3 | 3.25 | FetchContent, static, `-fPIC` (`BulletSupport.cmake`) | Alley (private) |
 | GLM | 1.0.1 | FetchContent, header-only (`GlmSupport.cmake`) | Render |
-| wxWidgets | 3.2.8 | FetchContent, static, GTK3 (`WxSupport.cmake`) | BowlingGL |
+| wxWidgets | 3.2.8 | FetchContent, static, GTK3 (`WxSupport.cmake`) | BowlingGL, BowlingDisplay |
 | GoogleTest | v1.15.2 | FetchContent (`GTestSupport.cmake`) | all tests |
 | GLAD 2, stb_easy_font | in tree | `3rdparty/` | Render (private) |
-| Qt 6 | system | `find_package` (`QtSupport.cmake`) | BowlingDisplay |
 
 Versions are cache variables (`BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
 `BOWLINGBOX_WX_VERSION`, `BOWLINGBOX_GTEST_VERSION`).
@@ -298,7 +298,7 @@ interface. Code that includes `Bowlingbox/Render/Render.h` must find GLM itself.
 | `test_bowlingbox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas |
 | `test_bowlinggl` | Input mapping, lane commands, fixed time step, follow camera, HUD layout, text and drawing; no window is opened |
 | `test_bowlingconsole` | `Session` (menu, rolls, game over, input trimming), score grid text against golden output, banner, and the game loop with a scripted terminal |
-| `test_bowlingdisplay` | The Qt form on the offscreen platform: pin buttons, tenth frame, game over, restart (only with `BUILD_QT_UI=ON`) |
+| `test_bowlingdisplay` | The wx score sheet: pin buttons, tenth frame, game over, restart (only with `BUILD_WX_UI=ON`). Needs a display or `xvfb-run` |
 
 Anything that needs a real window or GL context is checked by hand with the checklist in
 [applications/bowlingGame/README.md](../applications/bowlingGame/README.md).
@@ -307,8 +307,8 @@ Anything that needs a real window or GL context is checked by hand with the chec
 
 - **`.github/workflows/ci.yml`**: on pushes to `main` and `feature/**`, and on pull requests to
   `main`, Ubuntu 24.04 with CMake 3.31 and Ninja:
-  - configures with Debug, `BUILD_WX_UI=ON`, `BUILD_QT_UI=OFF` and `GENERATE_SCAFFOLD=OFF`
-  - builds, then runs `ctest --label-regex unit`
+  - configures with Debug, `BUILD_WX_UI=ON` and `GENERATE_SCAFFOLD=OFF`
+  - builds, then runs `xvfb-run -a ctest --label-regex unit`
   - installs the libraries and builds `ci/consumer` against them (`ci/install-smoke.sh`)
   - caches the FetchContent downloads
 - **`.github/workflows/automerge.yml`**: squash-merges a pull request labelled `automerge` once CI succeeds on it, and only if the pull request still points at the tested commit.
