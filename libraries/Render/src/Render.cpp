@@ -17,18 +17,18 @@ const char* kLitVs = R"(#version 330 core
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
 uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj; uniform mat3 uNormalMat;
-out vec3 vNormal; out float vLocalY; out float vLocalX; out float vViewDist;
+out vec3 vNormal; out float vLocalY; out float vLocalX; out vec3 vViewPos;
 void main() {
     vNormal = normalize(uNormalMat * aNormal);
     vLocalY = aPos.y;
     vLocalX = aPos.x;
     vec4 viewPos = uView * uModel * vec4(aPos, 1.0);
-    vViewDist = length(viewPos.xyz);
+    vViewPos = viewPos.xyz;
     gl_Position = uProj * viewPos;
 })";
 
 const char* kLitFs = R"(#version 330 core
-in vec3 vNormal; in float vLocalY; in float vLocalX; in float vViewDist;
+in vec3 vNormal; in float vLocalY; in float vLocalX; in vec3 vViewPos;
 uniform vec4 uColor; uniform vec4 uBandColor; uniform vec2 uBandRange; uniform vec3 uLightDir;
 uniform float uAmbient; uniform bool uEmissive; uniform bool uFog; uniform bool uStripes;
 uniform vec3 uFogColor; uniform float uFogStart; uniform float uFogEnd;
@@ -45,12 +45,12 @@ void main() {
         rgb = base.rgb * (uAmbient + (1.0 - uAmbient) * diffuse);
     }
     if (uFog) {
-        float f = clamp((vViewDist - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
+        float dist = length(vViewPos);
+        float f = clamp((dist - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
         rgb = mix(rgb, uFogColor, uEmissive ? 0.5 * f : f);
     }
     FragColor = vec4(rgb, base.a);
 })";
-
 
 const char* kFlatVs = R"(#version 330 core
 layout(location = 0) in vec3 aPos;
