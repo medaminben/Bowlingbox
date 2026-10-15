@@ -1,5 +1,6 @@
 # Merges pull requests into main after the CI workflow succeeds on the PR head.
 # Opt in by adding the "automerge" label to the PR (squash merge).
+# After merging it runs version.yml, since a merge made with GITHUB_TOKEN starts no other workflow.
 name: Automerge on green CI
 
 on:
@@ -18,8 +19,11 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      pr: ${{ steps.merge.outputs.pr }}
     steps:
       - name: Merge pull request
+        id: merge
         uses: actions/github-script@v7
         with:
           script: |
@@ -75,3 +79,14 @@ jobs:
               sha: testedSha,  // GitHub refuses the merge if the head moved after this check
             });
             core.info(`Merged PR #${prNumber} (squash) after successful CI.`);
+            core.setOutput('pr', prNumber);
+
+  version:
+    needs: automerge
+    if: needs.automerge.outputs.pr
+    permissions:
+      contents: write
+      pull-requests: read
+    uses: ./.github/workflows/version.yml
+    with:
+      pr_number: ${{ fromJSON(needs.automerge.outputs.pr) }}
