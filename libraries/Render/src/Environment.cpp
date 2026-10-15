@@ -1,5 +1,6 @@
 #include <Bowlingbox/Render/Environment.h>
 #include "PropBuilders.h"
+#include "EnvironmentDecor.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cctype>
@@ -236,6 +237,7 @@ std::vector<Prop> buildProps(const Theme& t, const SceneGeometry& g) {
         for (float side : {-1.f, 1.f})
             addNeighbourLane(props, t, g, side * pitch * static_cast<float>(k));
     addBallReturns(props, t, g);
+    addDecor(props, t, g);
     return props;
 }
 

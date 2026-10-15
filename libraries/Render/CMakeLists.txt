@@ -10,6 +10,7 @@ set(TARGET_HEADERS
     src/GlMesh.h
     src/ContextData.h
     src/PropBuilders.h
+    src/EnvironmentDecor.h
     include/Bowlingbox/Render/Geometry.h
     include/Bowlingbox/Render/Canvas2D.h
     include/Bowlingbox/Render/ScoreboardLayout.h
@@ -23,6 +24,7 @@ set(TARGET_SOURCES
     src/ScoreboardLayout.cpp
     src/ScoreboardPainter.cpp
     src/Environment.cpp
+    src/EnvironmentDecor.cpp
     src/GlShader.cpp
     src/GlMesh.cpp
     src/Render.cpp
