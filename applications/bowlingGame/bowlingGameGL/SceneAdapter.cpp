@@ -10,7 +10,8 @@ namespace SceneAdapter {
 
 Render::SceneGeometry geometry(const Alley::LaneDimensions& d) {
     return {d.halfWidth, d.length, d.approach, d.gutterWidth, d.gutterDepth,
-            d.ballRadius, d.pinHeight, d.pinMaxRadius, d.pinComHeight};
+            d.ballRadius, d.pinHeight, d.pinMaxRadius, d.pinComHeight,
+            d.pinSpacing, d.headPinZ};
 }
 
 Render::Transform toTransform(const Alley::Pose& p) {

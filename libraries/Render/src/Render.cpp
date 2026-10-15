@@ -53,12 +53,6 @@ struct Vertex2D {
 };
 }  // namespace
 
-// ---------------------------------------------------------------- Transform
-glm::mat4 Transform::matrix() const {
-    return glm::translate(glm::mat4(1.f), position) * glm::mat4_cast(rotation) *
-           glm::scale(glm::mat4(1.f), scale);
-}
-
 // ---------------------------------------------------------------- Context
 Context::Context() : _d(std::make_unique<ContextData>()) {}
 Context::~Context() = default;
