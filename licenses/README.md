@@ -49,9 +49,9 @@ packages. They are listed here for completeness:
 
 The Windows build (`cmake/windows-installer.cmake`) differs in three ways:
 
-- wxWidgets is built from source with `wxUSE_LIBPNG`, `wxUSE_LIBJPEG`,
-  `wxUSE_EXPAT` and `wxUSE_REGEX` off and its own zlib, so libpng, libjpeg,
-  Expat and PCRE2 are not in the binary.
+- wxWidgets is built from source with `wxUSE_LIBJPEG`, `wxUSE_EXPAT` and
+  `wxUSE_REGEX` off and its own zlib, so libjpeg, Expat and PCRE2 are not in the
+  binary. libpng stays (wxMSW requires it) and needs no binary notice.
 - The GCC runtime is linked statically (`BOWLINGBOX_STATIC_RUNTIME`), which adds
   the mingw-w64 runtime: [mingw-w64.txt](mingw-w64.txt).
 - GoogleTest is built statically on every platform; it is still tests-only.

@@ -66,14 +66,16 @@ foreach(feature wxUSE_WEBVIEW wxUSE_MEDIACTRL wxUSE_STC wxUSE_RIBBON wxUSE_RICHT
     set(${feature} OFF CACHE BOOL "" FORCE)
 endforeach()
 if(WIN32)
-    # BowlingGL uses no wx image, XML or regex classes. Leaving them out keeps
+    # BowlingGL uses no wx JPEG, XML or regex classes. Leaving them out keeps
     # libjpeg, Expat and PCRE2 (whose licences need binary notices) out of the
-    # Windows installer. wx turns wxUSE_XML off with Expat. Windows has no
-    # system zlib, so wx builds its own.
-    foreach(lib wxUSE_LIBPNG wxUSE_LIBJPEG wxUSE_EXPAT wxUSE_REGEX)
+    # Windows installer. wx turns wxUSE_XML off with Expat. wxMSW cannot drop
+    # PNG (its Tango art provider and wxUSE_SVG require it); libpng needs no
+    # binary notice. Windows has no system zlib, so wx builds its own.
+    foreach(lib wxUSE_LIBJPEG wxUSE_EXPAT wxUSE_REGEX)
         set(${lib} OFF CACHE STRING "" FORCE)
     endforeach()
-    set(wxUSE_ZLIB builtin CACHE STRING "" FORCE)
+    set(wxUSE_LIBPNG builtin CACHE STRING "" FORCE)
+    set(wxUSE_ZLIB   builtin CACHE STRING "" FORCE)
 else()
     foreach(lib wxUSE_LIBPNG wxUSE_LIBJPEG wxUSE_EXPAT wxUSE_REGEX)
         set(${lib} builtin CACHE STRING "" FORCE)
