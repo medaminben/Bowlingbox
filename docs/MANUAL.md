@@ -7,7 +7,7 @@ structured, see [ARCHITECTURE.md](ARCHITECTURE.md).
 - [2. Building](#2-building)
 - [3. Playing BowlingGL](#3-playing-bowlinggl)
 - [4. Playing BowlingConsole](#4-playing-bowlingconsole)
-- [5. BowlingDisplay (Qt)](#5-bowlingdisplay-qt)
+- [5. BowlingDisplay (wx)](#5-bowlingdisplay-wx)
 - [6. Scoring rules](#6-scoring-rules)
 - [7. Troubleshooting](#7-troubleshooting)
 - [8. Developer guide](#8-developer-guide)
@@ -29,9 +29,8 @@ sudo apt install build-essential cmake git ninja-build \
                  libgtk-3-dev libgl1-mesa-dev libx11-dev zlib1g-dev
 ```
 
-- `libgtk-3-dev`, `libgl1-mesa-dev`, `libx11-dev` and `zlib1g-dev` are needed only for BowlingGL
-  (`BUILD_WX_UI=ON`).
-- Qt 6 is needed only with `BUILD_QT_UI=ON`.
+- `libgtk-3-dev`, `libgl1-mesa-dev`, `libx11-dev` and `zlib1g-dev` are needed for the wx apps
+  (`BUILD_WX_UI=ON`): BowlingGL and BowlingDisplay.
 
 Bullet3 3.25, GLM 1.0.1 and GoogleTest 1.15.2 are downloaded and built during configure. You do
 not install them yourself.
@@ -63,7 +62,7 @@ Executables are written to `<build-dir>/bin/` (`build/bin/` with the commands ab
 |---|---|
 | `BowlingGL` | 3D bowling game (wxWidgets + OpenGL) |
 | `BowlingConsole` | Text bowling score keeper |
-| `BowlingDisplay` | Qt score display (only with `BUILD_QT_UI=ON`) |
+| `BowlingDisplay` | wx score display (with `BUILD_WX_UI=ON`) |
 | `test_*` | GoogleTest suites |
 
 ### Build options
@@ -73,9 +72,8 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` (uses the system wxWidgets, or fetches it) |
+| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (uses the system wxWidgets, or fetches it) |
 | `BOWLINGBOX_USE_SYSTEM_WX` | `ON` | Use an installed wxWidgets if found; `OFF` always builds it from source |
-| `BUILD_QT_UI` | `OFF` | Build `BowlingDisplay`; needs Qt 6 |
 | `BUILD_TESTING` | `ON` | Fetch GoogleTest and build the test executables |
 | `BUILD_SHARED_LIBS` | `ON` | Bowlingbox libraries as shared (`.so` / `.dll`) instead of static |
 | `GENERATE_SCAFFOLD` | `ON` | Generate missing libraries listed in `BOWLINGBOX_LIBRARIES` from templates |
@@ -95,9 +93,6 @@ cmake -S . -B build -DBUILD_WX_UI=OFF
 
 # Release build
 cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
-
-# With the Qt display (point CMake to your Qt if it is not found)
-cmake -S . -B build -DBUILD_QT_UI=ON -DCMAKE_PREFIX_PATH=/path/to/Qt/6.x/gcc_64
 ```
 
 Keep extra build directories under `build/` (for example `build/release`). It is git-ignored, and each directory has its own `bin/` and `lib/`.
@@ -190,11 +185,13 @@ The program also ends when input ends (for example when stdin is a pipe). After 
 grid is redrawn with the current total; it shows 10, 5, 2 or 1 frames per row depending on the
 terminal width. When the tenth frame is complete, the final score is shown.
 
-## 5. BowlingDisplay (Qt)
+## 5. BowlingDisplay (wx)
 
-Build it with `-DBUILD_QT_UI=ON` and run `./build/bin/BowlingDisplay`. It is a form-based score
-display backed by the same `ScoreCalculator`. It is kept for comparison with the other two
-front-ends.
+The default wx build (`BUILD_WX_UI=ON`) produces `./build/bin/BowlingDisplay` next to BowlingGL.
+It is a form-based score display backed by the same `ScoreCalculator`. It uses `wx::core` and
+`wx::base`, not OpenGL.
+
+`test_bowlingdisplay` opens that window, so it needs a display or `xvfb-run`.
 
 ## 6. Scoring rules
 
@@ -218,7 +215,7 @@ frame's total appears once its bonus balls have been played.
 
 | Symptom | Cause and fix |
 |---|---|
-| `Package 'gtk+-3.0' not found` / OpenGL not found | Install `libgtk-3-dev libgl1-mesa-dev`, or build without BowlingGL (`-DBUILD_WX_UI=OFF`) |
+| `Package 'gtk+-3.0' not found` / OpenGL not found | Install `libgtk-3-dev libgl1-mesa-dev`, or build without the wx apps (`-DBUILD_WX_UI=OFF`) |
 | `DSO missing from command line` (X11) | Install `libx11-dev` and configure again |
 | Configure hangs or fails while downloading | Check network or proxy access to github.com. Once `build/_deps` is filled, use `-DBOWLINGBOX_FETCH_OFFLINE=ON` |
 | BowlingGL crashes at start on Wayland | The app switches to `GDK_BACKEND=x11` (XWayland) on its own. Make sure XWayland is available. Only set `GDK_BACKEND=wayland` if your wx/GL stack supports it |
@@ -299,7 +296,6 @@ Bowlingbox itself is MIT licensed (see [LICENSE](../LICENSE)). It uses:
 | GoogleTest | BSD-3-Clause (tests only, not shipped) |
 | GLAD 2 | generated loader (WTFPL OR CC0-1.0) AND Apache-2.0 |
 | stb_easy_font | MIT or public domain (Unlicense) |
-| Qt 6 (optional) | LGPL-3.0 / GPL / commercial |
 
 See [licenses/](../licenses/README.md) for versions, the libraries bundled into a
 source-built wxWidgets, and the full licence texts.

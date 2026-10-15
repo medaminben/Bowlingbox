@@ -52,7 +52,7 @@ Front-ends depend on interfaces; the concrete classes are picked in `main` (or a
 
 `Score/Notation.h` owns the 21-slot roll encoding (`Mark::Strike`, `Spare`, ...) and its
 "X / -" notation, and `Score/Frames.h` cuts the slots into ten `FrameView`s. Render, the console
-and Qt all draw from `Score::frames()`. Inject fakes to test without Bullet, OpenGL or a terminal:
+and BowlingDisplay all draw from `Score::frames()`. Inject fakes to test without Bullet, OpenGL or a terminal:
 see `test_alley_injected`, `test_render_scoreboard` and `test_hud`.
 
 Each app keeps everything except its entry point in a static library (`bowlingconsole_core`,
@@ -72,9 +72,9 @@ BowlingConsole: `Console::Session` holds the game flow (menu, playing, game over
 
 Text UI; type the number of pins. Built with `BUILD_APPS=ON`.
 
-## BowlingDisplay (Qt, optional)
+## BowlingDisplay (wxWidgets)
 
 ![bdisplay](https://github.com/medaminben/Sandbox/assets/166343832/bb91928f-58ca-4893-8179-2c4ee2be4679)
 
-Kept for comparison; off by default because of the Qt licence. Build with `-DBUILD_QT_UI=ON` (needs Qt 6).
-`test_bowlingdisplay` opens the form on Qt's offscreen platform, so it needs no display.
+Built with `BUILD_WX_UI=ON`, next to BowlingGL. It uses `wx::core` and `wx::base`, not OpenGL.
+`test_bowlingdisplay` opens the window, so it needs a display or `xvfb-run`.
