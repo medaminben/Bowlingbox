@@ -153,6 +153,7 @@ On the second ball of a frame, the pins that are still standing stay exactly whe
 | Charge power | hold Space | hold the left button |
 | Throw | release Space | release the left button |
 | New game | N or Ctrl+N | Game ▸ New Game |
+| Change scenery | T | View ▸ Theme |
 | Show controls | | Help ▸ Controls |
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
@@ -163,6 +164,17 @@ With the keyboard you can still move and aim while charging; mouse aiming works 
 - A centred throw at about 80 % power from an offset of about 0.08 m usually hits the pocket.
 - Holding → or ← moves the ball over the gutter. That throw goes straight into the gutter and is
   scored `-`.
+
+### Scenery
+
+BowlingGL draws one of three themes around the lane: Neon Hall (default), Classic Alley and
+Outdoor. Press `T` or use View ▸ Theme to switch. Start in a theme with:
+
+```bash
+./build/bin/BowlingGL --theme=outdoor     # neon, classic or outdoor; case does not matter
+```
+
+An unknown name prints `unknown theme '<name>'; use neon, classic or outdoor` and starts Neon Hall.
 
 ## 4. Playing BowlingConsole
 

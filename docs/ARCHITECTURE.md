@@ -141,7 +141,8 @@ OpenGL 3.3 core rendering, independent of any windowing toolkit.
 
 | Header | Purpose |
 |---|---|
-| `Render.h` | `Context` (one per GL context, loads GLAD, owns shaders), `Camera`, `SceneRenderer` (lane, gutters, ball, pins, aim guide), `Overlay` (OpenGL `ICanvas2D`), plain data `SceneGeometry` / `SceneDescription` / `Transform` |
+| `Render.h` | `Context` (one per GL context, loads GLAD, owns shaders), `Camera`, `SceneRenderer` (background, theme props, lane, gutters, ball, pins, aim guide), `Overlay` (OpenGL `ICanvas2D`), plain data `SceneDescription` |
+| `Environment.h` | Themes (`ThemeId`, `Theme`, `theme()`, `themeFromName()`, `nextTheme()`), `SceneGeometry`, `Transform`, and the GL-free decor layout: `buildProps()`, `shapeMesh()`, `localBounds()`, `bounds()` |
 | `Canvas2D.h` | `ICanvas2D`: `drawText`, `measureText`, `drawRect`, `strokeRect` in pixels |
 | `ScoreboardLayout.h` | Pixel geometry of the 10-frame grid and `glyphFor()` |
 | `ScoreboardPainter.h` | `paintScoreboard()`, which draws the grid through any `ICanvas2D` |
@@ -152,6 +153,11 @@ scoreboard and HUD draw through `ICanvas2D`, so they can be tested with a record
 a GL context. `Context::create()` returns a `Result` and fails cleanly when no GL 3.3 context is
 current.
 
+The lit shader adds per-theme ambient light, distance fog, emissive (glowing) materials and lane
+board stripes on top of the pin colour band; a separate sky shader draws the background gradient.
+Theme props are unit boxes, cylinders and cones scaled by their `Transform`, so one mesh per shape
+serves every prop, and `bounds()` uses the same extents as the meshes.
+
 ## Applications
 
 ### BowlingGL (`applications/bowlingGame/bowlingGameGL`)
@@ -159,7 +165,7 @@ current.
 | Unit | Responsibility |
 |---|---|
 | `main.cpp` | wx entry point; forces `GDK_BACKEND=x11` on Wayland (wxGLCanvas needs GLX) |
-| `BowlingFrame` | Window, menu (Game ▸ New/Quit, Help ▸ Controls/About), status bar |
+| `BowlingFrame` | Window, menu (Game ▸ New/Quit, View ▸ Theme, Help ▸ Controls/About), status bar |
 | `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the timer, forwards wx events |
 | `FixedStep` | Turns irregular timer ticks into 1/60 s physics steps; drops the backlog after a stall |
 | `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `Quit` |
@@ -295,7 +301,7 @@ interface. Code that includes `Bowlingbox/Render/Render.h` must find GLM itself.
 | `test_bowlingbox_score` | Scoring rules, encoding, notation, frames() |
 | `test_bowlingbox_core` | `Result` / `Error` |
 | `test_bowlingbox_alley` | State machine with real Bullet (`test_alley`: gutter, strike, 300 game, determinism) and with `FakeWorld` / `FakeGame` (`test_alley_injected`) |
-| `test_bowlingbox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas |
+| `test_bowlingbox_render` | Mesh generators, scoreboard layout, `paintScoreboard` on a fake canvas, theme data, shape bounds, and decor that never enters the play corridor, sight line or camera path |
 | `test_bowlinggl` | Input mapping, lane commands, fixed time step, follow camera, HUD layout, text and drawing; no window is opened |
 | `test_bowlingconsole` | `Session` (menu, rolls, game over, input trimming), score grid text against golden output, banner, and the game loop with a scripted terminal |
 | `test_bowlingdisplay` | The wx score sheet: pin buttons, tenth frame, game over, restart (only with `BUILD_WX_UI=ON`). Needs a display or `xvfb-run` |
