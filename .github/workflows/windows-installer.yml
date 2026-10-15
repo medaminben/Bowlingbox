@@ -1,0 +1,78 @@
+name: Windows installer
+
+# Manual for now. Tag and release triggers come once versioning is automated.
+on:
+  workflow_dispatch:
+  # TEMPORARY (removed in the last task of the installer plan): workflow_dispatch
+  # only works once the workflow is on the default branch.
+  push:
+    branches:
+      - feature/windows-installer
+
+concurrency:
+  group: windows-installer
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 (UCRT64 GCC, CMake, Ninja, binutils)
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-binutils
+
+      - name: Cache FetchContent
+        uses: actions/cache@v4
+        with:
+          path: .cache/fetchcontent
+          key: fetchcontent-win-v1-${{ hashFiles('cmake/GTestSupport.cmake', 'cmake/BulletSupport.cmake', 'cmake/GlmSupport.cmake', 'cmake/WxSupport.cmake', 'cmake/windows-installer.cmake') }}
+          restore-keys: |
+            fetchcontent-win-v1-
+
+      - name: Build, test and stage
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          ./scripts/build_windows_installer.ps1 `
+            -FetchContentDir "${{ github.workspace }}/.cache/fetchcontent" `
+            -SkipInstaller
+
+      # The stage check must reject a file outside the shipped set; prove it
+      # does, so a broken check cannot pass every build.
+      - name: Stage check rejects an extra file
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP "stage-probe"
+          Copy-Item build/windows/installer/stage/bin $probe -Recurse
+          Copy-Item (Join-Path $probe "libBowlingboxCore.dll") (Join-Path $probe "stale.dll")
+          ./scripts/verify_installer_stage.ps1 -AppDir $probe `
+            -Objdump (Join-Path $env:MSYS2_LOCATION "ucrt64\bin\objdump.exe")
+          if ($LASTEXITCODE -eq 0) { throw "verify_installer_stage.ps1 accepted stale.dll" }
+          Write-Host "Rejected as expected."
+          exit 0
+
+      - name: Upload staged folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: BowlingBox_stage
+          path: build/windows/installer/stage/bin
+          if-no-files-found: error
