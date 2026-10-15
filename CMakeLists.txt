@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.29)
 
+# The version comes from the latest vX.Y.Z git tag (see cmake/GitVersion.cmake).
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GitVersion.cmake)
+
 # Project names are only relevant for humans; camel case is okay.
-project(Bowlingbox VERSION 1.4.0 LANGUAGES CXX)
+project(Bowlingbox VERSION ${BOWLINGBOX_VERSION} LANGUAGES CXX)
 
 # Global project name used by library aliases (Bowlingbox::Core)
 set(CMAKE_ROOT_NAME ${PROJECT_NAME})

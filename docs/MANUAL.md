@@ -296,6 +296,30 @@ Every push to `main` or `feature/**`, and every pull request to `main`, builds a
 24.04 (`.github/workflows/ci.yml`). Add the `automerge` label to a pull request to squash-merge it
 automatically once CI is green. The merge only happens if the pull request still points at the commit CI tested. A merge made by the workflow does not start another CI run on `main`.
 
+### Versioning
+
+Every pull request merged into `main` gets its own [semantic version](https://semver.org).
+`.github/workflows/version.yml` tags the merge commit `vX.Y.Z` and publishes a GitHub release
+for it. A label on the pull request chooses the bump:
+
+| Label | Bump | Use for |
+|---|---|---|
+| `semver:major` | 1.4.2 → 2.0.0 | Breaking changes to the public library API |
+| `semver:minor` | 1.4.2 → 1.5.0 | New features |
+| `semver:patch` | 1.4.2 → 1.4.3 | Fixes, refactors (also the default when no `semver:` label is set) |
+| `semver:none` | no release | Docs or CI only |
+
+While the pull request is open, the Version check shows the version it will get. The check fails
+if more than one `semver:` label is set. Merges made by the `automerge` workflow are versioned
+too.
+
+CMake takes `Bowlingbox_VERSION` (and the version of the installed package) from the nearest
+`vX.Y.Z` tag, through `cmake/GitVersion.cmake`. Without git or tags, for example in a shallow
+clone, it uses the fallback version in that file. To set the version by hand, pass
+`-DBOWLINGBOX_VERSION=X.Y.Z`. Each library keeps its own version in its `project()` call,
+and that version sets the shared library's `SOVERSION`. Run `git fetch --tags` and reconfigure
+to pick up a new release in an existing build tree.
+
 ## Third-party licences
 
 Bowlingbox itself is MIT licensed (see [LICENSE](../LICENSE)). It uses:

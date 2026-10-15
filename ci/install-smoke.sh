@@ -9,8 +9,11 @@ here=$(cd "$(dirname "$0")" && pwd)
 work="$(cd "$build_dir" && pwd)/install-smoke"
 rm -rf "$work"
 
+version=$(sed -n 's/^CMAKE_PROJECT_VERSION:STATIC=//p' "$build_dir/CMakeCache.txt")
+
 cmake --install "$build_dir" --prefix "$work/prefix"
-cmake -S "$here/consumer" -B "$work/consumer" -DCMAKE_PREFIX_PATH="$work/prefix"
+cmake -S "$here/consumer" -B "$work/consumer" -DCMAKE_PREFIX_PATH="$work/prefix" \
+    -DBOWLINGBOX_EXPECTED_VERSION="$version"
 cmake --build "$work/consumer"
 LD_LIBRARY_PATH="$work/prefix/lib:$work/prefix/lib64" "$work/consumer/consumer"
-echo "install smoke test passed"
+echo "install smoke test passed (Bowlingbox $version)"
