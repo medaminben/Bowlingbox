@@ -20,6 +20,8 @@ public:
     void setVec2(const char* name, const glm::vec2& v) const;
     void setVec3(const char* name, const glm::vec3& v) const;
     void setVec4(const char* name, const glm::vec4& v) const;
+    void setFloat(const char* name, float v) const;
+    void setBool(const char* name, bool v) const;
 
 private:
     explicit GlShader(unsigned program) : _program(program) {}

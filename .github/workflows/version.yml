@@ -1,0 +1,92 @@
+# Gives every pull request merged into main a semantic version (vX.Y.Z tag + GitHub release).
+# The pull request's label picks the bump: semver:major, semver:minor, semver:patch, or
+# semver:none for no release. Without a semver label the bump is patch. CMake reads the
+# version from the latest tag (cmake/GitVersion.cmake).
+name: Version
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled, closed]
+  # Called by automerge.yml: a merge made with GITHUB_TOKEN starts no pull_request run.
+  workflow_call:
+    inputs:
+      pr_number:
+        type: number
+        required: true
+
+permissions: {}
+
+jobs:
+  # Shows the version the pull request will get, and fails on conflicting semver labels.
+  preview:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tags
+
+      - name: Next version
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          mapfile -t labels < <(jq -r '.[]' <<<"$LABELS")
+          bump=$(ci/version-bump.sh "${labels[@]}")
+          if [[ $bump == none ]]; then
+            message="semver:none: merging this pull request creates no release."
+          else
+            message="Merging this pull request releases v$(ci/next-version.sh "$bump") ($bump)."
+          fi
+          echo "::notice::$message"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
+
+  # Tags the merge commit with the next version and publishes a release for it.
+  release:
+    if: inputs.pr_number || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: read
+    concurrency:
+      group: version-release  # one release at a time, so two merges never get the same version
+      cancel-in-progress: false
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0  # tags
+
+      - name: Tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          pr_json=$(gh pr view "$PR" --json title,url,labels,mergeCommit)
+          sha=$(jq -r '.mergeCommit.oid // empty' <<<"$pr_json")
+          if [[ -z $sha ]]; then
+            echo "PR #$PR is not merged."
+            exit 1
+          fi
+
+          mapfile -t labels < <(jq -r '.labels[].name' <<<"$pr_json")
+          bump=$(ci/version-bump.sh "${labels[@]}")
+          if [[ $bump == none ]]; then
+            echo "PR #$PR has semver:none, no release."
+            exit 0
+          fi
+          if git tag --points-at "$sha" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Merge commit $sha of PR #$PR already has a version tag."
+            exit 0
+          fi
+
+          tag="v$(ci/next-version.sh "$bump")"
+          title=$(jq -r '.title' <<<"$pr_json")
+          url=$(jq -r '.url' <<<"$pr_json")
+          gh release create "$tag" --target "$sha" --title "$tag" \
+            --notes "$title ([#$PR]($url)), $bump release."
+          echo "Released $tag for PR #$PR ($bump)." >> "$GITHUB_STEP_SUMMARY"

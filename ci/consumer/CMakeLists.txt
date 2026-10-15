@@ -2,7 +2,12 @@
 cmake_minimum_required(VERSION 3.29)
 project(BowlingboxConsumer LANGUAGES CXX)
 
-find_package(Bowlingbox 1.4 REQUIRED)
+# install-smoke.sh passes the version of the build tree it installed.
+if(BOWLINGBOX_EXPECTED_VERSION)
+    find_package(Bowlingbox ${BOWLINGBOX_EXPECTED_VERSION} EXACT REQUIRED)
+else()
+    find_package(Bowlingbox REQUIRED)
+endif()
 
 add_executable(consumer main.cpp)
 target_compile_features(consumer PRIVATE cxx_std_20)

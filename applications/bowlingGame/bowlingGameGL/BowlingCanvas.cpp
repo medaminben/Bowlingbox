@@ -4,6 +4,7 @@
 #include "InputMapper.h"
 #include "LaneCommands.h"
 #include "SceneAdapter.h"
+#include <cstdio>
 
 using namespace Bowlingbox;
 using Alley::Phase;
@@ -50,11 +51,21 @@ void BowlingCanvas::newGame() {
     apply({Command::Type::NewGame});
 }
 
+void BowlingCanvas::setTheme(Render::ThemeId id) {
+    _theme = id;
+    if (_scene)
+        _scene->setTheme(id);  // CPU only, no GL context needed
+    if (onThemeChanged)
+        onThemeChanged(id);
+    Refresh(false);
+}
+
 bool BowlingCanvas::ensureRenderer() {
     if (_ctx)
         return true;
     auto created = Render::Context::create();
     if (created.isError()) {
+        std::fprintf(stderr, "OpenGL initialisation failed: %s\n", created.error().c_str());
         _failed = true;
         const wxString msg = wxString::FromUTF8(created.error());
         CallAfter([this, msg] {
@@ -64,7 +75,7 @@ bool BowlingCanvas::ensureRenderer() {
         return false;
     }
     _ctx = created();
-    _scene = std::make_unique<Render::SceneRenderer>(*_ctx, SceneAdapter::geometry(Alley::kLane));
+    _scene = std::make_unique<Render::SceneRenderer>(*_ctx, SceneAdapter::geometry(Alley::kLane), _theme);
     _overlay = std::make_unique<Render::Overlay>(*_ctx);
     resizeContext();
     return true;
@@ -113,6 +124,10 @@ void BowlingCanvas::OnTimer(wxTimerEvent&) {
 
 void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
     const Command c = InputMapper::keyDown(e.GetKeyCode(), e.ControlDown(), _lane.snapshot().phase);
+    if (c.type == Command::Type::CycleTheme) {
+        if (_themeKeyHeld) return;  // auto-repeat would otherwise flash through themes
+        _themeKeyHeld = true;
+    }
     if (c.type == Command::Type::None)
         e.Skip();
     else
@@ -120,6 +135,7 @@ void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
 }
 
 void BowlingCanvas::OnKeyUp(wxKeyEvent& e) {
+    if (e.GetKeyCode() == 'T' || e.GetKeyCode() == 't') _themeKeyHeld = false;
     const Command c = InputMapper::keyUp(e.GetKeyCode(), _lane.snapshot().phase);
     if (c.type == Command::Type::None)
         e.Skip();
@@ -144,6 +160,10 @@ void BowlingCanvas::OnMouse(wxMouseEvent& e) {
 void BowlingCanvas::apply(Command command) {
     if (command.type == Command::Type::Quit) {
         if (onQuit) onQuit();
+        return;
+    }
+    if (command.type == Command::Type::CycleTheme) {
+        setTheme(Render::nextTheme(_theme));
         return;
     }
     auto r = LaneCommands::execute(command, _lane);

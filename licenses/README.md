@@ -18,7 +18,7 @@ one copied from that project's own source.
 | [Bullet3](https://github.com/bulletphysics/bullet3) | 3.25 | Alley (statically linked) | Zlib | [bullet3.txt](bullet3.txt) |
 | [GLM](https://github.com/g-truc/glm) | 1.0.1 | Render (header-only) | MIT OR Happy Bunny License | [glm.txt](glm.txt) |
 | [GoogleTest](https://github.com/google/googletest) | 1.15.2 | tests only, not shipped | BSD-3-Clause | [googletest.txt](googletest.txt) |
-| [wxWidgets](https://www.wxwidgets.org) | ≥ 3.2 (3.2.8 when built from source) | `BowlingGL` | wxWindows Library Licence 3.1 (LGPL-2.0+ with a binary exception) | [wxWidgets.txt](wxWidgets.txt) |
+| [wxWidgets](https://www.wxwidgets.org) | ≥ 3.2 (3.2.8 when built from source) | `BowlingGL`, `BowlingDisplay` | wxWindows Library Licence 3.1 (LGPL-2.0+ with a binary exception) | [wxWidgets.txt](wxWidgets.txt) |
 
 ### Built into wxWidgets when it is compiled from source
 
