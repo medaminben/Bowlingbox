@@ -3,11 +3,6 @@ name: Windows installer
 # Manual for now. Tag and release triggers come once versioning is automated.
 on:
   workflow_dispatch:
-  # TEMPORARY (removed in the last task of the installer plan): workflow_dispatch
-  # only works once the workflow is on the default branch.
-  push:
-    branches:
-      - feature/windows-installer
 
 concurrency:
   group: windows-installer
