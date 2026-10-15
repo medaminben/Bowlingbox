@@ -4,6 +4,7 @@
 #include "InputMapper.h"
 #include "LaneCommands.h"
 #include "SceneAdapter.h"
+#include <cstdio>
 
 using namespace Bowlingbox;
 using Alley::Phase;
@@ -55,6 +56,7 @@ bool BowlingCanvas::ensureRenderer() {
         return true;
     auto created = Render::Context::create();
     if (created.isError()) {
+        std::fprintf(stderr, "OpenGL initialisation failed: %s\n", created.error().c_str());
         _failed = true;
         const wxString msg = wxString::FromUTF8(created.error());
         CallAfter([this, msg] {

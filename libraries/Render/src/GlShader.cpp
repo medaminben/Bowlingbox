@@ -71,6 +71,12 @@ void GlShader::setVec3(const char* name, const glm::vec3& v) const {
 void GlShader::setVec4(const char* name, const glm::vec4& v) const {
     glUniform4fv(glGetUniformLocation(_program, name), 1, glm::value_ptr(v));
 }
+void GlShader::setFloat(const char* name, float v) const {
+    glUniform1f(glGetUniformLocation(_program, name), v);
+}
+void GlShader::setBool(const char* name, bool v) const {
+    glUniform1i(glGetUniformLocation(_program, name), v ? 1 : 0);
+}
 
 }  // namespace Render
 }  // namespace Bowlingbox

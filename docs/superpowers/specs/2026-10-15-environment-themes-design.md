@@ -236,8 +236,8 @@ All positions are derived from `SceneGeometry` and the constants below. There is
 
 ```glsl
 // vertex: as today, plus
-out float vViewDist; out float vLocalX;
-vViewDist = length((uView * uModel * vec4(aPos, 1.0)).xyz);
+out vec3 vViewPos; out float vLocalX;
+vViewPos = (uView * uModel * vec4(aPos, 1.0)).xyz;
 vLocalX = aPos.x;
 
 // fragment
@@ -256,12 +256,14 @@ void main() {
         rgb = base.rgb * (uAmbient + (1.0 - uAmbient) * diffuse);
     }
     if (uFog) {
-        float f = clamp((vViewDist - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
+        float f = clamp((length(vViewPos) - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
         rgb = mix(rgb, uFogColor, uEmissive ? 0.5 * f : f);
     }
     FragColor = vec4(rgb, base.a);  // alpha passes through: the aim guide stays at 0.40
 }
 ```
+
+The fog distance is taken per fragment from the interpolated view position, because interpolating a per-vertex `length()` is wrong on large slabs.
 
 - **Pins:** the band (`uBandRange`, `uBandColor`) works as today. A `Prop` with `pinBand` uses the
   theme's `pinBand` colour and today's neck range.

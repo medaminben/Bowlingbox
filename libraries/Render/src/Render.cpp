@@ -17,21 +17,39 @@ const char* kLitVs = R"(#version 330 core
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
 uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj; uniform mat3 uNormalMat;
-out vec3 vNormal; out float vLocalY;
+out vec3 vNormal; out float vLocalY; out float vLocalX; out vec3 vViewPos;
 void main() {
     vNormal = normalize(uNormalMat * aNormal);
     vLocalY = aPos.y;
-    gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+    vLocalX = aPos.x;
+    vec4 viewPos = uView * uModel * vec4(aPos, 1.0);
+    vViewPos = viewPos.xyz;
+    gl_Position = uProj * viewPos;
 })";
 
 const char* kLitFs = R"(#version 330 core
-in vec3 vNormal; in float vLocalY;
+in vec3 vNormal; in float vLocalY; in float vLocalX; in vec3 vViewPos;
 uniform vec4 uColor; uniform vec4 uBandColor; uniform vec2 uBandRange; uniform vec3 uLightDir;
+uniform float uAmbient; uniform bool uEmissive; uniform bool uFog; uniform bool uStripes;
+uniform vec3 uFogColor; uniform float uFogStart; uniform float uFogEnd;
 out vec4 FragColor;
 void main() {
     vec4 base = (vLocalY >= uBandRange.x && vLocalY <= uBandRange.y) ? uBandColor : uColor;
-    float diff = max(dot(normalize(vNormal), normalize(-uLightDir)), 0.0);
-    FragColor = vec4(base.rgb * (0.35 + 0.65 * diff), base.a);
+    if (uStripes)  // boards 0.025 m wide, alternating +-6 %
+        base.rgb *= mod(floor(vLocalX / 0.025), 2.0) < 1.0 ? 1.06 : 0.94;
+    vec3 rgb;
+    if (uEmissive) {
+        rgb = base.rgb;
+    } else {
+        float diffuse = max(dot(normalize(vNormal), normalize(-uLightDir)), 0.0);
+        rgb = base.rgb * (uAmbient + (1.0 - uAmbient) * diffuse);
+    }
+    if (uFog) {
+        float dist = length(vViewPos);
+        float f = clamp((dist - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
+        rgb = mix(rgb, uFogColor, uEmissive ? 0.5 * f : f);
+    }
+    FragColor = vec4(rgb, base.a);
 })";
 
 const char* kFlatVs = R"(#version 330 core
@@ -44,8 +62,22 @@ uniform vec4 uColor;
 out vec4 FragColor;
 void main() { FragColor = uColor; })";
 
+// One triangle that covers the viewport; vT runs 0 (bottom) to 1 (top).
+const char* kSkyVs = R"(#version 330 core
+out float vT;
+void main() {
+    vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
+    vT = (p.y + 1.0) * 0.5;
+    gl_Position = vec4(p, 0.0, 1.0);
+})";
+
+const char* kSkyFs = R"(#version 330 core
+in float vT;
+uniform vec3 uTop; uniform vec3 uBottom;
+out vec4 FragColor;
+void main() { FragColor = vec4(mix(uBottom, uTop, clamp(vT, 0.0, 1.0)), 1.0); })";
+
 const glm::vec2 kNoBand {1.f, -1.f};  // min > max: matches no y
-const glm::vec3 kLightDir {-0.3f, -1.f, 0.4f};
 
 struct Vertex2D {
     float x, y, z;
@@ -71,9 +103,13 @@ Result<std::unique_ptr<Context>> Context::create() {
     auto flat = GlShader::build(kFlatVs, kFlatFs);
     if (flat.isError())
         return Bowlingbox::Core::Error<>("flat shader: " + flat.error());
+    auto sky = GlShader::build(kSkyVs, kSkyFs);
+    if (sky.isError())
+        return Bowlingbox::Core::Error<>("sky shader: " + sky.error());
     std::unique_ptr<Context> ctx(new Context());
     ctx->_d->lit = lit();
     ctx->_d->flat = flat();
+    ctx->_d->sky = sky();
     return Result<std::unique_ptr<Context>>(std::move(ctx));
 }
 
@@ -108,74 +144,132 @@ glm::mat4 Camera::view() const {
     return glm::lookAt(_eye, _target, glm::vec3(0.f, 1.f, 0.f));
 }
 glm::mat4 Camera::projection() const {
-    return glm::perspective(glm::radians(45.f), _aspect, 0.1f, 100.f);
+    return glm::perspective(glm::radians(45.f), _aspect, 0.1f, 150.f);
 }
 
 // ---------------------------------------------------------------- SceneRenderer
 struct SceneRenderer::Impl {
     Context& ctx;
     SceneGeometry g;
-    GlMesh lane, gutter, wall, ball, pin, guide;
+    const Theme* current = nullptr;
+    std::vector<Prop> props;
+    GlMesh lane, gutter, wall, ball, pin, guide, unitBox, unitCylinder, unitCone;
+    unsigned skyVao = 0;  // core profile needs a bound VAO even for attribute-less draws
 
-    explicit Impl(Context& c, const SceneGeometry& geo)
+    Impl(Context& c, const SceneGeometry& geo, ThemeId id)
         : ctx(c), g(geo),
           lane(boxData(geo.laneHalfWidth, 0.05f, (geo.laneLength + geo.approach) / 2)),
           gutter(boxData(geo.gutterWidth / 2, 0.05f, geo.laneLength / 2)),
           wall(boxData(0.02f, 0.15f, geo.laneLength / 2)),
           ball(sphereData(geo.ballRadius, 32)),
-          pin(pinData(geo.pinHeight, geo.pinMaxRadius, geo.pinComHeight)),
-          guide(boxData(0.01f, 0.003f, 0.5f)) {}
+          pin(shapeMesh(Shape::Pin, geo)),
+          guide(boxData(0.01f, 0.003f, 0.5f)),
+          unitBox(shapeMesh(Shape::Box, geo)),
+          unitCylinder(shapeMesh(Shape::Cylinder, geo)),
+          unitCone(shapeMesh(Shape::Cone, geo)) {
+        glGenVertexArrays(1, &skyVao);
+        setTheme(id);
+    }
+    ~Impl() { glDeleteVertexArrays(1, &skyVao); }
 
-    void drawMesh(const GlMesh& mesh, const glm::mat4& model, glm::vec4 color,
-                  glm::vec2 band = kNoBand, glm::vec4 bandColor = glm::vec4(1.f)) {
+    void setTheme(ThemeId id) {
+        current = &theme(id);
+        props = buildProps(*current, g);
+    }
+
+    const GlMesh& meshFor(Shape shape) const {
+        switch (shape) {
+            case Shape::Box:      return unitBox;
+            case Shape::Cylinder: return unitCylinder;
+            case Shape::Cone:     return unitCone;
+            case Shape::Pin:      break;
+        }
+        return pin;
+    }
+
+    void drawMesh(const GlMesh& mesh, const glm::mat4& model, glm::vec4 color, bool emissive = false,
+                  bool stripes = false, glm::vec2 band = kNoBand) {
         GlShader& s = *ctx.data().lit;
         s.setMat4("uModel", model);
         s.setMat3("uNormalMat", glm::inverseTranspose(glm::mat3(model)));
         s.setVec4("uColor", color);
         s.setVec2("uBandRange", band);
-        s.setVec4("uBandColor", bandColor);
+        s.setBool("uEmissive", emissive);
+        s.setBool("uStripes", stripes);
         mesh.draw();
+    }
+    void drawMaterial(const GlMesh& mesh, const glm::mat4& model, const Material& m, bool stripes = false,
+                      glm::vec2 band = kNoBand) {
+        drawMesh(mesh, model, glm::vec4(m.color, 1.f), m.emissive, stripes, band);
     }
     static glm::mat4 at(float x, float y, float z) {
         return glm::translate(glm::mat4(1.f), glm::vec3(x, y, z));
     }
 };
 
-SceneRenderer::SceneRenderer(Context& ctx, const SceneGeometry& geometry)
-    : _p(std::make_unique<Impl>(ctx, geometry)) {}
+SceneRenderer::SceneRenderer(Context& ctx, const SceneGeometry& geometry, ThemeId theme)
+    : _p(std::make_unique<Impl>(ctx, geometry, theme)) {}
 SceneRenderer::~SceneRenderer() = default;
+
+void SceneRenderer::setTheme(ThemeId theme) {
+    _p->setTheme(theme);
+}
 
 void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, int viewportY,
                          int viewportH) {
     Impl& p = *_p;
     const SceneGeometry& g = p.g;
+    const Theme& t = *p.current;
     glViewport(0, viewportY, p.ctx.width(), viewportH);
-    glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
+
+    // Background gradient behind everything, in the 3D band only.
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    GlShader& sky = *p.ctx.data().sky;
+    sky.use();
+    sky.setVec3("uTop", t.backgroundTop);
+    sky.setVec3("uBottom", t.backgroundBottom);
+    glBindVertexArray(p.skyVao);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+
     GlShader& s = *p.ctx.data().lit;
     s.use();
     s.setMat4("uView", camera.view());
     s.setMat4("uProj", camera.projection());
-    s.setVec3("uLightDir", kLightDir);
+    s.setVec3("uLightDir", t.lightDir);
+    s.setFloat("uAmbient", t.ambient);
+    s.setBool("uFog", true);
+    s.setVec3("uFogColor", t.fogColor);
+    s.setFloat("uFogStart", t.fogStart);
+    s.setFloat("uFogEnd", t.fogEnd);
+    s.setVec4("uBandColor", glm::vec4(t.pinBand.color, 1.f));
+
+    const glm::vec2 neck {0.55f * g.pinHeight - g.pinComHeight, 0.65f * g.pinHeight - g.pinComHeight};
+    for (const Prop& prop : p.props)
+        p.drawMaterial(p.meshFor(prop.shape), prop.transform.matrix(), prop.material, prop.stripes,
+                       prop.pinBand ? neck : kNoBand);
 
     const float outerX = g.laneHalfWidth + g.gutterWidth;
-    // Theme tokens: spec §4.4 / plan “Visual theme constants”.
-    p.drawMesh(p.lane, Impl::at(0.f, -0.05f, (g.laneLength - g.approach) / 2), {0.831f, 0.639f, 0.451f, 1.f});
+    p.drawMaterial(p.lane, Impl::at(0.f, -0.05f, (g.laneLength - g.approach) / 2), t.lane, true);
     for (float sx : {-1.f, 1.f}) {
-        p.drawMesh(p.gutter, Impl::at(sx * (g.laneHalfWidth + g.gutterWidth / 2), -g.gutterDepth - 0.05f, g.laneLength / 2),
-                   {0.008f, 0.055f, 0.22f, 1.f});
-        p.drawMesh(p.wall, Impl::at(sx * (outerX + 0.02f), 0.05f, g.laneLength / 2), {0.008f, 0.055f, 0.22f, 1.f});
+        p.drawMaterial(p.gutter, Impl::at(sx * (g.laneHalfWidth + g.gutterWidth / 2), -g.gutterDepth - 0.05f, g.laneLength / 2),
+                       t.gutter);
+        p.drawMaterial(p.wall, Impl::at(sx * (outerX + 0.02f), 0.05f, g.laneLength / 2), t.gutter);
     }
-    const glm::vec2 neck {0.55f * g.pinHeight - g.pinComHeight, 0.65f * g.pinHeight - g.pinComHeight};
     for (int i = 0; i < 10; ++i)
         if (scene.pinVisible[i])
-            p.drawMesh(p.pin, scene.pins[i].matrix(), {0.941f, 0.941f, 0.941f, 1.f}, neck, {0.902f, 0.f, 0.f, 1.f});
-    p.drawMesh(p.ball, scene.ball.matrix(), {0.098f, 0.365f, 0.925f, 1.f});
+            p.drawMaterial(p.pin, scene.pins[i].matrix(), t.pinBody, false, neck);
+    p.drawMaterial(p.ball, scene.ball.matrix(), t.ball);
 
     if (scene.showAimGuide) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDepthMask(GL_FALSE);
+        s.setBool("uFog", false);  // the guide keeps its colour and 0.40 alpha
         const float length = g.laneLength + 1.f;  // from the ball start (z = -1) to the deck end
         const float a = glm::radians(scene.aimAngleDeg);
         const glm::vec3 dir(std::sin(a), 0.f, std::cos(a));
