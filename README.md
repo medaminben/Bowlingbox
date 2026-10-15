@@ -67,6 +67,12 @@ The [manual](docs/MANUAL.md#build-options) lists the full set.
 - [Architecture](docs/ARCHITECTURE.md): libraries, interfaces, data flow, build system
 - [Bowling apps](applications/bowlingGame/README.md): per-app notes and the manual test checklist
 
+## Contributing
+
+Bug reports and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to build,
+test and submit a change. Everyone follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report security
+problems privately as described in [SECURITY.md](SECURITY.md).
+
 ## License
 
 Bowlingbox is released under the [MIT License](LICENSE). Third-party components keep their own
