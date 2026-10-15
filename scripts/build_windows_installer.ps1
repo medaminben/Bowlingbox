@@ -109,4 +109,52 @@ if ($SkipInstaller) {
   exit 0
 }
 
-throw "Packaging is added in Task 4; run with -SkipInstaller."
+function Get-ProjectVersion {
+  $text = Get-Content (Join-Path $RepoRoot "CMakeLists.txt") -Raw
+  $match = [regex]::Match($text, 'project\(\s*Bowlingbox\s+VERSION\s+([^\s)]+)')
+  if (-not $match.Success) { throw "No 'project(Bowlingbox VERSION x.y.z' in CMakeLists.txt." }
+  $version = $match.Groups[1].Value
+  if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected project version '$version'." }
+  return $version
+}
+
+function Resolve-Iscc {
+  param([string]$Hint)
+  $candidates = @()
+  if ($Hint) { $candidates += (Join-Path $Hint "ISCC.exe") }
+  $onPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+  if ($onPath) { $candidates += $onPath.Source }
+  $candidates += "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+  $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if (-not $iscc) { throw "Inno Setup 6.3+ not found. Install it (choco install innosetup) or pass -InnoSetupDir." }
+  # x64compatible and the multi-resolution wizard images need 6.3.
+  $info = (Get-Item $iscc).VersionInfo
+  if ([version]::new($info.FileMajorPart, $info.FileMinorPart) -lt [version]"6.3") {
+    throw "Inno Setup $($info.FileVersion) at $iscc is too old; 6.3 or newer is required."
+  }
+  return $iscc
+}
+
+Write-Host "`n--- Wizard art ---"
+$ArtDir = Join-Path $BuildDir "installer\art"
+& (Join-Path $PSScriptRoot "make_installer_art.ps1") `
+  -Source (Join-Path $RepoRoot "docs\Neon-Bowling-phone.png") -OutDir $ArtDir
+
+$Version = Get-ProjectVersion
+$DistDir = Join-Path $BuildDir "dist"
+New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
+Write-Host "`n--- Inno Setup (Bowling Box $Version) ---"
+$Iscc = Resolve-Iscc -Hint $InnoSetupDir
+Invoke-Native $Iscc @(
+  "/DStageDir=$((Resolve-Path $AppDir).Path)",
+  "/DArtDir=$((Resolve-Path $ArtDir).Path)",
+  "/DOutputDir=$((Resolve-Path $DistDir).Path)",
+  "/DMyAppVersion=$Version",
+  (Join-Path $RepoRoot "installer\bowlingbox.iss")
+)
+
+$Installer = Join-Path $DistDir "BowlingBox_Setup_$Version.exe"
+if (-not (Test-Path $Installer)) { throw "Installer not found: $Installer" }
+Write-Host "`n=== Done ==="
+Write-Host "Installer: $Installer"
+Write-Host "Size:      $([math]::Round((Get-Item $Installer).Length / 1MB, 1)) MB"
