@@ -107,6 +107,24 @@ TEST(test_display, game_over_disables_the_pins) {
         EXPECT_TRUE(pinButton(w, pins)->IsShown()) << pins;
 }
 
+TEST(test_display, a_perfect_game_fits_the_score_boxes) {
+    WindowGuard guard;
+    auto& w = guard.get();
+    for (int i = 0; i < 12; ++i)
+        roll(w, {10});
+    w.Layout();
+    const auto width = [&w](const char* name) {
+        return wxWindow::FindWindowByName(name, &w)->GetSize().GetWidth();
+    };
+    // The sizer hands its leftover pixel to the last box.
+    for (const char* frame : {"frame1", "frame10"})
+        EXPECT_NEAR(width("GameScore"), width(frame), 1) << frame;
+    for (const char* name : {"lblScore", "lblScoreFrame10"}) {
+        auto* label = wxWindow::FindWindowByName(name, &w);
+        EXPECT_GE(label->GetSize().GetWidth(), label->GetTextExtent("300").GetWidth()) << name;
+    }
+}
+
 TEST(test_display, restart_resets_once_and_clears_the_sheet) {
     int resets = 0;
     WindowGuard guard(std::make_unique<CountingGame>(resets));

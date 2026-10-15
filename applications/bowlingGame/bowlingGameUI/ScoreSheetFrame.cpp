@@ -16,7 +16,8 @@ namespace BowlingDisplay {
 namespace {
 wxStaticText* makeCell(wxWindow* parent, const wxString& name, const wxFont& font) {
     auto* label = new wxStaticText(parent, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                                   wxSize(30, 30), wxALIGN_CENTRE_HORIZONTAL);
+                                   wxSize(30, 30),
+                                   wxALIGN_CENTRE_HORIZONTAL | wxST_NO_AUTORESIZE);
     label->SetName(name);
     label->SetFont(font);
     return label;
@@ -72,22 +73,25 @@ MainWindow::MainWindow(wxWindow* parent, std::unique_ptr<Bowlingbox::Score::IBow
             _rollLabels.push_back(label);
         }
         boxSizer->Add(rolls, 0, wxEXPAND);
+        // Score cells span the box, so a total up to 300 is never cut off.
         auto* score = makeCell(box, wxString::Format("lblScoreFrame%d", frame), frameFont);
-        boxSizer->Add(score, 1, wxALIGN_CENTER);
+        boxSizer->AddStretchSpacer();
+        boxSizer->Add(score, 0, wxEXPAND);
+        boxSizer->AddStretchSpacer();
         _scoreLabels.push_back(score);
         frames->Add(boxSizer, 1, wxEXPAND | wxLEFT | wxRIGHT, 2);
     }
 
+    // The game total is an eleventh box, as wide as a frame.
     auto* gameBox = new wxStaticBox(this, wxID_ANY, wxEmptyString);
     gameBox->SetName("GameScore");
     auto* gameSizer = new wxStaticBoxSizer(gameBox, wxVERTICAL);
     _total = makeCell(gameBox, "lblScore", wxFontInfo(20).Bold());
-    gameSizer->Add(_total, 1, wxALIGN_CENTER);
-
-    auto* bottom = new wxBoxSizer(wxHORIZONTAL);
-    bottom->Add(frames, 1, wxEXPAND);
-    bottom->Add(gameSizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 4);
-    root->Add(bottom, 1, wxEXPAND);
+    gameSizer->AddStretchSpacer();
+    gameSizer->Add(_total, 0, wxEXPAND);
+    gameSizer->AddStretchSpacer();
+    frames->Add(gameSizer, 1, wxEXPAND | wxLEFT | wxRIGHT, 2);
+    root->Add(frames, 1, wxEXPAND);
 
     SetSizer(root);
     refresh();
