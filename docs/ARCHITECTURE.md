@@ -247,7 +247,7 @@ both link.
 
 `Console::Session` (`session.*`) is the game flow without I/O: `handle(line)` moves between `Menu`,
 `Playing` and `GameOver` and sets the message; rolls are validated by `IBowlingGame::roll`.
-`Console::Screen` (`bowlingScreen.*`) receives an `IBowlingGame` and an `ITerminal` (`terminal.*`;
+`Console::Screen` (`bowlingScreen.*`) borrows an `IBowlingGame&` and an `ITerminal&` that `main` owns (`terminal.*`;
 `SystemTerminal` uses stdin/stdout), draws `banner()` (`banner.*`), `renderScoreSheet()`
 (`scoreGrid.*`) and the session's message and prompt, and feeds it input lines. `console.cpp` is the
 entry point.

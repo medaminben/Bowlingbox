@@ -1,7 +1,6 @@
 #include "session.h"
 #include <charconv>
 #include <optional>
-#include <utility>
 
 namespace Console {
 namespace {
@@ -26,7 +25,7 @@ std::optional<int> parsePins(std::string_view text) {
 }
 }  // namespace
 
-Session::Session(std::shared_ptr<Bowlingbox::Score::IBowlingGame> game) : _game(std::move(game)) {}
+Session::Session(Bowlingbox::Score::IBowlingGame& game) : _game(game) {}
 
 void Session::handle(std::string_view input) {
     const std::string_view choice = trim(input);
@@ -35,7 +34,7 @@ void Session::handle(std::string_view input) {
         return;
     }
     if (choice == "p" || choice == "r") {
-        _game->reset();
+        _game.reset();
         _mode = Mode::Playing;
         _message = "New game started! Good luck!";
         return;
@@ -43,14 +42,14 @@ void Session::handle(std::string_view input) {
 
     const auto pins = parsePins(choice);
     // roll() refuses counts outside 0..pinsLeft(); no need to check them here.
-    if (_mode != Mode::Playing || !pins || _game->roll(*pins) != Bowlingbox::Score::RollStatus::Accepted) {
+    if (_mode != Mode::Playing || !pins || _game.roll(*pins) != Bowlingbox::Score::RollStatus::Accepted) {
         _message = "Your choice: " + std::string(choice) + "\nInvalid choice!";
         return;
     }
     // Same text as before the refactor: no echo, and a trailing newline that the
     // screen shows as a blank line before the prompt.
-    const std::string total = std::to_string(_game->score());
-    if (_game->isOver()) {
+    const std::string total = std::to_string(_game.score());
+    if (_game.isOver()) {
         _mode = Mode::GameOver;
         _message = "Game over! You scored: " + total + "\n";
     } else {
@@ -60,7 +59,7 @@ void Session::handle(std::string_view input) {
 
 std::string Session::prompt() const {
     if (_mode == Mode::Playing)
-        return "Enter a number between 0 and " + std::to_string(_game->pinsLeft()) +
+        return "Enter a number between 0 and " + std::to_string(_game.pinsLeft()) +
                "\nor a letter: r - restart, q - quit";
     return "Choose an option:\n p - play, q - quit";
 }

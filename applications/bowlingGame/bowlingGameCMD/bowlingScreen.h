@@ -1,7 +1,5 @@
 #ifndef BOWLING_SCREEN_H
 #define BOWLING_SCREEN_H
-#include <memory>
-
 #include <Bowlingbox/Score/IBowlingGame.h>
 
 #include "session.h"
@@ -13,7 +11,8 @@ namespace Console {
 /// lines to a Session. Scoring and terminal I/O are injected.
 class Screen {
 public:
-    Screen(std::shared_ptr<Bowlingbox::Score::IBowlingGame> game, ITerminal& terminal);
+    /// Draws and runs a game owned by the caller; `game` and `terminal` must outlive the Screen.
+    Screen(Bowlingbox::Score::IBowlingGame& game, ITerminal& terminal);
     /// Runs until "q" or the end of input.
     void start();
 
