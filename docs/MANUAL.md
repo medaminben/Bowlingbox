@@ -187,6 +187,9 @@ to the terminal. Two environment variables help when something looks wrong:
 | `BOWLINGBOX_RENDER=basic` | Use the simpler look: same lighting and materials, no shadows, reflection or glow. |
 | `BOWLINGBOX_RENDER_STATS=1` | Print the GPU time of each render pass once a second. |
 
+The GPU times only show the real cost when the graphics card is fully loaded: with a small window it
+clocks down until the work fills the frame, so the numbers look larger. Measure fullscreen.
+
 ## 4. Playing BowlingConsole
 
 ```bash
