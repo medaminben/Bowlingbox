@@ -16,6 +16,7 @@ set(TARGET_HEADERS
     include/Bowlingbox/Render/ScoreboardLayout.h
     include/Bowlingbox/Render/ScoreboardPainter.h
     include/Bowlingbox/Render/Environment.h
+    include/Bowlingbox/Render/Lighting.h
     include/Bowlingbox/Render/Render.h
 )
 set(TARGET_SOURCES
@@ -25,6 +26,7 @@ set(TARGET_SOURCES
     src/ScoreboardPainter.cpp
     src/Environment.cpp
     src/EnvironmentDecor.cpp
+    src/Lighting.cpp
     src/GlShader.cpp
     src/GlMesh.cpp
     src/Render.cpp
@@ -46,6 +48,7 @@ set(TARGET_FILES ${TARGET_HEADERS} ${TARGET_SOURCES})
 set(TST_SOURCES
     test/src/test_Render.cpp
     test/src/test_Environment.cpp
+    test/src/test_Lighting.cpp
 )
 set(TEST_DEPS)
 ###############################################################
