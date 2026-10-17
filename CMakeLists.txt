@@ -6,6 +6,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GitVersion.cmake)
 # Project names are only relevant for humans; camel case is okay.
 project(Bowlingbox VERSION ${BOWLINGBOX_VERSION} LANGUAGES CXX)
 
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR "Bowlingbox needs a 64-bit toolchain (CMAKE_SIZEOF_VOID_P is ${CMAKE_SIZEOF_VOID_P})")
+endif()
+
 # Global project name used by library aliases (Bowlingbox::Core)
 set(CMAKE_ROOT_NAME ${PROJECT_NAME})
 

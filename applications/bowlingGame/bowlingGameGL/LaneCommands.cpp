@@ -1,5 +1,7 @@
 #include "LaneCommands.h"
 
+using Bowlingbox::Result;
+
 namespace LaneCommands {
 
 Result<> execute(Command command, Bowlingbox::Alley::Lane& lane) {

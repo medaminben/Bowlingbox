@@ -28,10 +28,10 @@ Result<std::unique_ptr<GlShader>> GlShader::build(const char* vertexSrc, const c
         return Bowlingbox::Core::Error<>(vs.error());
     auto fs = compile(GL_FRAGMENT_SHADER, fragmentSrc);
     if (fs.isError()) {
-        glDeleteShader(vs());
+        glDeleteShader(vs.value());
         return Bowlingbox::Core::Error<>(fs.error());
     }
-    const GLuint vsId = vs(), fsId = fs();
+    const GLuint vsId = vs.value(), fsId = fs.value();
     const GLuint program = glCreateProgram();
     glAttachShader(program, vsId);
     glAttachShader(program, fsId);

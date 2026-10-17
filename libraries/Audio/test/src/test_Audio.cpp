@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <set>
 #include <string>
+#include <utility>
 
 using namespace Bowlingbox::Audio;
 
@@ -30,7 +31,7 @@ TEST(test_audio_catalogue, every_sound_decodes_to_mono_at_a_supported_rate_withi
     for (SoundId id : kAllSounds) {
         auto decoded = decodeInfo(id);
         ASSERT_TRUE(decoded.isValue()) << fileName(id);
-        const SoundInfo info = decoded();
+        const SoundInfo info = std::move(decoded).value();
         EXPECT_EQ(info.channels, 1) << fileName(id);
         EXPECT_TRUE(info.sampleRate == 22050 || info.sampleRate == 44100) << fileName(id) << ": " << info.sampleRate;
         if (isLoop(id)) {

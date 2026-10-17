@@ -82,10 +82,12 @@ count the balls thrown so far.
 
 Shared vocabulary types with no dependencies, all in `Core.h`:
 
-- `Result<T, E>`: a `std::variant` of a value and an error, with `isValue()`, `isError()`,
-  `operator()` and `error()`. `Result<>` (value type `std::monostate`) is the return type of
-  commands that can be refused. It is declared in the global namespace, so callers write
-  `Result<>`, not `Core::Result<>`.
+- `Bowlingbox::Result<T, E>`: a value or an error, with `isValue()`, `isError()`, `value()` and
+  `error()`. Reading does not move: `r.value()` returns a reference, and `std::move(r).value()`
+  takes the value out. The class is `[[nodiscard]]`, so an ignored refusal fails the `-Werror`
+  build. `Result<>` (value type `std::monostate`) is the return type of commands that can be
+  refused. Code inside `namespace Bowlingbox` writes `Result<>`; code outside writes
+  `Bowlingbox::Result<>` or adds `using Bowlingbox::Result;` in a `.cpp`.
 - `Bowlingbox::Core::Error<E>`: wraps an error (by default a `std::string`).
 
 ### Bowlingbox::Alley
@@ -351,6 +353,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 - The root `CMakeLists.txt` reads the version (`cmake/GitVersion.cmake`), sets the project
   (`Bowlingbox`, C++20) and the options, then includes `cmake/Common.cmake`. It adds `3rdparty/`,
   `libraries/` (the list in `libraries/CMakeLists.txt`) and, with `BUILD_APPS`, `applications/`.
+  The root `CMakeLists.txt` stops on a toolchain that is not 64-bit.
 - `GitVersion.cmake` takes the project version from the nearest `vX.Y.Z` tag, falls back to the
   version written in the file without git or tags, and accepts `-DBOWLINGBOX_VERSION=X.Y.Z`. Each
   library keeps its own version in its `project()` call, which sets its `SOVERSION`.

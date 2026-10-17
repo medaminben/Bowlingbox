@@ -13,7 +13,7 @@ namespace {
 std::unique_ptr<Audio::IAudioOutput> createAudio() {
     auto device = Audio::createDeviceOutput();
     if (device.isValue())
-        return device();
+        return std::move(device).value();
     std::fprintf(stderr, "sound disabled: %s\n", device.error().c_str());
     return Audio::makeSilentOutput();
 }
@@ -98,7 +98,7 @@ bool BowlingCanvas::ensureRenderer() {
         });
         return false;
     }
-    _ctx = created();
+    _ctx = std::move(created).value();
     _scene = std::make_unique<Render::SceneRenderer>(*_ctx, SceneAdapter::geometry(Alley::kLane), _theme);
     _overlay = std::make_unique<Render::Overlay>(*_ctx);
     resizeContext();

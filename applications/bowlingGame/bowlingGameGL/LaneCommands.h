@@ -7,6 +7,6 @@
 /// CycleTheme, the sound commands (ToggleMute, VolumeUp, VolumeDown, ToggleAmbience),
 /// Quit and None are not lane commands and succeed without effect; the caller handles them.
 namespace LaneCommands {
-Result<> execute(Command command, Bowlingbox::Alley::Lane& lane);
+Bowlingbox::Result<> execute(Command command, Bowlingbox::Alley::Lane& lane);
 }  // namespace LaneCommands
 #endif  // BOWLINGGL_LANE_COMMANDS_H

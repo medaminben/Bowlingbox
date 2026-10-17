@@ -28,11 +28,11 @@ int standingCount(const Snapshot& s) {
 /// and the lane is back in Aiming (or GameOver).
 void throwBall(Lane& lane, float offset, float angleDeg, float power) {
     const auto s = lane.snapshot();
-    lane.moveAim(offset - s.aimOffset);
-    lane.rotateAim(angleDeg - s.aimAngle);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(offset - s.aimOffset).isValue());
+    ASSERT_TRUE(lane.rotateAim(angleDeg - s.aimAngle).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(power));
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (int i = 0; i < 60 * 60; ++i) {
         const auto phase = lane.snapshot().phase;
         if (phase == Phase::Aiming || phase == Phase::GameOver)
@@ -84,9 +84,9 @@ TEST_F(test_alley, move_aim_clamps_to_range) {
 }
 
 TEST_F(test_alley, aim_while_rolling_is_an_error) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(0.25f);
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     EXPECT_EQ(lane.snapshot().phase, Phase::Rolling);
     auto r = lane.moveAim(0.1f);
     EXPECT_TRUE(r.isError());
@@ -94,7 +94,7 @@ TEST_F(test_alley, aim_while_rolling_is_an_error) {
 }
 
 TEST_F(test_alley, charging_power_follows_one_hertz_cosine) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(0.25f);
     EXPECT_NEAR(lane.snapshot().power, 0.5f, 1e-4f);
     lane.step(0.25f);
@@ -104,8 +104,8 @@ TEST_F(test_alley, charging_power_follows_one_hertz_cosine) {
 }
 
 TEST_F(test_alley, new_game_resets_everything) {
-    lane.moveAim(0.3f);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(0.3f).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     EXPECT_TRUE(lane.newGame().isValue());
     const auto s = lane.snapshot();
     EXPECT_EQ(s.phase, Phase::Aiming);
@@ -159,10 +159,10 @@ TEST_F(test_alley, second_ball_keeps_standing_pins) {
 }
 
 TEST_F(test_alley, fallen_pins_stay_visible_until_aiming) {
-    lane.moveAim(kPocketOffset);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(kPocketOffset).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(kStrikePower));
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (int i = 0; i < 60 * 20 && lane.snapshot().phase != Phase::FrameDone; ++i)
         lane.step(kDt);
     const auto s = lane.snapshot();
@@ -188,10 +188,10 @@ TEST_F(test_alley, twelve_strikes_score_three_hundred) {
 }
 
 TEST_F(test_alley, a_pocket_throw_reports_ball_pin_impacts) {
-    lane.moveAim(kPocketOffset);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(kPocketOffset).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(kStrikePower));
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     bool ballHitPin = false;
     for (int i = 0; i < 60 * 4 && !ballHitPin; ++i) {
         lane.step(kDt);
@@ -209,9 +209,9 @@ TEST_F(test_alley, a_pocket_throw_reports_ball_pin_impacts) {
 }
 
 TEST_F(test_alley, no_pin_impacts_before_the_ball_reaches_the_rack) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(0.05f));  // 4.4 m/s: about 4 s to the head pin
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (int i = 0; i < 60; ++i)
         lane.step(kDt);
     for (const Impact& im : lane.drainImpacts()) {
@@ -221,13 +221,13 @@ TEST_F(test_alley, no_pin_impacts_before_the_ball_reaches_the_rack) {
 }
 
 TEST_F(test_alley, new_game_drops_pending_impacts) {
-    lane.moveAim(kPocketOffset);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(kPocketOffset).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(kStrikePower));
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (int i = 0; i < 60 * 3; ++i)
         lane.step(kDt);
-    lane.newGame();
+    ASSERT_TRUE(lane.newGame().isValue());
     EXPECT_TRUE(lane.drainImpacts().empty());
 }
 
@@ -299,9 +299,9 @@ public:
 };
 
 void throwAndWait(Lane& lane, float seconds) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(0.25f);
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (float t = 0.f; t < seconds; t += kDt)
         lane.step(kDt);
 }

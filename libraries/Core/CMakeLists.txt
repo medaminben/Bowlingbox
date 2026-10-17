@@ -1,4 +1,4 @@
-project(Core VERSION 1.1.0 LANGUAGES CXX)
+project(Core VERSION 2.0.0 LANGUAGES CXX)
 
 set(TARGET_NAME Core)
 
