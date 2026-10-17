@@ -1,6 +1,7 @@
 #ifndef BOWLINGBOX_RENDER_POSTCHAIN_H
 #define BOWLINGBOX_RENDER_POSTCHAIN_H
 #include "GlFramebuffer.h"
+#include <array>
 #include <Bowlingbox/Render/RenderOptions.h>
 
 namespace Bowlingbox {
@@ -30,6 +31,7 @@ private:
     glm::ivec2 _size {0};
     int _samples = 0;
     GlFramebuffer _msaa, _resolved;
+    std::array<GlFramebuffer, 4> _bloom;  // half .. sixteenth of the scene
     unsigned _vao = 0;
 };
 

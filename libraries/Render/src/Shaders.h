@@ -24,6 +24,9 @@ std::string skyFs();
 
 extern const char* const kPostVs;     // attribute-less full-screen triangle with vUv
 extern const char* const kResolveFs;  // MSAA -> one sample, weighted so bright samples don't swamp edges
+extern const char* const kBrightFs;     // keeps what exceeds uThreshold, clamped to kMaxBright
+extern const char* const kBloomDownFs;  // 13-tap downsample
+extern const char* const kBloomUpFs;    // 3x3 tent upsample (drawn additively)
 /// Scene (+ bloom) * exposure -> ACES -> sRGB.
 std::string compositeFs();
 

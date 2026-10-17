@@ -297,4 +297,42 @@ void main() {
     FragColor = vec4(t / max(1.0 - max(max(t.r, t.g), t.b), 1e-4), 1.0);
 })";
 
+const char* const kBrightFs = R"(#version 330 core
+in vec2 vUv;
+uniform sampler2D uSrc; uniform float uThreshold;
+out vec4 FragColor;
+// The ball's highlight reaches ~40 on a few pixels; unclamped, those pixels make the glow
+// flicker as the ball rolls. Neon (5) and anything a viewer reads as a light stay below this.
+const float kMaxBright = 16.0;
+void main() {
+    vec3 c = min(texture(uSrc, vUv).rgb, vec3(kMaxBright));
+    float peak = max(max(c.r, c.g), c.b);
+    FragColor = vec4(c * max(peak - uThreshold, 0.0) / max(peak, 1e-4), 1.0);
+})";
+
+const char* const kBloomDownFs = R"(#version 330 core
+in vec2 vUv;
+uniform sampler2D uSrc; uniform vec2 uTexel;  // source texel size
+out vec4 FragColor;
+vec3 at(float x, float y) { return texture(uSrc, vUv + uTexel * vec2(x, y)).rgb; }
+void main() {
+    vec3 r = at(0.0, 0.0) * 0.125
+           + (at(-2.0, 2.0) + at(2.0, 2.0) + at(-2.0, -2.0) + at(2.0, -2.0)) * 0.03125
+           + (at(0.0, 2.0) + at(-2.0, 0.0) + at(2.0, 0.0) + at(0.0, -2.0)) * 0.0625
+           + (at(-1.0, 1.0) + at(1.0, 1.0) + at(-1.0, -1.0) + at(1.0, -1.0)) * 0.125;
+    FragColor = vec4(r, 1.0);
+})";
+
+const char* const kBloomUpFs = R"(#version 330 core
+in vec2 vUv;
+uniform sampler2D uSrc; uniform vec2 uTexel;  // source texel size
+out vec4 FragColor;
+vec3 at(float x, float y) { return texture(uSrc, vUv + uTexel * vec2(x, y)).rgb; }
+void main() {
+    vec3 r = 4.0 * at(0.0, 0.0)
+           + 2.0 * (at(0.0, 1.0) + at(-1.0, 0.0) + at(1.0, 0.0) + at(0.0, -1.0))
+           + (at(-1.0, 1.0) + at(1.0, 1.0) + at(-1.0, -1.0) + at(1.0, -1.0));
+    FragColor = vec4(r / 16.0, 1.0);
+})";
+
 }  // namespace Bowlingbox::Render::shaders

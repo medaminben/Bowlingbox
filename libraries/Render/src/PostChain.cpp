@@ -5,6 +5,14 @@
 namespace Bowlingbox {
 namespace Render {
 
+namespace {
+void bindUnit(unsigned unit, unsigned target, unsigned tex) {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(target, tex);
+    glActiveTexture(GL_TEXTURE0);
+}
+}  // namespace
+
 PostChain::PostChain(ContextData& d) : _d(d) {
     glGenVertexArrays(1, &_vao);
 }
@@ -15,10 +23,16 @@ PostChain::~PostChain() {
 bool PostChain::ensureSize(const FrameSizes& sizes, int samples) {
     if (sizes.scene == _size && samples == _samples)
         return true;
+    // _size/_samples are updated before the targets exist: after a failure a second call at the same
+    // size returns true over released targets. That is safe because draw() turns fullPipeline off
+    // permanently on the first failure.
     _size = sizes.scene;
     _samples = samples;
-    return _msaa.create({_size.x, _size.y, samples, GL_RGBA16F, true, false}) &&
-           _resolved.create({_size.x, _size.y, 0, GL_RGBA16F, false, false});
+    bool ok = _msaa.create({_size.x, _size.y, samples, GL_RGBA16F, true, false}) &&
+              _resolved.create({_size.x, _size.y, 0, GL_RGBA16F, false, false});
+    for (std::size_t i = 0; ok && i < _bloom.size(); ++i)
+        ok = _bloom[i].create({sizes.bloom[i].x, sizes.bloom[i].y, 0, GL_RGBA16F, false, false});
+    return ok;
 }
 
 void PostChain::beginScene() {
@@ -55,7 +69,42 @@ void PostChain::resolve() {
 
 void PostChain::present(int viewportY, float exposure, float bloomStrength) {
     resolve();
-    // Task 8 inserts the bloom chain here.
+    const bool bloom = bloomStrength > 0.f;
+    if (bloom) {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glActiveTexture(GL_TEXTURE0);
+        GlShader& bright = *_d.bright;
+        bright.use();
+        bright.setInt("uSrc", 0);
+        bright.setFloat("uThreshold", 1.f);
+        _bloom[0].bind();
+        glBindTexture(GL_TEXTURE_2D, _resolved.colorTexture());
+        drawTriangle();
+        GlShader& down = *_d.bloomDown;
+        down.use();
+        down.setInt("uSrc", 0);
+        for (std::size_t i = 1; i < _bloom.size(); ++i) {
+            const GlFramebuffer& src = _bloom[i - 1];
+            down.setVec2("uTexel", {1.f / static_cast<float>(src.width()), 1.f / static_cast<float>(src.height())});
+            _bloom[i].bind();
+            glBindTexture(GL_TEXTURE_2D, src.colorTexture());
+            drawTriangle();
+        }
+        GlShader& up = *_d.bloomUp;
+        up.use();
+        up.setInt("uSrc", 0);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        for (std::size_t i = _bloom.size() - 1; i > 0; --i) {
+            const GlFramebuffer& src = _bloom[i];
+            up.setVec2("uTexel", {1.f / static_cast<float>(src.width()), 1.f / static_cast<float>(src.height())});
+            _bloom[i - 1].bind();
+            glBindTexture(GL_TEXTURE_2D, src.colorTexture());
+            drawTriangle();
+        }
+        glDisable(GL_BLEND);
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, viewportY, _size.x, _size.y);
     glDisable(GL_DEPTH_TEST);
@@ -64,13 +113,14 @@ void PostChain::present(int viewportY, float exposure, float bloomStrength) {
     s.use();
     s.setInt("uScene", 0);
     s.setInt("uBloom", 1);
-    s.setBool("uHasBloom", false);
+    s.setBool("uHasBloom", bloom);
     s.setFloat("uBloomStrength", bloomStrength);
     s.setFloat("uExposure", exposure);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _resolved.colorTexture());
+    bindUnit(0, GL_TEXTURE_2D, _resolved.colorTexture());
+    bindUnit(1, GL_TEXTURE_2D, _bloom[0].colorTexture());
     drawTriangle();
-    glBindTexture(GL_TEXTURE_2D, 0);
+    bindUnit(1, GL_TEXTURE_2D, 0);
+    bindUnit(0, GL_TEXTURE_2D, 0);
     glEnable(GL_DEPTH_TEST);
 }
 

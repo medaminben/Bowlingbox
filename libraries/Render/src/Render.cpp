@@ -42,6 +42,20 @@ bool enableFullPipeline(ContextData& d) {
         return false;
     }
     d.composite = composite();
+    struct Stage {
+        std::unique_ptr<GlShader>& slot;
+        const char* fs;
+        const char* name;
+    };
+    for (Stage st : {Stage {d.bright, shaders::kBrightFs, "bright"}, Stage {d.bloomDown, shaders::kBloomDownFs, "bloom down"},
+                     Stage {d.bloomUp, shaders::kBloomUpFs, "bloom up"}}) {
+        auto built = GlShader::build(shaders::kPostVs, st.fs);
+        if (built.isError()) {
+            std::fprintf(stderr, "render: %s shader failed (%s); using the basic path\n", st.name, built.error().c_str());
+            return false;
+        }
+        st.slot = built();
+    }
     auto resolve = GlShader::build(shaders::kPostVs, shaders::kResolveFs);
     if (resolve.isError()) {
         std::fprintf(stderr, "render: resolve shader failed (%s); using the basic path\n", resolve.error().c_str());
