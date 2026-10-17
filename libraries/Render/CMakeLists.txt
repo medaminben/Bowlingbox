@@ -22,6 +22,7 @@ set(TARGET_HEADERS
     src/GlFramebuffer.h
     src/PostChain.h
     src/ShadowMap.h
+    src/GpuTimer.h
     src/PropBuilders.h
     src/EnvironmentDecor.h
     include/Bowlingbox/Render/Geometry.h
@@ -51,6 +52,7 @@ set(TARGET_SOURCES
     src/GlFramebuffer.cpp
     src/PostChain.cpp
     src/ShadowMap.cpp
+    src/GpuTimer.cpp
     src/Render.cpp
     ${RUBIK_CPP}
 )

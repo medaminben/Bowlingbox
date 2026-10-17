@@ -2,6 +2,7 @@
 #include "ContextData.h"
 #include "GlFramebuffer.h"
 #include "GlMesh.h"
+#include "GpuTimer.h"
 #include "PostChain.h"
 #include "ShadowMap.h"
 #include "Shaders.h"
@@ -15,6 +16,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <string>
 
 namespace Bowlingbox {
@@ -220,6 +222,7 @@ struct SceneRenderer::Impl {
     glm::ivec2 reflectionSize {0};
     std::vector<std::size_t> reflectionCasters;  // rebuilt by setTheme
     LightFrustum light;
+    std::unique_ptr<GpuTimer> timer;  // BOWLINGBOX_RENDER_STATS=1 only
     unsigned skyVao = 0;  // core profile needs a bound VAO even for attribute-less draws
 
     Impl(Context& c, const SceneGeometry& geo, ThemeId id)
@@ -244,8 +247,17 @@ struct SceneRenderer::Impl {
                 ctx.data().fullPipeline = false;
             }
         }
+        if (ctx.data().options.stats)
+            timer = std::make_unique<GpuTimer>();
     }
     ~Impl() { glDeleteVertexArrays(1, &skyVao); }
+
+    template <typename F>
+    void timed(GpuTimer::Pass pass, F&& f) {
+        if (timer) timer->begin(pass);
+        f();
+        if (timer) timer->end();
+    }
 
     void setTheme(ThemeId id) {  // CPU only
         current = &theme(id);
@@ -488,21 +500,25 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, viewportY, p.ctx.width(), viewportH);
         pp.toneMap = true;
-        p.mainPass(pp, scene);
+        p.timed(GpuTimer::Main, [&] { p.mainPass(pp, scene); });
+        if (p.timer) p.timer->endFrame();
         return;
     }
-    p.shadowPass(scene);
+    p.timed(GpuTimer::Shadow, [&] { p.shadowPass(scene); });
     pp.shadows = true;
     pp.lightViewProj = p.light.viewProjection();
     // Unit 1; PostChain::present rebinds and then unbinds it.
     bindUnit(1, p.shadow->depthTexture());
-    p.reflectionPass(pp, scene);
+    p.timed(GpuTimer::Reflection, [&] { p.reflectionPass(pp, scene); });
     pp.reflection = true;
     bindUnit(2, p.reflection.colorTexture());
-    p.post->beginScene();
-    p.mainPass(pp, scene);
+    p.timed(GpuTimer::Main, [&] {
+        p.post->beginScene();
+        p.mainPass(pp, scene);
+    });
     bindUnit(2, 0);  // the reflection target is not sampled after the main pass
-    p.post->present(viewportY, p.current->exposure, p.current->bloomStrength);
+    p.timed(GpuTimer::Post, [&] { p.post->present(viewportY, p.current->exposure, p.current->bloomStrength); });
+    if (p.timer) p.timer->endFrame();
 }
 
 // ---------------------------------------------------------------- Overlay
