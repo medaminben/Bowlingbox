@@ -10,6 +10,8 @@ one copied from that project's own source.
 |---|---|---|---|---|
 | [glad 2](https://github.com/Dav1dde/glad) generated loader | OpenGL 3.3 core | Render | (WTFPL OR CC0-1.0) AND Apache-2.0; `khrplatform.h`: Khronos MIT-style | [glad.txt](glad.txt) |
 | [stb_easy_font](https://github.com/nothings/stb) | 1.1 | Render (overlay text) | MIT OR Unlicense (public domain) | [stb.txt](stb.txt) |
+| [stb_truetype](https://github.com/nothings/stb) | 1.26 | Render (HUD font atlas) | MIT OR Unlicense (public domain) | [stb.txt](stb.txt) |
+| [Rubik](https://github.com/googlefonts/rubik) Medium | 2.x static | Render (HUD font, embedded) | SIL Open Font License 1.1 | [Rubik-OFL.txt](Rubik-OFL.txt) |
 
 ## Fetched at configure time (`cmake/*Support.cmake`)
 
