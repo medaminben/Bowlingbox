@@ -1,4 +1,5 @@
 #include "SoundDirector.h"
+#include "ThemeSounds.h"
 #include <Bowlingbox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <algorithm>
@@ -219,22 +220,28 @@ TEST(test_sound_director, a_plain_count_plays_no_stinger) {
     EXPECT_TRUE(f.out.played.empty());
 }
 
-TEST(test_sound_director, theme_sets_the_ambience_and_announces_only_when_asked) {
+TEST(test_sound_director, ambient_sets_the_loop_and_announces_only_when_asked) {
     Fixture f;
-    f.director.setTheme(Render::ThemeId::ClassicAlley, false);
+    f.director.setAmbient(SoundId::AmbientClassic, false);
     EXPECT_EQ(f.out.loop(LoopSlot::Ambient), SoundId::AmbientClassic);
     EXPECT_NEAR(f.out.loopVoice(LoopSlot::Ambient).volume, SoundDirector::kAmbientVolume, 1e-5f);
     EXPECT_EQ(f.out.count(SoundId::ThemeSwitch), 0);
-    f.director.setTheme(Render::ThemeId::Outdoor, true);
+    f.director.setAmbient(SoundId::AmbientOutdoor, true);
     EXPECT_EQ(f.out.loop(LoopSlot::Ambient), SoundId::AmbientOutdoor);
     EXPECT_EQ(f.out.count(SoundId::ThemeSwitch), 1);
-    f.director.setTheme(Render::ThemeId::NeonHall, true);
+    f.director.setAmbient(SoundId::AmbientNeon, true);
     EXPECT_EQ(f.out.loop(LoopSlot::Ambient), SoundId::AmbientNeon);
+}
+
+TEST(test_theme_sounds, every_theme_has_its_own_ambience) {
+    EXPECT_EQ(ambientFor(Render::ThemeId::NeonHall), SoundId::AmbientNeon);
+    EXPECT_EQ(ambientFor(Render::ThemeId::ClassicAlley), SoundId::AmbientClassic);
+    EXPECT_EQ(ambientFor(Render::ThemeId::Outdoor), SoundId::AmbientOutdoor);
 }
 
 TEST(test_sound_director, new_game_chimes_and_stops_roll_and_charge_but_not_the_ambience) {
     Fixture f;
-    f.director.setTheme(Render::ThemeId::NeonHall, false);
+    f.director.setAmbient(SoundId::AmbientNeon, false);
     f.update(at(Phase::Rolling, 0.f, 0.f));
     f.update(at(Phase::Rolling, 0.f, 0.1f));
     ASSERT_TRUE(f.out.loop(LoopSlot::Roll));
@@ -247,11 +254,11 @@ TEST(test_sound_director, new_game_chimes_and_stops_roll_and_charge_but_not_the_
 
 TEST(test_sound_director, ambience_toggle_stops_and_restores_the_theme_loop) {
     Fixture f;
-    f.director.setTheme(Render::ThemeId::Outdoor, false);
+    f.director.setAmbient(SoundId::AmbientOutdoor, false);
     f.director.setAmbienceEnabled(false);
     EXPECT_FALSE(f.director.ambienceEnabled());
     EXPECT_FALSE(f.out.loop(LoopSlot::Ambient));
-    f.director.setTheme(Render::ThemeId::ClassicAlley, true);  // switching theme keeps it off
+    f.director.setAmbient(SoundId::AmbientClassic, true);  // switching theme keeps it off
     EXPECT_FALSE(f.out.loop(LoopSlot::Ambient));
     EXPECT_EQ(f.out.count(SoundId::ThemeSwitch), 1);
     f.director.setAmbienceEnabled(true);

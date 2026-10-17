@@ -240,8 +240,9 @@ both link.
 | `FollowCamera` | Waits behind the foul line, follows the ball down the lane, eases back |
 | `SceneAdapter` | The only place that converts Alley floats into Render/GLM types |
 | `Hud`, `HudText` | Scoreboard, power bar, hint and result text; `hudLayout()` sizes the bands; `HudText` holds the strings, including the Controls dialog |
-| `SoundDirector` | Decides what plays from the snapshot, the score sheet and the drained impacts, and drives an `Audio::IAudioOutput` (release, roll, gutter, pin hits, stingers, charge tone, ambience) |
+| `SoundDirector` | Decides what plays from the snapshot, the score sheet and the drained impacts, and drives an `Audio::IAudioOutput` (release, roll, gutter, pin hits, stingers, charge tone, the ambience loop it is given) |
 | `SoundSettings.h` | The player's sound preferences (muted, volume in 10 % steps, ambience on/off) and the master gain (volume squared) |
+| `ThemeSounds` | `ambientFor(ThemeId)`: the ambience loop of each theme, so SoundDirector does not depend on Render |
 
 ### BowlingConsole (`bowlingGameCMD`)
 

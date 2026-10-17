@@ -2,7 +2,6 @@
 #define BOWLINGGL_SOUND_DIRECTOR_H
 #include <Bowlingbox/Alley/Types.h>
 #include <Bowlingbox/Audio/Audio.h>
-#include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Score/IBowlingGame.h>
 #include <optional>
 #include <span>
@@ -38,7 +37,8 @@ public:
                 std::span<const Bowlingbox::Alley::Impact> impacts, float dt);
     void onNewGame();
     /// Switches the ambience; announce plays the theme-switch chime.
-    void setTheme(Bowlingbox::Render::ThemeId id, bool announce);
+    /// Plays `ambient` as the background loop (if ambience is on); `announce` adds the theme chime.
+    void setAmbient(Bowlingbox::Audio::SoundId ambient, bool announce);
     /// Starts or stops the theme's background loop; the other sounds are unaffected.
     void setAmbienceEnabled(bool enabled);
     bool ambienceEnabled() const { return _ambience; }
@@ -53,7 +53,7 @@ private:
 
     Bowlingbox::Audio::IAudioOutput& _out;
     std::optional<Bowlingbox::Alley::Snapshot> _prev;
-    std::optional<Bowlingbox::Render::ThemeId> _theme;  // unset until the first setTheme
+    std::optional<Bowlingbox::Audio::SoundId> _ambient;  // unset until the first setAmbient
     bool _ambience = true;
     float _ballSpeed = 0.f;
     bool _gutterPlayed = false;

@@ -4,6 +4,7 @@
 #include "InputMapper.h"
 #include "LaneCommands.h"
 #include "SceneAdapter.h"
+#include "ThemeSounds.h"
 #include <cstdio>
 
 using namespace Bowlingbox;
@@ -66,7 +67,7 @@ void BowlingCanvas::newGame() {
 }
 
 void BowlingCanvas::setTheme(Render::ThemeId id) {
-    _sound.setTheme(id, _themeChosen);
+    _sound.setAmbient(ambientFor(id), _themeChosen);
     _themeChosen = true;
     _theme = id;
     if (_scene)

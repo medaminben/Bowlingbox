@@ -21,15 +21,6 @@ float pan(float x) {
     return std::clamp(x / SoundDirector::kPanHalfWidth, -1.f, 1.f);
 }
 
-SoundId ambientFor(Bowlingbox::Render::ThemeId id) {
-    switch (id) {
-        case Bowlingbox::Render::ThemeId::ClassicAlley: return SoundId::AmbientClassic;
-        case Bowlingbox::Render::ThemeId::Outdoor:      return SoundId::AmbientOutdoor;
-        case Bowlingbox::Render::ThemeId::NeonHall:     break;
-    }
-    return SoundId::AmbientNeon;
-}
-
 std::optional<SoundId> stingerFor(HudText::ThrowResult r) {
     switch (r) {
         case HudText::ThrowResult::Strike: return SoundId::Strike;
@@ -86,8 +77,8 @@ void SoundDirector::onNewGame() {
     _gutterPlayed = false;
 }
 
-void SoundDirector::setTheme(Bowlingbox::Render::ThemeId id, bool announce) {
-    _theme = id;
+void SoundDirector::setAmbient(SoundId ambient, bool announce) {
+    _ambient = ambient;
     updateAmbience();
     if (announce)
         _out.play(SoundId::ThemeSwitch, {kChimeVolume, 1.f, 0.f});
@@ -99,8 +90,8 @@ void SoundDirector::setAmbienceEnabled(bool enabled) {
 }
 
 void SoundDirector::updateAmbience() {
-    if (_ambience && _theme)
-        _out.setLoop(LoopSlot::Ambient, ambientFor(*_theme), {kAmbientVolume, 1.f, 0.f});
+    if (_ambience && _ambient)
+        _out.setLoop(LoopSlot::Ambient, *_ambient, {kAmbientVolume, 1.f, 0.f});
     else
         _out.setLoop(LoopSlot::Ambient, std::nullopt, {});
 }

@@ -11,6 +11,7 @@ add_library(bowlinggl_core STATIC
     SceneAdapter.h SceneAdapter.cpp
     SoundDirector.h SoundDirector.cpp
     SoundSettings.h
+    ThemeSounds.h ThemeSounds.cpp
 )
 target_include_directories(bowlinggl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(bowlinggl_core PUBLIC
