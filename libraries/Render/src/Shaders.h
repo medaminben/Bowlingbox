@@ -22,5 +22,10 @@ extern const char* const kTextFs;  // colour * atlas coverage
 extern const char* const kSkyVs;  // attribute-less full-screen triangle, vT = 0 bottom .. 1 top
 std::string skyFs();
 
+extern const char* const kPostVs;     // attribute-less full-screen triangle with vUv
+extern const char* const kResolveFs;  // MSAA -> one sample, weighted so bright samples don't swamp edges
+/// Scene (+ bloom) * exposure -> ACES -> sRGB.
+std::string compositeFs();
+
 }  // namespace Bowlingbox::Render::shaders
 #endif  // BOWLINGBOX_RENDER_SHADERS_H

@@ -1,6 +1,8 @@
 #include <Bowlingbox/Render/Render.h>
 #include "ContextData.h"
+#include "GlFramebuffer.h"
 #include "GlMesh.h"
+#include "PostChain.h"
 #include "Shaders.h"
 #include <Bowlingbox/Render/Lighting.h>
 #include <glad/gl.h>
@@ -11,6 +13,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 namespace Bowlingbox {
@@ -24,6 +27,34 @@ struct Vertex2D {
     float x, y, z;
     unsigned char rgba[4];
 };
+
+/// Builds the full pipeline's shaders and checks the GPU can render to RGBA16F with MSAA.
+/// On failure prints why and returns false: the basic path runs instead.
+bool enableFullPipeline(ContextData& d) {
+    // The main pass uses multisample *textures*, whose limits are separate from GL_MAX_SAMPLES.
+    GLint colorSamples = 0, depthSamples = 0;
+    glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &colorSamples);
+    glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &depthSamples);
+    d.samples = std::clamp(static_cast<int>(std::min(colorSamples, depthSamples)), 0, 4);
+    auto composite = GlShader::build(shaders::kPostVs, shaders::compositeFs().c_str());
+    if (composite.isError()) {
+        std::fprintf(stderr, "render: composite shader failed (%s); using the basic path\n", composite.error().c_str());
+        return false;
+    }
+    d.composite = composite();
+    auto resolve = GlShader::build(shaders::kPostVs, shaders::kResolveFs);
+    if (resolve.isError()) {
+        std::fprintf(stderr, "render: resolve shader failed (%s); using the basic path\n", resolve.error().c_str());
+        return false;
+    }
+    d.resolve = resolve();
+    GlFramebuffer probe;
+    if (!probe.create({4, 4, d.samples, GL_RGBA16F, true, false})) {
+        std::fprintf(stderr, "render: RGBA16F x%d target incomplete; using the basic path\n", d.samples);
+        return false;
+    }
+    return true;
+}
 }  // namespace
 
 // ---------------------------------------------------------------- Context
@@ -80,6 +111,12 @@ Result<std::unique_ptr<Context>> Context::create() {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glUseProgram(0);
+    ContextData& d = *ctx->_d;
+    d.options = renderOptions(std::getenv("BOWLINGBOX_RENDER"), std::getenv("BOWLINGBOX_RENDER_STATS"));
+    if (d.options.forceBasic)
+        std::fprintf(stderr, "render: basic path (BOWLINGBOX_RENDER=basic)\n");
+    else
+        d.fullPipeline = enableFullPipeline(d);
     return Result<std::unique_ptr<Context>>(std::move(ctx));
 }
 
@@ -144,6 +181,7 @@ struct SceneRenderer::Impl {
     const Theme* current = nullptr;
     std::vector<Prop> props;
     GlMesh lane, gutter, wall, ball, pin, guide, unitBox, unitCylinder, unitCone;
+    std::unique_ptr<PostChain> post;
     unsigned skyVao = 0;  // core profile needs a bound VAO even for attribute-less draws
 
     Impl(Context& c, const SceneGeometry& geo, ThemeId id)
@@ -159,6 +197,8 @@ struct SceneRenderer::Impl {
           unitCone(shapeMesh(Shape::Cone, geo)) {
         glGenVertexArrays(1, &skyVao);
         setTheme(id);
+        if (ctx.data().fullPipeline)
+            post = std::make_unique<PostChain>(ctx.data());
     }
     ~Impl() { glDeleteVertexArrays(1, &skyVao); }
 
@@ -341,10 +381,24 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
     Impl& p = *_p;
     if (viewportH < 1)
         return;  // minimised, or the HUD bands take the whole window
-    glViewport(0, viewportY, p.ctx.width(), viewportH);
-    PassParams pp = p.cameraPass(camera, {p.ctx.width(), viewportH});
-    pp.toneMap = true;
+    ContextData& d = p.ctx.data();
+    const FrameSizes sizes = frameSizes(p.ctx.width(), viewportH);
+    if (d.fullPipeline && !p.post->ensureSize(sizes, d.samples)) {
+        std::fprintf(stderr, "render: offscreen targets incomplete at %dx%d; using the basic path\n",
+                     sizes.scene.x, sizes.scene.y);
+        d.fullPipeline = false;
+    }
+    PassParams pp = p.cameraPass(camera, sizes.scene);
+    if (!d.fullPipeline) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, viewportY, p.ctx.width(), viewportH);
+        pp.toneMap = true;
+        p.mainPass(pp, scene);
+        return;
+    }
+    p.post->beginScene();
     p.mainPass(pp, scene);
+    p.post->present(viewportY, p.current->exposure, p.current->bloomStrength);
 }
 
 // ---------------------------------------------------------------- Overlay

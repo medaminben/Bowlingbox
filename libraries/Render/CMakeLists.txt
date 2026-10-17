@@ -19,6 +19,8 @@ set(TARGET_HEADERS
     src/GlMesh.h
     src/GlTexture.h
     src/ContextData.h
+    src/GlFramebuffer.h
+    src/PostChain.h
     src/PropBuilders.h
     src/EnvironmentDecor.h
     include/Bowlingbox/Render/Geometry.h
@@ -28,6 +30,7 @@ set(TARGET_HEADERS
     include/Bowlingbox/Render/Environment.h
     include/Bowlingbox/Render/Lighting.h
     include/Bowlingbox/Render/FontAtlas.h
+    include/Bowlingbox/Render/RenderOptions.h
     include/Bowlingbox/Render/Render.h
 )
 set(TARGET_SOURCES
@@ -43,6 +46,9 @@ set(TARGET_SOURCES
     src/GlMesh.cpp
     src/GlTexture.cpp
     src/FontAtlas.cpp
+    src/RenderOptions.cpp
+    src/GlFramebuffer.cpp
+    src/PostChain.cpp
     src/Render.cpp
     ${RUBIK_CPP}
 )
@@ -66,6 +72,7 @@ set(TST_SOURCES
     test/src/test_Environment.cpp
     test/src/test_Lighting.cpp
     test/src/test_FontAtlas.cpp
+    test/src/test_RenderOptions.cpp
 )
 set(TEST_DEPS)
 ###############################################################

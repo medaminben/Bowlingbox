@@ -248,6 +248,18 @@ void main() {
     FragColor = vec4(uToneMap ? toDisplay(c, uExposure) : c, 1.0);
 }
 )";
+
+const char* const kCompositeBody = R"(
+in vec2 vUv;
+uniform sampler2D uScene; uniform sampler2D uBloom;  // units 0 and 1
+uniform bool uHasBloom; uniform float uBloomStrength; uniform float uExposure;
+out vec4 FragColor;
+void main() {
+    vec3 c = texture(uScene, vUv).rgb;
+    if (uHasBloom) c += texture(uBloom, vUv).rgb * uBloomStrength;
+    FragColor = vec4(toDisplay(c, uExposure), 1.0);
+}
+)";
 }  // namespace
 
 std::string litFs() {
@@ -256,5 +268,33 @@ std::string litFs() {
 std::string skyFs() {
     return std::string("#version 330 core\n") + kToneMapGlsl + kSkyBody;
 }
+std::string compositeFs() {
+    return std::string("#version 330 core\n") + kToneMapGlsl + kCompositeBody;
+}
+
+const char* const kPostVs = R"(#version 330 core
+out vec2 vUv;
+void main() {
+    vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
+    vUv = (p + 1.0) * 0.5;
+    gl_Position = vec4(p, 0.0, 1.0);
+})";
+
+// A plain average lets one sample of a neon strip (5.0) or the ball's highlight (~40) dominate an
+// edge pixel, so edges look jagged again after tone mapping. Averaging c / (1 + max(c)) and
+// inverting that curve afterwards keeps the edge gradient.
+const char* const kResolveFs = R"(#version 330 core
+uniform sampler2DMS uSrc; uniform int uSamples;
+out vec4 FragColor;
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec3 sum = vec3(0.0);
+    for (int i = 0; i < uSamples; ++i) {
+        vec3 c = texelFetch(uSrc, p, i).rgb;
+        sum += c / (1.0 + max(max(c.r, c.g), c.b));
+    }
+    vec3 t = sum / float(uSamples);
+    FragColor = vec4(t / max(1.0 - max(max(t.r, t.g), t.b), 1e-4), 1.0);
+})";
 
 }  // namespace Bowlingbox::Render::shaders
