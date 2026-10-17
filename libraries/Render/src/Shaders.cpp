@@ -61,7 +61,7 @@ out float vT;
 void main() {
     vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
     vT = (p.y + 1.0) * 0.5;
-    gl_Position = vec4(p, 0.0, 1.0);
+    gl_Position = vec4(p, 1.0, 1.0);  // on the far plane: drawn last with GL_LEQUAL, behind everything
 })";
 
 namespace {
@@ -192,12 +192,12 @@ float keyLightVisible(vec3 n) {
     vec3 p = vLightPos.xyz / vLightPos.w * 0.5 + 0.5;
     if (any(lessThan(p, vec3(0.0))) || any(greaterThan(p, vec3(1.0)))) return 1.0;  // outside: lit
     float bias = max(0.0025 * (1.0 - max(dot(n, -normalize(uLightDir)), 0.0)), 0.0005);
-    vec2 texel = 1.0 / vec2(textureSize(uShadowMap, 0));
-    float lit = 0.0;
-    for (int x = -1; x <= 1; ++x)
-        for (int y = -1; y <= 1; ++y)
-            lit += texture(uShadowMap, vec3(p.xy + vec2(x, y) * texel, p.z - bias));
-    return lit / 9.0;
+    // Each tap is a bilinear 2x2 compare (LINEAR filtering), so four taps at +-0.5 texel cover
+    // the same 3x3-texel tent footprint as nine point taps.
+    vec2 h = 0.5 / vec2(textureSize(uShadowMap, 0));
+    float z = p.z - bias;
+    return 0.25 * (texture(uShadowMap, vec3(p.xy + vec2(-h.x, -h.y), z)) + texture(uShadowMap, vec3(p.xy + vec2(h.x, -h.y), z))
+                 + texture(uShadowMap, vec3(p.xy + vec2(-h.x, h.y), z)) + texture(uShadowMap, vec3(p.xy + vec2(h.x, h.y), z)));
 }
 
 void main() {
@@ -216,8 +216,13 @@ void main() {
         for (int i = 0; i < uPointCount; ++i) {
             vec3 toLight = uPointPos[i] - vWorldPos;
             float d = length(toLight);
+            if (d >= uPointRange[i]) continue;  // the window below is zero: skip the BRDF
             float window = clamp(1.0 - pow(d / uPointRange[i], 4.0), 0.0, 1.0);
-            rgb += brdf(n, v, toLight / d, base, uPointColor[i] * window * window / (d * d + 1.0));
+            vec3 radiance = uPointColor[i] * window * window / (d * d + 1.0);
+            vec3 l = toLight / d;
+            // Rough surfaces show no visible point-light highlight: Lambert is enough there.
+            if (uRoughness >= 0.6) rgb += (1.0 - uSpecular) * base / PI * radiance * max(dot(n, l), 0.0);
+            else rgb += brdf(n, v, l, base, radiance);
         }
         if (uReflect) {
             vec2 uv = gl_FragCoord.xy / uViewportSize;

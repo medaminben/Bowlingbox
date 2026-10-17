@@ -2,6 +2,7 @@
 #define BOWLINGBOX_RENDER_GLSHADER_H
 #include <Bowlingbox/Core/Core.h>
 #include <glm/glm.hpp>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>

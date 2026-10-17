@@ -77,7 +77,11 @@ bool enableFullPipeline(ContextData& d) {
         return false;
     }
     GlFramebuffer probe;
-    if (!probe.create({4, 4, d.samples, GL_RGBA16F, true, false})) {
+    const bool probeOk = probe.create({4, 4, d.samples, GL_RGBA16F, true, false});
+    while (glGetError() != GL_NO_ERROR) {
+        // A refused format raises a GL error; the message below already says why we fall back.
+    }
+    if (!probeOk) {
         std::fprintf(stderr, "render: RGBA16F x%d target incomplete; using the basic path\n", d.samples);
         return false;
     }
@@ -302,14 +306,16 @@ struct SceneRenderer::Impl {
         s.setVec3("uKeyColor", t.keyColor * t.keyIntensity);
         s.setVec3("uSkyAmbient", t.skyAmbient);
         s.setVec3("uGroundAmbient", t.groundAmbient);
+        static_assert(kMaxPointLights == 4, "the lit shader declares uPointPos/uPointColor/uPointRange[4]");
         static constexpr std::array<const char*, kMaxPointLights> kPos {"uPointPos[0]", "uPointPos[1]",
                                                                          "uPointPos[2]", "uPointPos[3]"};
         static constexpr std::array<const char*, kMaxPointLights> kColor {"uPointColor[0]", "uPointColor[1]",
                                                                            "uPointColor[2]", "uPointColor[3]"};
         static constexpr std::array<const char*, kMaxPointLights> kRange {"uPointRange[0]", "uPointRange[1]",
                                                                            "uPointRange[2]", "uPointRange[3]"};
-        s.setInt("uPointCount", t.pointLightCount);
-        for (std::size_t i = 0; i < static_cast<std::size_t>(t.pointLightCount); ++i) {
+        const int pointCount = std::clamp(t.pointLightCount, 0, kMaxPointLights);
+        s.setInt("uPointCount", pointCount);
+        for (std::size_t i = 0; i < static_cast<std::size_t>(pointCount); ++i) {
             const PointLight& l = t.pointLights[i];
             s.setVec3(kPos[i], l.position);
             s.setVec3(kColor[i], l.color * l.intensity);
@@ -347,21 +353,12 @@ struct SceneRenderer::Impl {
         mesh.draw();
     }
 
-    /// Props (all, or only the listed indices), then lane + gutters (if withLane), gutter walls,
-    /// standing pins and the ball. Works with any program built on kLitVs.
+    /// Lane + gutters (if withLane), gutter walls, standing pins and the ball, then the props (all,
+    /// or only the listed indices): the large near surfaces first, so the depth test rejects most
+    /// hidden prop fragments before shading. Works with any program built on kLitVs.
     void drawOpaque(GlShader& s, const PassParams& pp, const SceneDescription& scene,
                     const std::vector<std::size_t>* only, bool withLane) const {
         const Theme& t = *current;
-        const auto drawProp = [&](const Prop& prop) {
-            drawMesh(s, meshFor(prop.shape), prop.transform.matrix(), prop.material, prop.pinBand ? neck() : kNoBand);
-        };
-        if (only)
-            for (std::size_t i : *only)
-                drawProp(props[i]);
-        else
-            for (const Prop& prop : props)
-                drawProp(prop);
-
         const float outerX = g.laneHalfWidth + g.gutterWidth;
         if (withLane) {
             s.setBool("uReflect", pp.reflection);
@@ -377,6 +374,16 @@ struct SceneRenderer::Impl {
             if (scene.pinVisible[i])
                 drawMesh(s, pin, scene.pins[i].matrix(), t.pinBody, neck());
         drawMesh(s, ball, scene.ball.matrix(), t.ball);
+
+        const auto drawProp = [&](const Prop& prop) {
+            drawMesh(s, meshFor(prop.shape), prop.transform.matrix(), prop.material, prop.pinBand ? neck() : kNoBand);
+        };
+        if (only)
+            for (std::size_t i : *only)
+                drawProp(props[i]);
+        else
+            for (const Prop& prop : props)
+                drawProp(prop);
     }
 
     void shadowPass(const SceneDescription& scene) {
@@ -426,9 +433,10 @@ struct SceneRenderer::Impl {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+    /// After the opaque geometry: the sky sits on the far plane and fills only the uncovered pixels.
     void drawSky(bool toneMap) {
         const Theme& t = *current;
-        glDisable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
         GlShader& sky = *ctx.data().sky;
         sky.use();
@@ -440,7 +448,7 @@ struct SceneRenderer::Impl {
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
         glDepthMask(GL_TRUE);
-        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
     }
 
     void drawGuide(GlShader& s, const SceneDescription& scene) const {
@@ -463,13 +471,15 @@ struct SceneRenderer::Impl {
         glDisable(GL_BLEND);
     }
 
-    /// Sky, everything opaque, then the aim guide, into whatever framebuffer is bound.
+    /// Everything opaque, the sky behind it, then the aim guide, into whatever framebuffer is bound.
     void mainPass(const PassParams& pp, const SceneDescription& scene) {
         glDisable(GL_BLEND);
-        drawSky(pp.toneMap);
+        glEnable(GL_DEPTH_TEST);
         GlShader& s = *ctx.data().lit;
         setFrameUniforms(s, pp);
         drawOpaque(s, pp, scene, nullptr, true);
+        drawSky(pp.toneMap);
+        s.use();
         if (scene.showAimGuide)
             drawGuide(s, scene);
     }
