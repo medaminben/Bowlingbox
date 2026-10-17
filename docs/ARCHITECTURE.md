@@ -84,9 +84,10 @@ Shared vocabulary types with no dependencies, all in `Core.h`:
 
 - `Bowlingbox::Result<T, E>`: a value or an error, with `isValue()`, `isError()`, `value()` and
   `error()`. Reading does not move: `r.value()` returns a reference, and `std::move(r).value()`
-  takes the value out. The class is `[[nodiscard]]`, so an ignored refusal fails the `-Werror`
-  build. `Result<>` (value type `std::monostate`) is the return type of commands that can be
-  refused. Code inside `namespace Bowlingbox` writes `Result<>`; code outside writes
+  takes the value out. The class is `[[nodiscard]]`, so an ignored refusal fails the build
+  (`-Werror` in libraries and apps, `-Werror=unused-result` in tests). `Result<>` (value type
+  `std::monostate`) is the return type of commands that can be refused. Code inside
+  `namespace Bowlingbox` writes `Result<>`; code outside writes
   `Bowlingbox::Result<>` or adds `using Bowlingbox::Result;` in a `.cpp`.
 - `Bowlingbox::Core::Error<E>`: wraps an error (by default a `std::string`).
 

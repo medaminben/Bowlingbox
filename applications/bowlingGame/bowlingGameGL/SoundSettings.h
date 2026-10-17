@@ -30,7 +30,15 @@ struct SoundSettings {
             case Command::Type::VolumeUp:       next.stepVolume(1); break;
             case Command::Type::VolumeDown:     next.stepVolume(-1); break;
             case Command::Type::ToggleAmbience: next.ambience = !next.ambience; break;
-            default:                            break;
+            case Command::Type::None:
+            case Command::Type::MoveAim:
+            case Command::Type::RotateAim:
+            case Command::Type::StartCharge:
+            case Command::Type::Release:
+            case Command::Type::NewGame:
+            case Command::Type::CycleTheme:
+            case Command::Type::Quit:
+                break;
         }
         return next;
     }

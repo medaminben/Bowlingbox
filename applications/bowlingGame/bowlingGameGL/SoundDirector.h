@@ -36,7 +36,6 @@ public:
     void update(const Bowlingbox::Alley::Snapshot& s, const Bowlingbox::Score::IScoreSheet& sheet,
                 std::span<const Bowlingbox::Alley::Impact> impacts, float dt);
     void onNewGame();
-    /// Switches the ambience; announce plays the theme-switch chime.
     /// Plays `ambient` as the background loop (if ambience is on); `announce` adds the theme chime.
     void setAmbient(Bowlingbox::Audio::SoundId ambient, bool announce);
     /// Starts or stops the theme's background loop; the other sounds are unaffected.

@@ -38,7 +38,8 @@ function(build_gtest_executable)
     # Keep tests building against third-party headers without treating their
     # diagnostics as project errors.
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(${test_NAME} PRIVATE -Wall -Wextra -Wno-error)
+        target_compile_options(${test_NAME} PRIVATE -Wall -Wextra -Wno-error
+            -Werror=unused-result)
     endif()
 
     if(test_DISCOVER)
