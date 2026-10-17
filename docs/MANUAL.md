@@ -176,6 +176,20 @@ Outdoor. Press `T` or use View ▸ Theme to switch. Start in a theme with:
 
 An unknown name prints `unknown theme '<name>'; use neon, classic or outdoor` and starts Neon Hall.
 
+### Graphics
+
+BowlingGL renders with soft shadows, a reflecting lane, glow (bloom) and a filmic tone curve.
+If your graphics card can't do this, it falls back to a simpler look by itself, and prints the reason
+to the terminal. Two environment variables help when something looks wrong:
+
+| Variable | Effect |
+|---|---|
+| `BOWLINGBOX_RENDER=basic` | Use the simpler look: same lighting and materials, no shadows, reflection or glow. |
+| `BOWLINGBOX_RENDER_STATS=1` | Print the GPU time of each render pass once a second. |
+
+The GPU times only show the real cost when the graphics card is fully loaded: with a small window it
+clocks down until the work fills the frame, so the numbers look larger. Measure fullscreen.
+
 ## 4. Playing BowlingConsole
 
 ```bash

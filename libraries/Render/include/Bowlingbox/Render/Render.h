@@ -49,6 +49,7 @@ public:
     void lookAt(glm::vec3 eye, glm::vec3 target);
     glm::mat4 view() const;
     glm::mat4 projection() const;
+    glm::vec3 eye() const { return _eye; }
 
 private:
     glm::vec3 _eye {0.f, 1.8f, -3.5f};

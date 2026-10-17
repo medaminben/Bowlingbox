@@ -14,15 +14,21 @@ using detail::pin;
 using detail::slab;
 
 Material lit(float r, float g, float b) {
-    return {{r, g, b}, false};
+    return {{r, g, b}, false, 0.8f, 0.04f, 1.f, Pattern::None};
 }
-Material glow(float r, float g, float b) {
-    return {{r, g, b}, true};
+Material glow(float r, float g, float b, float strength = 1.f) {
+    return {{r, g, b}, true, 1.f, 0.f, strength, Pattern::None};
+}
+Material wood(float r, float g, float b) {
+    return {{r, g, b}, false, 0.25f, 0.04f, 1.f, Pattern::Wood};
+}
+Material metal(float r, float g, float b) {
+    return {{r, g, b}, false, 0.40f, 0.50f, 1.f, Pattern::None};
 }
 
-const Material kBall = lit(0.098f, 0.365f, 0.925f);
-const Material kPinBody = lit(0.941f, 0.941f, 0.941f);
-const Material kPinBand = lit(0.902f, 0.f, 0.f);
+const Material kBall {{0.098f, 0.365f, 0.925f}, false, 0.15f, 0.06f, 1.f, Pattern::BallSwirl};
+const Material kPinBody {{0.941f, 0.941f, 0.941f}, false, 0.30f, 0.05f, 1.f, Pattern::None};
+const Material kPinBand {{0.902f, 0.f, 0.f}, false, 0.30f, 0.05f, 1.f, Pattern::None};
 const Material kUnused = lit(0.5f, 0.5f, 0.5f);
 
 const Theme kNeonHall {
@@ -35,9 +41,21 @@ const Theme kNeonHall {
     .fogStart = 12.f,
     .fogEnd = 35.f,
     .lightDir = {-0.3f, -1.f, 0.4f},
-    .ambient = 0.40f,
-    .lane = lit(0.831f, 0.639f, 0.451f),
-    .gutter = lit(0.008f, 0.055f, 0.22f),
+    .keyColor = {0.80f, 0.85f, 1.00f},
+    .keyIntensity = 2.5f,
+    .skyAmbient = {0.05f, 0.06f, 0.16f},
+    .groundAmbient = {0.02f, 0.02f, 0.05f},
+    .pointLights = {{
+        {{-4.5f, 1.2f, 3.f}, {0.f, 0.79f, 1.f}, 12.f, 9.f},     // cyan, along the low strips
+        {{4.5f, 1.2f, 3.f}, {0.f, 0.79f, 1.f}, 12.f, 9.f},
+        {{-4.5f, 3.2f, 12.f}, {0.34f, 0.03f, 1.f}, 12.f, 9.f},  // violet, along the high strips
+        {{4.5f, 3.2f, 12.f}, {0.34f, 0.03f, 1.f}, 12.f, 9.f},
+    }},
+    .pointLightCount = 4,
+    .exposure = 1.f,
+    .bloomStrength = 0.6f,
+    .lane = wood(0.831f, 0.639f, 0.451f),
+    .gutter = metal(0.008f, 0.055f, 0.22f),
     .ball = kBall,
     .pinBody = kPinBody,
     .pinBand = kPinBand,
@@ -47,9 +65,9 @@ const Theme kNeonHall {
     .wall = lit(0.03f, 0.05f, 0.20f),
     .ceiling = lit(0.02f, 0.03f, 0.12f),
     .trim = lit(0.05f, 0.08f, 0.30f),
-    .accentA = glow(0.f, 0.9f, 1.f),
-    .accentB = glow(0.62f, 0.2f, 1.f),
-    .screen = glow(0.1f, 0.3f, 0.9f),
+    .accentA = glow(0.f, 0.9f, 1.f, 5.f),
+    .accentB = glow(0.62f, 0.2f, 1.f, 5.f),
+    .screen = glow(0.1f, 0.3f, 0.9f, 4.f),
     .props = {.pillars = true, .neonStrips = true, .ceilingLights = true, .wallScreens = true,
               .scoreMonitor = false, .fences = false, .trees = false},
 };
@@ -64,9 +82,21 @@ const Theme kClassicAlley {
     .fogStart = 20.f,
     .fogEnd = 45.f,
     .lightDir = {-0.2f, -1.f, 0.3f},
-    .ambient = 0.55f,
-    .lane = lit(0.86f, 0.70f, 0.50f),
-    .gutter = lit(0.25f, 0.25f, 0.28f),
+    .keyColor = {1.00f, 0.92f, 0.80f},
+    .keyIntensity = 3.0f,
+    .skyAmbient = {0.35f, 0.32f, 0.28f},
+    .groundAmbient = {0.12f, 0.09f, 0.06f},
+    .pointLights = {{
+        {{0.f, 4.2f, 2.f}, {1.f, 0.82f, 0.6f}, 10.f, 8.f},  // warm, under the ceiling lights
+        {{0.f, 4.2f, 7.f}, {1.f, 0.82f, 0.6f}, 10.f, 8.f},
+        {{0.f, 4.2f, 12.f}, {1.f, 0.82f, 0.6f}, 10.f, 8.f},
+        {{0.f, 4.2f, 17.f}, {1.f, 0.82f, 0.6f}, 10.f, 8.f},
+    }},
+    .pointLightCount = 4,
+    .exposure = 1.f,
+    .bloomStrength = 0.15f,
+    .lane = wood(0.86f, 0.70f, 0.50f),
+    .gutter = metal(0.25f, 0.25f, 0.28f),
     .ball = kBall,
     .pinBody = kPinBody,
     .pinBand = kPinBand,
@@ -76,7 +106,7 @@ const Theme kClassicAlley {
     .wall = lit(0.88f, 0.82f, 0.70f),
     .ceiling = lit(0.95f, 0.95f, 0.92f),
     .trim = lit(0.50f, 0.32f, 0.18f),
-    .accentA = glow(1.f, 0.96f, 0.85f),
+    .accentA = glow(1.f, 0.96f, 0.85f, 1.5f),
     .accentB = lit(0.3f, 0.3f, 0.3f),
     .screen = glow(0.05f, 0.1f, 0.3f),
     .props = {.pillars = false, .neonStrips = false, .ceilingLights = true, .wallScreens = false,
@@ -93,9 +123,16 @@ const Theme kOutdoor {
     .fogStart = 25.f,
     .fogEnd = 60.f,
     .lightDir = {-0.4f, -1.f, 0.3f},
-    .ambient = 0.45f,
-    .lane = lit(0.831f, 0.639f, 0.451f),
-    .gutter = lit(0.30f, 0.30f, 0.32f),
+    .keyColor = {1.00f, 0.96f, 0.88f},
+    .keyIntensity = 3.5f,
+    .skyAmbient = {0.30f, 0.42f, 0.60f},
+    .groundAmbient = {0.10f, 0.14f, 0.06f},
+    .pointLights = {},
+    .pointLightCount = 0,
+    .exposure = 1.f,
+    .bloomStrength = 0.05f,
+    .lane = wood(0.831f, 0.639f, 0.451f),
+    .gutter = metal(0.30f, 0.30f, 0.32f),
     .ball = kBall,
     .pinBody = kPinBody,
     .pinBand = kPinBand,
@@ -158,9 +195,7 @@ void addHall(std::vector<Prop>& out, const Theme& t, const SceneGeometry& g) {
 /// A copy of the main lane centred at x0: lane with approach, two gutters, a full rack.
 void addNeighbourLane(std::vector<Prop>& out, const Theme& t, const SceneGeometry& g, float x0) {
     const float hw = g.laneHalfWidth, outer = hw + g.gutterWidth;
-    Prop lane = slab({x0 - hw, -0.1f, -g.approach}, {x0 + hw, 0.f, g.laneLength}, t.lane);
-    lane.stripes = true;
-    out.push_back(lane);
+    out.push_back(slab({x0 - hw, -0.1f, -g.approach}, {x0 + hw, 0.f, g.laneLength}, t.lane));
     for (float side : {-1.f, 1.f}) {
         const float a = x0 + side * hw, b = x0 + side * outer;
         out.push_back(slab({std::min(a, b), -g.gutterDepth - 0.1f, 0.f},

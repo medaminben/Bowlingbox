@@ -64,14 +64,29 @@ TEST(test_environment, next_theme_visits_all_three_and_wraps) {
     EXPECT_EQ(nextTheme(ThemeId::Outdoor), ThemeId::NeonHall);
 }
 
-TEST(test_environment, fog_and_ambient_are_in_range) {
+TEST(test_environment, fog_and_lighting_are_in_range) {
     for (ThemeId id : kThemes) {
         const Theme& t = theme(id);
         EXPECT_LT(t.fogStart, t.fogEnd) << t.name;
-        EXPECT_GE(t.ambient, 0.f) << t.name;
-        EXPECT_LE(t.ambient, 1.f) << t.name;
         EXPECT_GE(t.neighbourLanesPerSide, 0) << t.name;
         EXPECT_LE(t.neighbourLanesPerSide, 3) << t.name;
+        EXPECT_GT(t.keyIntensity, 0.f) << t.name;
+        for (int k = 0; k < 3; ++k) {
+            EXPECT_GE(t.skyAmbient[k], 0.f) << t.name;
+            EXPECT_LE(t.skyAmbient[k], 1.f) << t.name;
+            EXPECT_GE(t.groundAmbient[k], 0.f) << t.name;
+            EXPECT_LE(t.groundAmbient[k], 1.f) << t.name;
+        }
+        EXPECT_GE(t.pointLightCount, 0) << t.name;
+        EXPECT_LE(t.pointLightCount, kMaxPointLights) << t.name;
+        for (int i = 0; i < t.pointLightCount; ++i) {
+            const PointLight& l = t.pointLights[static_cast<std::size_t>(i)];
+            EXPECT_GT(l.intensity, 0.f) << t.name << " light " << i;
+            EXPECT_GT(l.range, 0.f) << t.name << " light " << i;
+        }
+        EXPECT_GT(t.exposure, 0.f) << t.name;
+        EXPECT_GE(t.bloomStrength, 0.f) << t.name;
+        EXPECT_LE(t.bloomStrength, 1.f) << t.name;
     }
 }
 
@@ -180,12 +195,13 @@ TEST(test_environment, neighbour_lanes_carry_full_racks_standing_on_the_lane) {
     }
 }
 
-TEST(test_environment, neighbour_lanes_have_board_stripes) {
+TEST(test_environment, neighbour_lanes_are_wood) {
     for (ThemeId id : kThemes) {
         const Theme& t = theme(id);
         const auto props = buildProps(t, kG);
-        const auto striped = std::count_if(props.begin(), props.end(), [](const Prop& p) { return p.stripes; });
-        EXPECT_EQ(striped, 2 * t.neighbourLanesPerSide) << t.name;
+        const auto wooden = std::count_if(props.begin(), props.end(),
+                                          [](const Prop& p) { return p.material.pattern == Pattern::Wood; });
+        EXPECT_EQ(wooden, 2 * t.neighbourLanesPerSide) << t.name;
     }
 }
 
@@ -258,4 +274,53 @@ TEST(test_environment_decor, outdoor_terrace_has_fences_and_sixteen_trees_below_
         top = std::max(top, bounds(p, kG).max.y);
     EXPECT_LE(top, 6.5f);
     EXPECT_NEAR(top, 6.25f, 1e-3f);  // the tallest tree
+}
+
+namespace {
+std::vector<Material> allMaterials(const Theme& t) {
+    std::vector<Material> out {t.lane, t.gutter, t.ball, t.pinBody, t.pinBand, t.floor, t.wall,
+                               t.ceiling, t.trim, t.accentA, t.accentB, t.screen};
+    for (const Prop& p : buildProps(t, kG))
+        out.push_back(p.material);
+    return out;
+}
+}  // namespace
+
+TEST(test_environment, every_material_has_roughness_and_specular_in_range) {
+    for (ThemeId id : kThemes)
+        for (const Material& m : allMaterials(theme(id))) {
+            EXPECT_GE(m.roughness, 0.f) << theme(id).name;
+            EXPECT_LE(m.roughness, 1.f) << theme(id).name;
+            EXPECT_GE(m.specular, 0.f) << theme(id).name;
+            EXPECT_LE(m.specular, 1.f) << theme(id).name;
+            EXPECT_GE(m.emissiveStrength, 1.f) << theme(id).name;
+        }
+}
+
+namespace {
+/// The strongest glow in a theme (1 if nothing glows harder than its plain colour).
+float hottestGlow(const Theme& t) {
+    float hottest = 1.f;
+    for (const Material& m : allMaterials(t))
+        if (m.emissive)
+            hottest = std::max(hottest, m.emissiveStrength);
+    return hottest;
+}
+}  // namespace
+
+TEST(test_environment, neon_hall_glows_hottest_and_outdoor_not_at_all) {
+    const float neon = hottestGlow(theme(ThemeId::NeonHall));
+    const float classic = hottestGlow(theme(ThemeId::ClassicAlley));
+    EXPECT_GT(neon, classic);
+    EXPECT_GT(classic, 1.f) << "the bright pass keeps only what exceeds 1: Classic's ceiling panels glow faintly";
+    EXPECT_FLOAT_EQ(hottestGlow(theme(ThemeId::Outdoor)), 1.f);
+}
+
+TEST(test_environment, the_lane_is_wood_and_the_ball_swirls) {
+    for (ThemeId id : kThemes) {
+        const Theme& t = theme(id);
+        EXPECT_EQ(t.lane.pattern, Pattern::Wood) << t.name;
+        EXPECT_EQ(t.ball.pattern, Pattern::BallSwirl) << t.name;
+        EXPECT_LT(t.ball.roughness, t.floor.roughness) << t.name;
+    }
 }

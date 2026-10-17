@@ -27,7 +27,7 @@ graph TD
     subgraph Third-party
         BULLET[Bullet3]
         GLM[GLM]
-        GLAD[GLAD + stb_easy_font]
+        GLAD[GLAD + stb_easy_font + stb_truetype]
         WX[wxWidgets 3.2]
     end
 
@@ -143,6 +143,9 @@ OpenGL 3.3 core rendering, independent of any windowing toolkit.
 |---|---|
 | `Render.h` | `Context` (one per GL context, loads GLAD, owns shaders), `Camera`, `SceneRenderer` (background, theme props, lane, gutters, ball, pins, aim guide), `Overlay` (OpenGL `ICanvas2D`), plain data `SceneDescription` |
 | `Environment.h` | Themes (`ThemeId`, `Theme`, `theme()`, `themeFromName()`, `nextTheme()`), `SceneGeometry`, `Transform`, and the GL-free decor layout: `buildProps()`, `shapeMesh()`, `localBounds()`, `bounds()` |
+| `Lighting.h` | GL-free lighting maths: sRGB conversion, `fitLightFrustum()`, `shadowBox()`, `reflectionBox()`, `propsInBox()` |
+| `RenderOptions.h` | `frameSizes()` (offscreen target sizes) and `renderOptions()` (reads `BOWLINGBOX_RENDER`, `BOWLINGBOX_RENDER_STATS`) |
+| `FontAtlas.h` | The embedded Rubik font, baked into an atlas with stb_truetype for HUD text |
 | `Canvas2D.h` | `ICanvas2D`: `drawText`, `measureText`, `drawRect`, `strokeRect` in pixels |
 | `ScoreboardLayout.h` | Pixel geometry of the 10-frame grid and `glyphFor()` |
 | `ScoreboardPainter.h` | `paintScoreboard()`, which draws the grid through any `ICanvas2D` |
@@ -153,10 +156,32 @@ scoreboard and HUD draw through `ICanvas2D`, so they can be tested with a record
 a GL context. `Context::create()` returns a `Result` and fails cleanly when no GL 3.3 context is
 current.
 
-The lit shader adds per-theme ambient light, distance fog, emissive (glowing) materials and lane
-board stripes on top of the pin colour band; a separate sky shader draws the background gradient.
+The lit shader uses GGX specular, hemisphere ambient light, distance fog, emissive (glowing)
+materials, procedural wood and ball patterns, and samples the key-light shadow map and the lane
+reflection; a separate sky shader draws the background gradient on the far plane after the opaque
+geometry, so it shades only the pixels nothing covers. Point lights skip fragments beyond their range,
+and light rough surfaces (roughness ≥ 0.6) with Lambert diffuse only; the key light uses full GGX everywhere.
 Theme props are unit boxes, cylinders and cones scaled by their `Transform`, so one mesh per shape
 serves every prop, and `bounds()` uses the same extents as the meshes.
+
+**Frame pipeline (full path).** `SceneRenderer::draw` runs, in order: a 1024×4096 shadow map from the key
+light (fitted to `shadowBox`), a half-resolution mirror of the scene in the lane plane, the HDR main
+pass (RGBA16F, 4× MSAA) and `PostChain::present` (weighted MSAA resolve, 4-level bloom, ACES tone map, sRGB) into
+the 3D band. The *basic path* draws the main pass straight into the window, with tone mapping done in
+the lit shader. It runs when `Context::create` finds no usable RGBA16F/MSAA target, a full-pipeline
+shader fails, `GL_MAX_TEXTURE_SIZE` is below 4096 (the shadow map's height), or `BOWLINGBOX_RENDER=basic`
+is set. It also takes over when the `SceneRenderer` finds its shadow map incomplete, and when the offscreen
+targets turn out incomplete at a later resize.
+
+**Testable without GL:** `Lighting.h` (sRGB, `fitLightFrustum`, `shadowBox`, `reflectionBox`,
+`propsInBox`), `RenderOptions.h` (`frameSizes`, `renderOptions`) and `FontAtlas.h` (the embedded Rubik
+font, baked with stb_truetype).
+
+**GPU timing.** With `BOWLINGBOX_RENDER_STATS=1`, `GpuTimer` wraps each pass in a `GL_TIME_ELAPSED`
+query, rotates through three query sets so results are read only once available (the CPU never waits),
+and prints the per-pass averages to stderr about once a second. The numbers only measure cost when the
+GPU is saturated: on a light load the GPU clock governor (notably on Intel) downclocks until the work
+fills the frame, which inflates them. Measure fullscreen, at a high resolution.
 
 ## Applications
 
@@ -275,7 +300,7 @@ never touched.
 | GLM | 1.0.1 | FetchContent, header-only (`GlmSupport.cmake`) | Render |
 | wxWidgets | 3.2.8 | FetchContent, static, GTK3 (`WxSupport.cmake`) | BowlingGL, BowlingDisplay |
 | GoogleTest | v1.15.2 | FetchContent (`GTestSupport.cmake`) | all tests |
-| GLAD 2, stb_easy_font | in tree | `3rdparty/` | Render (private) |
+| GLAD 2, stb_easy_font, stb_truetype, Rubik font | in tree | `3rdparty/` | Render (private) |
 
 Versions are cache variables (`BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
 `BOWLINGBOX_WX_VERSION`, `BOWLINGBOX_GTEST_VERSION`).

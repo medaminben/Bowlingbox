@@ -53,29 +53,41 @@ GlShader::~GlShader() {
     glDeleteProgram(_program);
 }
 
+int GlShader::location(const char* name) const {
+    const std::string_view key(name);
+    if (const auto it = _locations.find(key); it != _locations.end())
+        return it->second;
+    const int loc = glGetUniformLocation(_program, name);
+    _locations.emplace(std::string(key), loc);
+    return loc;
+}
+
 void GlShader::use() const {
     glUseProgram(_program);
 }
 void GlShader::setMat4(const char* name, const glm::mat4& m) const {
-    glUniformMatrix4fv(glGetUniformLocation(_program, name), 1, GL_FALSE, glm::value_ptr(m));
+    glUniformMatrix4fv(location(name), 1, GL_FALSE, glm::value_ptr(m));
 }
 void GlShader::setMat3(const char* name, const glm::mat3& m) const {
-    glUniformMatrix3fv(glGetUniformLocation(_program, name), 1, GL_FALSE, glm::value_ptr(m));
+    glUniformMatrix3fv(location(name), 1, GL_FALSE, glm::value_ptr(m));
 }
 void GlShader::setVec2(const char* name, const glm::vec2& v) const {
-    glUniform2fv(glGetUniformLocation(_program, name), 1, glm::value_ptr(v));
+    glUniform2fv(location(name), 1, glm::value_ptr(v));
 }
 void GlShader::setVec3(const char* name, const glm::vec3& v) const {
-    glUniform3fv(glGetUniformLocation(_program, name), 1, glm::value_ptr(v));
+    glUniform3fv(location(name), 1, glm::value_ptr(v));
 }
 void GlShader::setVec4(const char* name, const glm::vec4& v) const {
-    glUniform4fv(glGetUniformLocation(_program, name), 1, glm::value_ptr(v));
+    glUniform4fv(location(name), 1, glm::value_ptr(v));
 }
 void GlShader::setFloat(const char* name, float v) const {
-    glUniform1f(glGetUniformLocation(_program, name), v);
+    glUniform1f(location(name), v);
+}
+void GlShader::setInt(const char* name, int v) const {
+    glUniform1i(location(name), v);
 }
 void GlShader::setBool(const char* name, bool v) const {
-    glUniform1i(glGetUniformLocation(_program, name), v ? 1 : 0);
+    glUniform1i(location(name), v ? 1 : 0);
 }
 
 }  // namespace Render

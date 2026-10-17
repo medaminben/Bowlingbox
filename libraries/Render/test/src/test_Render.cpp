@@ -133,3 +133,29 @@ TEST(test_render_scoreboard, painter_writes_marks_scores_and_total) {
     // panel + 10 frame outlines (4 each) + 11 cell dividers + 10 score separators
     EXPECT_EQ(canvas.rects, 1 + 40 + 11 + 10);
 }
+
+TEST(test_render_geometry, pin_profile_is_smooth) {
+    const int segments = 40;
+    const float height = 0.38f, com = 0.12f;
+    const auto m = pinData(height, 0.06f, com, segments);
+    const std::size_t stride = static_cast<std::size_t>(segments) + 1;
+    const std::size_t rings = m.vertexCount() / stride;
+    ASSERT_GE(rings, 40u);
+    const float maxStep = 25.f * 3.14159265f / 180.f;  // the worst step is about 19°
+    bool havePrev = false;
+    float prev = 0.f;
+    for (std::size_t i = 0; i < rings; ++i) {
+        const float* v = &m.vertices[i * stride * 6];  // segment 0: x = radius, z = 0
+        const float r = v[0], y = v[1];
+        if (r < 1e-6f || y < -com + 0.01f * height) {  // poles and the flat base
+            havePrev = false;
+            continue;
+        }
+        const float angle = std::atan2(v[4], v[3]);  // profile normal (n_r, n_y)
+        if (havePrev) {
+            EXPECT_LT(std::abs(angle - prev), maxStep) << "ring " << i << " at y = " << y;
+        }
+        prev = angle;
+        havePrev = true;
+    }
+}

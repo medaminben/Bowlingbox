@@ -1,5 +1,7 @@
 #include <Bowlingbox/Render/Geometry.h>
+#include <algorithm>
 #include <cmath>
+#include <iterator>
 
 namespace Bowlingbox {
 namespace Render {
@@ -11,6 +13,17 @@ void push(MeshData& m, float x, float y, float z, float nx, float ny, float nz) 
 }
 void tri(MeshData& m, unsigned a, unsigned b, unsigned c) {
     m.indices.insert(m.indices.end(), {a, b, c});
+}
+
+using Point2 = std::pair<float, float>;
+
+/// Catmull-Rom between b (t = 0) and c (t = 1), with neighbours a and d.
+Point2 catmullRom(Point2 a, Point2 b, Point2 c, Point2 d, float t) {
+    const auto f = [t](float p0, float p1, float p2, float p3) {
+        return 0.5f * (2.f * p1 + (-p0 + p2) * t + (2.f * p0 - 5.f * p1 + 4.f * p2 - p3) * t * t +
+                       (-p0 + 3.f * p1 - 3.f * p2 + p3) * t * t * t);
+    };
+    return {f(a.first, b.first, c.first, d.first), f(a.second, b.second, c.second, d.second)};
 }
 }  // namespace
 
@@ -88,14 +101,25 @@ MeshData cylinderData(float radius, float height, int segments) {
 }
 
 MeshData pinData(float height, float maxRadius, float comHeight, int segments) {
-    const std::pair<float, float> shape[] = {
+    // Silhouette control points (radius / maxRadius, y / height), base to top.
+    const Point2 shape[] = {
         {0.0f, 0.00f}, {0.45f, 0.00f}, {0.70f, 0.05f}, {0.95f, 0.20f}, {1.00f, 0.30f},
         {0.90f, 0.45f}, {0.60f, 0.60f}, {0.45f, 0.70f}, {0.50f, 0.80f}, {0.55f, 0.90f},
         {0.35f, 0.98f}, {0.0f, 1.00f},
     };
-    std::vector<std::pair<float, float>> profile;
-    for (const auto& [r, y] : shape)
-        profile.emplace_back(r * maxRadius, y * height - comHeight);
+    constexpr int kSamplesPerSpan = 4;
+    const int n = static_cast<int>(std::size(shape));
+    const auto at = [&](int i) { return shape[std::clamp(i, 0, n - 1)]; };
+    std::vector<Point2> profile;
+    for (int i = 0; i < n - 1; ++i)
+        for (int s = 0; s < kSamplesPerSpan; ++s) {
+            const float t = static_cast<float>(s) / static_cast<float>(kSamplesPerSpan);
+            const auto [r, y] = catmullRom(at(i - 1), at(i), at(i + 1), at(i + 2), t);
+            // Clamping keeps the base flat and the belly at exactly maxRadius.
+            profile.emplace_back(std::clamp(r, 0.f, 1.f) * maxRadius,
+                                 std::clamp(y, 0.f, 1.f) * height - comHeight);
+        }
+    profile.emplace_back(shape[n - 1].first * maxRadius, shape[n - 1].second * height - comHeight);
     return latheData(profile, segments);
 }
 

@@ -5,10 +5,24 @@ set(TST_DISCOVER ON)
 ###############################################################
 # Manage project files
 ###############################################################
+include(EmbedFile)
+set(RUBIK_CPP ${CMAKE_CURRENT_BINARY_DIR}/generated/RubikMedium.cpp)
+bowlingbox_embed_file(
+    INPUT  ${CMAKE_SOURCE_DIR}/3rdparty/fonts/Rubik-Medium.ttf
+    OUTPUT ${RUBIK_CPP}
+    SYMBOL kRubikMedium
+)
 set(TARGET_HEADERS
+    src/EmbeddedFont.h
+    src/Shaders.h
     src/GlShader.h
     src/GlMesh.h
+    src/GlTexture.h
     src/ContextData.h
+    src/GlFramebuffer.h
+    src/PostChain.h
+    src/ShadowMap.h
+    src/GpuTimer.h
     src/PropBuilders.h
     src/EnvironmentDecor.h
     include/Bowlingbox/Render/Geometry.h
@@ -16,6 +30,9 @@ set(TARGET_HEADERS
     include/Bowlingbox/Render/ScoreboardLayout.h
     include/Bowlingbox/Render/ScoreboardPainter.h
     include/Bowlingbox/Render/Environment.h
+    include/Bowlingbox/Render/Lighting.h
+    include/Bowlingbox/Render/FontAtlas.h
+    include/Bowlingbox/Render/RenderOptions.h
     include/Bowlingbox/Render/Render.h
 )
 set(TARGET_SOURCES
@@ -25,15 +42,26 @@ set(TARGET_SOURCES
     src/ScoreboardPainter.cpp
     src/Environment.cpp
     src/EnvironmentDecor.cpp
+    src/Lighting.cpp
+    src/Shaders.cpp
     src/GlShader.cpp
     src/GlMesh.cpp
+    src/GlTexture.cpp
+    src/FontAtlas.cpp
+    src/RenderOptions.cpp
+    src/GlFramebuffer.cpp
+    src/PostChain.cpp
+    src/ShadowMap.cpp
+    src/GpuTimer.cpp
     src/Render.cpp
+    ${RUBIK_CPP}
 )
 set(TARGET_RSC)
 set(PRIVATE_DEPS
     ${CMAKE_ROOT_NAME}::Score
     $<BUILD_INTERFACE:glad::glad>
     $<BUILD_INTERFACE:stb::easy_font>
+    $<BUILD_INTERFACE:stb::truetype>
 )
 set(PUBLIC_DEPS
     ${CMAKE_ROOT_NAME}::Core
@@ -46,6 +74,9 @@ set(TARGET_FILES ${TARGET_HEADERS} ${TARGET_SOURCES})
 set(TST_SOURCES
     test/src/test_Render.cpp
     test/src/test_Environment.cpp
+    test/src/test_Lighting.cpp
+    test/src/test_FontAtlas.cpp
+    test/src/test_RenderOptions.cpp
 )
 set(TEST_DEPS)
 ###############################################################
