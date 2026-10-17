@@ -3,7 +3,10 @@
 #include "Command.h"
 #include "FixedStep.h"
 #include "FollowCamera.h"
+#include "SoundDirector.h"
+#include "SoundSettings.h"
 #include <Bowlingbox/Alley/Alley.h>
+#include <Bowlingbox/Audio/Audio.h>
 #include <Bowlingbox/Render/Environment.h>
 #include <Bowlingbox/Render/Render.h>
 #include <wx/wx.h>
@@ -25,6 +28,9 @@ public:
     void setTheme(Bowlingbox::Render::ThemeId id);
     Bowlingbox::Render::ThemeId theme() const { return _theme; }
     std::function<void(Bowlingbox::Render::ThemeId)> onThemeChanged;  // menu sync
+    void setSoundSettings(const SoundSettings& settings);
+    const SoundSettings& soundSettings() const { return _soundSettings; }
+    std::function<void(const SoundSettings&)> onSoundChanged;  // menu sync and saving
     std::function<void(const wxString&)> onStatus;  // status bar text
     std::function<void()> onQuit;                   // close the frame
 
@@ -56,5 +62,11 @@ private:
     bool _failed = false;
     Bowlingbox::Render::ThemeId _theme = Bowlingbox::Render::ThemeId::NeonHall;
     bool _themeKeyHeld = false;  // auto-repeat would otherwise flash through themes
+    bool _muteKeyHeld = false;   // auto-repeat would otherwise flicker the mute
+    bool _ambienceKeyHeld = false;
+    bool _themeChosen = false;   // the first setTheme starts the ambience without a chime
+    std::unique_ptr<Bowlingbox::Audio::IAudioOutput> _audio;
+    SoundDirector _sound;        // talks to *_audio
+    SoundSettings _soundSettings;
 };
 #endif  // BOWLINGGL_BOWLING_CANVAS_H

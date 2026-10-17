@@ -65,6 +65,48 @@ TEST(test_lane_commands, cycle_theme_leaves_the_lane_alone) {
     EXPECT_FLOAT_EQ(after.power, before.power);
 }
 
+TEST(test_lane_commands, sound_commands_leave_the_lane_alone) {
+    Alley::Lane lane;
+    const Alley::Snapshot before = lane.snapshot();
+    for (auto type : {Command::Type::ToggleMute, Command::Type::VolumeUp, Command::Type::VolumeDown,
+                      Command::Type::ToggleAmbience})
+        EXPECT_TRUE(LaneCommands::execute({type}, lane).isValue());
+    EXPECT_EQ(lane.snapshot().phase, before.phase);
+}
+
+TEST(test_sound_settings, volume_steps_by_ten_clamps_and_unmutes) {
+    SoundSettings s;
+    EXPECT_EQ(s.volume, SoundSettings::kDefaultVolume);
+    s.muted = true;
+    s.stepVolume(1);
+    EXPECT_EQ(s.volume, 90);
+    EXPECT_FALSE(s.muted);
+    s.stepVolume(5);
+    EXPECT_EQ(s.volume, 100);
+    s.stepVolume(-20);
+    EXPECT_EQ(s.volume, 0);
+}
+
+TEST(test_sound_settings, gain_is_the_squared_volume) {
+    SoundSettings s;
+    s.volume = 50;
+    EXPECT_FLOAT_EQ(s.gain(), 0.25f);
+    s.volume = 100;
+    EXPECT_FLOAT_EQ(s.gain(), 1.f);
+    s.volume = 0;
+    EXPECT_FLOAT_EQ(s.gain(), 0.f);
+}
+
+TEST(test_hud_text, sound_status_shows_volume_mute_and_ambience) {
+    SoundSettings s;
+    s.volume = 70;
+    EXPECT_EQ(HudText::soundStatus(s), "volume 70%");
+    s.muted = true;
+    EXPECT_EQ(HudText::soundStatus(s), "sound muted");
+    s.ambience = false;
+    EXPECT_EQ(HudText::soundStatus(s), "sound muted, no ambience");
+}
+
 // ------------------------------------------------------------ FollowCamera
 TEST(test_follow_camera, stays_home_while_aiming) {
     FollowCamera cam;
@@ -120,6 +162,29 @@ TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
     sheet.roll(10);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::result(s, sheet), "SPARE!");
+}
+
+TEST(test_hud_text, throw_result_ten_after_a_gutter_ball_is_a_spare) {
+    Score::ScoreCalculator sheet;
+    auto s = snapshotIn(Phase::FrameDone);
+    sheet.roll(0);
+    s.lastPinsDown = 0;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Gutter);
+    sheet.roll(10);
+    s.lastPinsDown = 10;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Spare);
+}
+
+TEST(test_hud_text, throw_result_names_strikes_and_counts_and_nothing_outside_frame_done) {
+    Score::ScoreCalculator sheet;
+    auto s = snapshotIn(Phase::FrameDone);
+    sheet.roll(10);
+    s.lastPinsDown = 10;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Strike);
+    sheet.roll(4);
+    s.lastPinsDown = 4;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Pins);
+    EXPECT_EQ(HudText::throwResult(snapshotIn(Phase::Rolling), sheet), HudText::ThrowResult::None);
 }
 
 TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
@@ -182,7 +247,8 @@ TEST(test_hud, layout_reserves_top_and_bottom_bands) {
 
 TEST(test_hud_text, controls_help_names_every_binding) {
     const std::string help = HudText::controlsHelp();
-    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q", "T: change the scenery"})
+    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q", "T: change the scenery",
+                            "M: mute sound", "+ / -: volume", "B: background ambience"})
         EXPECT_NE(help.find(key), std::string::npos) << key;
 }
 

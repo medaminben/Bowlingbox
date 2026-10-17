@@ -9,9 +9,22 @@
 using namespace Bowlingbox;
 using Alley::Phase;
 
+namespace {
+std::unique_ptr<Audio::IAudioOutput> createAudio() {
+    auto device = Audio::createDeviceOutput();
+    if (device.isValue())
+        return device();
+    std::fprintf(stderr, "sound disabled: %s\n", device.error().c_str());
+    return Audio::makeSilentOutput();
+}
+}  // namespace
+
 BowlingCanvas::BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs)
     : wxGLCanvas(parent, attrs, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS),
-      _timer(this) {
+      _timer(this),
+      _audio(createAudio()),
+      _sound(*_audio) {
+    _audio->setVolume(_soundSettings.gain());
     wxGLContextAttrs ca;
     ca.PlatformDefaults().CoreProfile().OGLVersion(3, 3).EndList();
     _gl = std::make_unique<wxGLContext>(this, nullptr, &ca);
@@ -52,12 +65,23 @@ void BowlingCanvas::newGame() {
 }
 
 void BowlingCanvas::setTheme(Render::ThemeId id) {
+    _sound.setTheme(id, _themeChosen);
+    _themeChosen = true;
     _theme = id;
     if (_scene)
         _scene->setTheme(id);  // CPU only, no GL context needed
     if (onThemeChanged)
         onThemeChanged(id);
     Refresh(false);
+}
+
+void BowlingCanvas::setSoundSettings(const SoundSettings& settings) {
+    _soundSettings = settings;
+    _audio->setVolume(settings.gain());
+    _audio->setMuted(settings.muted);
+    _sound.setAmbienceEnabled(settings.ambience);
+    if (onSoundChanged)
+        onSoundChanged(settings);
 }
 
 bool BowlingCanvas::ensureRenderer() {
@@ -112,9 +136,12 @@ void BowlingCanvas::OnTimer(wxTimerEvent&) {
     for (int i = 0; i < steps; ++i)
         _lane.step(FixedStep::kDt);
     const auto s = _lane.snapshot();
+    const auto impacts = _lane.drainImpacts();
+    _sound.update(s, _lane.scoreSheet(), impacts, static_cast<float>(steps) * FixedStep::kDt);
     _follow.update(s, static_cast<float>(steps) * FixedStep::kDt);
     _follow.applyTo(_camera);
-    const wxString status = wxString::FromUTF8(HudText::status(s, _lane.scoreSheet()));
+    const wxString status = wxString::FromUTF8(HudText::status(s, _lane.scoreSheet()) + "   |   " +
+                                               HudText::soundStatus(_soundSettings));
     if (onStatus && status != _status) {
         _status = status;
         onStatus(status);
@@ -128,6 +155,14 @@ void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
         if (_themeKeyHeld) return;  // auto-repeat would otherwise flash through themes
         _themeKeyHeld = true;
     }
+    if (c.type == Command::Type::ToggleMute) {
+        if (_muteKeyHeld) return;
+        _muteKeyHeld = true;
+    }
+    if (c.type == Command::Type::ToggleAmbience) {
+        if (_ambienceKeyHeld) return;
+        _ambienceKeyHeld = true;
+    }
     if (c.type == Command::Type::None)
         e.Skip();
     else
@@ -136,6 +171,8 @@ void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
 
 void BowlingCanvas::OnKeyUp(wxKeyEvent& e) {
     if (e.GetKeyCode() == 'T' || e.GetKeyCode() == 't') _themeKeyHeld = false;
+    if (e.GetKeyCode() == 'M' || e.GetKeyCode() == 'm') _muteKeyHeld = false;
+    if (e.GetKeyCode() == 'B' || e.GetKeyCode() == 'b') _ambienceKeyHeld = false;
     const Command c = InputMapper::keyUp(e.GetKeyCode(), _lane.snapshot().phase);
     if (c.type == Command::Type::None)
         e.Skip();
@@ -166,9 +203,23 @@ void BowlingCanvas::apply(Command command) {
         setTheme(Render::nextTheme(_theme));
         return;
     }
+    if (command.type == Command::Type::ToggleMute || command.type == Command::Type::VolumeUp ||
+        command.type == Command::Type::VolumeDown || command.type == Command::Type::ToggleAmbience) {
+        SoundSettings next = _soundSettings;
+        switch (command.type) {
+            case Command::Type::ToggleMute:     next.muted = !next.muted; break;
+            case Command::Type::VolumeUp:       next.stepVolume(1); break;
+            case Command::Type::VolumeDown:     next.stepVolume(-1); break;
+            default:                            next.ambience = !next.ambience; break;
+        }
+        setSoundSettings(next);
+        return;
+    }
     auto r = LaneCommands::execute(command, _lane);
     if (r.isError())
         wxLogDebug("command rejected: %s", r.error().c_str());
+    else if (command.type == Command::Type::NewGame)
+        _sound.onNewGame();
 }
 
 void BowlingCanvas::renderFrame() {

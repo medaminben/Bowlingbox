@@ -154,6 +154,9 @@ On the second ball of a frame, the pins that are still standing stay exactly whe
 | Throw | release Space | release the left button |
 | New game | N or Ctrl+N | Game ▸ New Game |
 | Change scenery | T | View ▸ Theme |
+| Mute / unmute sound | M | Sound ▸ Mute |
+| Volume up / down | + / − | Sound ▸ Volume up / down |
+| Background ambience on / off | B | Sound ▸ Background ambience |
 | Show controls | | Help ▸ Controls |
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
@@ -175,6 +178,15 @@ Outdoor. Press `T` or use View ▸ Theme to switch. Start in a theme with:
 ```
 
 An unknown name prints `unknown theme '<name>'; use neon, classic or outdoor` and starts Neon Hall.
+
+### Sound
+
+BowlingGL plays the ball, the pins, a chime for a strike and a bell for a spare, and a background
+ambience for each theme: a bowling alley (Classic), an arcade (Neon) and a garden (Outdoor).
+The Sound menu and keys control it: `M` mutes, `+` / `−` change the volume in 10% steps, `B` turns the
+background ambience off and on. The status bar shows the volume, or "sound muted". The game remembers
+these settings (`~/.BowlingGL` on Linux, the registry on Windows); `--mute` starts muted for one
+session. Without an audio device the game prints `sound disabled: <reason>` once and stays silent.
 
 ### Graphics
 

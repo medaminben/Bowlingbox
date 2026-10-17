@@ -12,7 +12,8 @@ wxWidgets.
   libBowlingboxScore.dll     ┐
   libBowlingboxCore.dll      │ the Bowlingbox libraries, shared
   libBowlingboxAlley.dll     │ (Bullet3 linked into Alley)
-  libBowlingboxRender.dll    ┘ (glad and stb linked into Render)
+  libBowlingboxRender.dll    │ (glad and stb linked into Render)
+  libBowlingboxAudio.dll     ┘ (miniaudio linked into Audio)
   LICENSE
   THIRD_PARTY_NOTICES.txt
 ```
@@ -60,7 +61,7 @@ after the stage check.
 
 ### The stage check
 
-The staged folder must hold exactly the seven files above. Every DLL they
+The staged folder must hold exactly the eight files above. Every DLL they
 import must be shipped beside them or be on the script's list of Windows system
 DLLs, and none may import `libstdc++`, `libgcc`, `libwinpthread` or `libssp`.
 A new import fails the build with its name; add it to the list only if it is a

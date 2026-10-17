@@ -19,6 +19,15 @@ Command keyDown(int keyCode, bool ctrl, Phase phase) {
         return {Type::NewGame};
     if (keyCode == 'T' || keyCode == 't')
         return {Type::CycleTheme};
+    if (keyCode == 'M' || keyCode == 'm')
+        return {Type::ToggleMute};
+    if (keyCode == 'B' || keyCode == 'b')
+        return {Type::ToggleAmbience};
+    // '=' is the unshifted '+' on US layouts.
+    if (keyCode == '+' || keyCode == '=' || keyCode == WXK_ADD || keyCode == WXK_NUMPAD_ADD)
+        return {Type::VolumeUp};
+    if (keyCode == '-' || keyCode == WXK_SUBTRACT || keyCode == WXK_NUMPAD_SUBTRACT)
+        return {Type::VolumeDown};
     switch (keyCode) {
         case WXK_LEFT:
             return canAim(phase) ? Command {Type::MoveAim, -kKeyOffsetStep} : Command {};

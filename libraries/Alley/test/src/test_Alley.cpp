@@ -3,6 +3,7 @@
 #include <Bowlingbox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 using namespace Bowlingbox::Alley;
@@ -186,6 +187,50 @@ TEST_F(test_alley, twelve_strikes_score_three_hundred) {
     EXPECT_EQ(lane.scoreSheet().score(), 300);
 }
 
+TEST_F(test_alley, a_pocket_throw_reports_ball_pin_impacts) {
+    lane.moveAim(kPocketOffset);
+    lane.startCharge();
+    lane.step(chargeTimeFor(kStrikePower));
+    lane.release();
+    bool ballHitPin = false;
+    for (int i = 0; i < 60 * 4 && !ballHitPin; ++i) {
+        lane.step(kDt);
+        const auto impacts = lane.drainImpacts();
+        EXPECT_LE(impacts.size(), 256u);
+        for (const Impact& im : impacts) {
+            EXPECT_LE(im.a, im.b);
+            EXPECT_GE(im.impulse, 0.3f);
+            if (im.a == Body::Ball && im.b == Body::Pin)
+                ballHitPin = true;
+        }
+    }
+    EXPECT_TRUE(ballHitPin);
+    EXPECT_TRUE(lane.drainImpacts().empty());
+}
+
+TEST_F(test_alley, no_pin_impacts_before_the_ball_reaches_the_rack) {
+    lane.startCharge();
+    lane.step(chargeTimeFor(0.05f));  // 4.4 m/s: about 4 s to the head pin
+    lane.release();
+    for (int i = 0; i < 60; ++i)
+        lane.step(kDt);
+    for (const Impact& im : lane.drainImpacts()) {
+        EXPECT_NE(im.a, Body::Pin);
+        EXPECT_NE(im.b, Body::Pin);
+    }
+}
+
+TEST_F(test_alley, new_game_drops_pending_impacts) {
+    lane.moveAim(kPocketOffset);
+    lane.startCharge();
+    lane.step(chargeTimeFor(kStrikePower));
+    lane.release();
+    for (int i = 0; i < 60 * 3; ++i)
+        lane.step(kDt);
+    lane.newGame();
+    EXPECT_TRUE(lane.drainImpacts().empty());
+}
+
 // ------------------------------------------------------------ injected collaborators
 namespace {
 /// Deterministic stand-in for Bullet: the ball drops into the pit as soon as it
@@ -222,6 +267,8 @@ public:
     bool ballInPit() const override { return _launched; }
     float ballSpeed() const override { return 0.f; }
     bool allSlow() const override { return true; }
+    std::vector<Impact> queued;
+    std::vector<Impact> drainImpacts() override { return std::exchange(queued, {}); }
 
 private:
     bool _launched = false;
@@ -329,4 +376,15 @@ TEST(test_alley_injected, tenth_frame_strike_then_open_balls_plays_three_balls) 
     throwAndWait(lane, 2.f);
     EXPECT_EQ(lane.snapshot().phase, Phase::GameOver);
     EXPECT_EQ(lane.scoreSheet().score(), 17);
+}
+
+TEST(test_alley_injected, impacts_are_forwarded_once) {
+    auto l = makeInjectedLane();
+    l.world->queued.push_back({Body::Ball, Body::Pin, 2.f, {0.f, 0.2f, 17.4f}});
+    const auto first = l.lane->drainImpacts();
+    ASSERT_EQ(first.size(), 1u);
+    EXPECT_EQ(first[0].a, Body::Ball);
+    EXPECT_EQ(first[0].b, Body::Pin);
+    EXPECT_FLOAT_EQ(first[0].impulse, 2.f);
+    EXPECT_TRUE(l.lane->drainImpacts().empty());
 }

@@ -21,6 +21,7 @@ public:
 
     void step(float dt) noexcept;
     Snapshot snapshot() const;
+    std::vector<Impact> drainImpacts() { return _world->drainImpacts(); }
     const Score::IScoreSheet& game() const { return *_game; }
 
 private:

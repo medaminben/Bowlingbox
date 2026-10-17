@@ -32,6 +32,17 @@ struct Pose {
     std::array<float, 4> rotation {0.f, 0.f, 0.f, 1.f};  // quaternion x, y, z, w
 };
 
+/// What a rigid body is, for impact reporting.
+enum class Body { Ball, Pin, Lane, Gutter, Pit, Other };
+
+/// A new contact between two bodies in one physics sub-step.
+struct Impact {
+    Body a = Body::Other;  // a <= b in enum order
+    Body b = Body::Other;
+    float impulse = 0.f;                            // N·s, Bullet applied impulse
+    std::array<float, 3> position {0.f, 0.f, 0.f};  // world, metres
+};
+
 struct Snapshot {
     Phase phase = Phase::Aiming;
     Pose ball;

@@ -21,6 +21,7 @@ graph TD
     subgraph Libraries
         ALLEY[Bowlingbox::Alley<br/>Lane state machine]
         RENDER[Bowlingbox::Render<br/>OpenGL scene + 2D overlay]
+        AUDIO[Bowlingbox::Audio<br/>miniaudio + embedded sounds]
         SCORE[Bowlingbox::Score<br/>ScoreCalculator]
         CORE[Bowlingbox::Core<br/>Result / Error]
     end
@@ -29,10 +30,12 @@ graph TD
         GLM[GLM]
         GLAD[GLAD + stb_easy_font + stb_truetype]
         WX[wxWidgets 3.2]
+        MINIAUDIO[miniaudio]
     end
 
     GL --> ALLEY
     GL --> RENDER
+    GL --> AUDIO
     GL --> WX
     CON --> SCORE
     DISP --> SCORE
@@ -44,6 +47,8 @@ graph TD
     RENDER --> GLM
     RENDER -. private .-> SCORE
     RENDER -. private .-> GLAD
+    AUDIO -. private .-> MINIAUDIO
+    AUDIO --> CORE
 ```
 
 Dotted edges are private dependencies: they do not leak into the public headers or the installed
@@ -183,6 +188,13 @@ and prints the per-pass averages to stderr about once a second. The numbers only
 GPU is saturated: on a light load the GPU clock governor (notably on Intel) downclocks until the work
 fills the frame, which inflates them. Measure fullscreen, at a high resolution.
 
+### Bowlingbox::Audio
+
+Sound output behind `IAudioOutput` (`play`, `setLoop` with three slots, `setMuted`, `setVolume`).
+`createDeviceOutput()` uses miniaudio and the 13 WAV files embedded from `3rdparty/sounds`;
+`makeSilentOutput()` is the fallback without a device. BowlingGL's `SoundDirector` decides what
+plays from the lane snapshot, the score sheet and `Lane::drainImpacts()` (new Bullet contacts).
+
 ## Applications
 
 ### BowlingGL (`applications/bowlingGame/bowlingGameGL`)
@@ -190,15 +202,16 @@ fills the frame, which inflates them. Measure fullscreen, at a high resolution.
 | Unit | Responsibility |
 |---|---|
 | `main.cpp` | wx entry point; forces `GDK_BACKEND=x11` on Wayland (wxGLCanvas needs GLX) |
-| `BowlingFrame` | Window, menu (Game ▸ New/Quit, View ▸ Theme, Help ▸ Controls/About), status bar |
+| `BowlingFrame` | Window, menu (Game ▸ New/Quit, View ▸ Theme, Sound ▸ Mute/Volume/Ambience (saved with wxConfig), Help ▸ Controls/About), status bar |
 | `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the timer, forwards wx events |
 | `FixedStep` | Turns irregular timer ticks into 1/60 s physics steps; drops the backlog after a stall |
-| `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `CycleTheme`, `Quit` |
+| `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `CycleTheme`, `ToggleMute`, `Quit` |
 | `InputMapper` | Pure functions: key, button or mouse move + current `Phase` → `Command` |
 | `LaneCommands` | `execute(Command, Lane&)` → `Result<>` |
 | `FollowCamera` | Waits behind the foul line, follows the ball down the lane, eases back |
 | `SceneAdapter` | The only place that converts Alley floats into Render/GLM types |
 | `Hud`, `HudText` | Scoreboard, power bar, hint and result text; `hudLayout()` sizes the bands; `HudText` holds the strings, including the Controls dialog |
+| `SoundDirector` | Decides what plays from the snapshot, the score sheet and the drained impacts, and drives an `Audio::IAudioOutput` (release, roll, gutter, pin hits, stingers, charge tone, ambience) |
 
 ### BowlingConsole (`bowlingGameCMD`)
 
@@ -255,6 +268,7 @@ The canvas never changes game state directly. Every change goes through a `Comma
 | `Score::IScoreSheet` / `Score::IBowlingGame` | Score | `Score::ScoreCalculator` | `FakeGame` in `test_Alley.cpp` |
 | `Alley::IPhysicsWorld` | Alley | `makeBulletWorld()` | `FakeWorld` in `test_Alley.cpp` |
 | `Render::ICanvas2D` | Render | `Render::Overlay` (OpenGL) | `RecordingCanvas` in `test_Render.cpp` and `test_Gameplay.cpp` |
+| `Audio::IAudioOutput` | Audio | `createDeviceOutput()` (miniaudio), `makeSilentOutput()` without a device | `RecordingOutput` in `test_SoundDirector.cpp` |
 | `Console::ITerminal` | BowlingConsole | `SystemTerminal` | `ScriptedTerminal` in `test_Console.cpp` |
 
 ## Build system
@@ -301,6 +315,8 @@ never touched.
 | wxWidgets | 3.2.8 | FetchContent, static, GTK3 (`WxSupport.cmake`) | BowlingGL, BowlingDisplay |
 | GoogleTest | v1.15.2 | FetchContent (`GTestSupport.cmake`) | all tests |
 | GLAD 2, stb_easy_font, stb_truetype, Rubik font | in tree | `3rdparty/` | Render (private) |
+| miniaudio | in tree | `3rdparty/miniaudio/` | Audio (private) |
+| stb_vorbis | in tree | `3rdparty/stb/` | `sound_convert` dev tool only, not shipped |
 
 Versions are cache variables (`BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
 `BOWLINGBOX_WX_VERSION`, `BOWLINGBOX_GTEST_VERSION`).

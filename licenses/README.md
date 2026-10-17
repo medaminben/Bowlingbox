@@ -12,6 +12,9 @@ one copied from that project's own source.
 | [stb_easy_font](https://github.com/nothings/stb) | 1.1 | Render (overlay text) | MIT OR Unlicense (public domain) | [stb.txt](stb.txt) |
 | [stb_truetype](https://github.com/nothings/stb) | 1.26 | Render (HUD font atlas) | MIT OR Unlicense (public domain) | [stb.txt](stb.txt) |
 | [Rubik](https://github.com/googlefonts/rubik) Medium | 2.x static | Render (HUD font, embedded) | SIL Open Font License 1.1 | [Rubik-OFL.txt](Rubik-OFL.txt) |
+| [miniaudio](https://github.com/mackron/miniaudio) | 0.11.25 | Audio (statically linked) | Unlicense OR MIT-0 | [miniaudio.txt](miniaudio.txt) |
+| [stb_vorbis](https://github.com/nothings/stb) | commit 2c980bb | `sound_convert` dev tool only, not shipped | MIT OR Unlicense (public domain) | [stb.txt](stb.txt) |
+| Sound effects (Kenney, Freesound) | see `3rdparty/sounds/SOURCES.md` | Audio (embedded) | CC0 1.0 | [sounds.txt](sounds.txt) |
 
 ## Fetched at configure time (`cmake/*Support.cmake`)
 

@@ -31,6 +31,7 @@ set(BOWLINGBOX_LIBRARIES
     Score
     Core
     Alley
+    Audio
     Render
 )
 

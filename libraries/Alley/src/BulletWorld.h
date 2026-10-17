@@ -32,6 +32,7 @@ public:
     bool ballInPit() const override;
     float ballSpeed() const override;
     bool allSlow() const override;
+    std::vector<Impact> drainImpacts() override;
 
     /// Standard rack: (x, z) of pins 1..10 in metres.
     static std::array<std::pair<float, float>, 10> pinPositions();

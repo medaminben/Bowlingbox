@@ -21,6 +21,7 @@ void Lane::step(float dt) noexcept { _impl->step(dt); }
 
 Snapshot Lane::snapshot() const { return _impl->snapshot(); }
 const Score::IScoreSheet& Lane::scoreSheet() const { return _impl->game(); }
+std::vector<Impact> Lane::drainImpacts() { return _impl->drainImpacts(); }
 
 }  // namespace Alley
 }  // namespace Bowlingbox

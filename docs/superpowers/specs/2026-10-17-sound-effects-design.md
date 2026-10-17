@@ -81,6 +81,9 @@ since the last call, oldest first, and empties the buffer. `Lane` gains
   `getAppliedImpulse() >= kImpactRecordThreshold` (0.3 N·s), records an `Impact` (pair order: the
   lower `Body` enum value first). The threshold sits above the resting impulse of a standing pin
   (1.5 kg · 9.81 m/s² · 1/120 s ≈ 0.12 N·s), so the first sub-step after a rack reset is silent.
+  Contacts involving a pin are additionally ignored until the ball reaches `kPinImpactMinBallZ`
+  (head pin z − 2 m), because the spawn bounces after a rack reset reach 0.38–1.76 N·s, above the
+  0.3 N·s threshold.
 - Buffer cap 256; when full, further impacts in that tick are dropped.
 - `rebuild()` and `removePin()` clear the buffer.
 

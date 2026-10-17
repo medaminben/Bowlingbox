@@ -3,6 +3,7 @@
 #include <Bowlingbox/Alley/Bowlingbox_Alley_export.h>
 #include <Bowlingbox/Alley/Types.h>
 #include <memory>
+#include <vector>
 
 namespace Bowlingbox {
 namespace Alley {
@@ -30,6 +31,9 @@ public:
     virtual bool ballInPit() const = 0;
     virtual float ballSpeed() const = 0;
     virtual bool allSlow() const = 0;  // every body in the world is (nearly) at rest
+
+    /// Impacts recorded since the last call, oldest first; empties the buffer.
+    virtual std::vector<Impact> drainImpacts() = 0;
 };
 
 /// The default Bullet3 implementation.

@@ -75,3 +75,24 @@ TEST(test_input_mapper, t_cycles_the_theme_in_every_phase) {
         EXPECT_EQ(InputMapper::keyDown('t', false, p), cmd(Type::CycleTheme));
     }
 }
+
+TEST(test_input_mapper, m_toggles_mute_in_every_phase) {
+    for (Phase p : {Phase::Aiming, Phase::Charging, Phase::Rolling, Phase::Settling, Phase::FrameDone,
+                    Phase::GameOver}) {
+        EXPECT_EQ(InputMapper::keyDown('M', false, p), cmd(Type::ToggleMute));
+        EXPECT_EQ(InputMapper::keyDown('m', false, p), cmd(Type::ToggleMute));
+        EXPECT_EQ(InputMapper::keyUp('M', p), cmd(Type::None));
+    }
+}
+
+TEST(test_input_mapper, plus_minus_and_b_control_the_sound_in_every_phase) {
+    for (Phase p : {Phase::Aiming, Phase::Charging, Phase::Rolling, Phase::Settling, Phase::FrameDone,
+                    Phase::GameOver}) {
+        for (int key : {int('+'), int('='), int(WXK_ADD), int(WXK_NUMPAD_ADD)})
+            EXPECT_EQ(InputMapper::keyDown(key, false, p), cmd(Type::VolumeUp)) << key;
+        for (int key : {int('-'), int(WXK_SUBTRACT), int(WXK_NUMPAD_SUBTRACT)})
+            EXPECT_EQ(InputMapper::keyDown(key, false, p), cmd(Type::VolumeDown)) << key;
+        EXPECT_EQ(InputMapper::keyDown('B', false, p), cmd(Type::ToggleAmbience));
+        EXPECT_EQ(InputMapper::keyDown('b', false, p), cmd(Type::ToggleAmbience));
+    }
+}

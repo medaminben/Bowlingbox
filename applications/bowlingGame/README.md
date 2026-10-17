@@ -15,6 +15,9 @@ Aim, charge and throw; Bullet3 decides which pins fall; Bowlingbox keeps the sco
 | Throw | release Space | release left button |
 | New game | N or Ctrl+N | Game ▸ New Game |
 | Change scenery | T | View ▸ Theme |
+| Mute / unmute sound | M | Sound ▸ Mute |
+| Volume up / down | + / − | Sound ▸ Volume up / down |
+| Background ambience on / off | B | Sound ▸ Background ambience |
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
 Prerequisites (Debian/Ubuntu): `sudo apt install build-essential cmake libgtk-3-dev libgl1-mesa-dev`.
@@ -41,6 +44,9 @@ Manual checklist after changes to Alley/Render/app:
 7. `--theme=neon`, `--theme=classic`, `--theme=outdoor`: each starts in that scenery; `--theme=space` warns and starts Neon Hall.
 8. Press `T` three times: Neon → Classic → Outdoor → Neon, and View ▸ Theme follows; choosing from the menu works too.
 9. In every theme: a gutter ball at full offset and flying pins stay visible; the aim guide is translucent and the pin necks are red; the frame rate stays smooth.
+10. With sound on, a pocket throw plays: release thud, rolling that rises with speed, pin knocks, then the strike chime (a spare plays a bell, a gutter ball nothing extra); the ambience matches the theme and changes with `T` (with a chime).
+11. `M` mutes everything and unmutes; holding `M` toggles once; Sound ▸ Mute stays in sync; muted + `T` stays silent. `+` / `−` step the volume by 10% (and unmute), `B` stops and restarts the ambience; the status bar shows the state. Quit and restart: the settings come back.
+12. `--mute` starts silent with Sound ▸ Mute checked. With no audio device (e.g. `env -u PULSE_SERVER -u XDG_RUNTIME_DIR ALSA_CONFIG_PATH=/dev/null ./build/bin/BowlingGL` on a machine without PipeWire/Pulse access) one `sound disabled:` line appears and the game runs.
 
 ### Scenery
 
@@ -59,6 +65,8 @@ Three themes surround the lane. Pick one at start or switch while playing (`T` o
 An unknown name prints the valid ones and starts Neon Hall. The decor is drawn only; it never
 touches the physics.
 
+`./build/bin/BowlingGL --mute` starts with the sound off. Without an audio device the game prints `sound disabled: ...` once and runs silently.
+
 ## Architecture
 
 Front-ends depend on interfaces; the concrete classes are picked in `main` (or a default constructor).
@@ -68,6 +76,7 @@ Front-ends depend on interfaces; the concrete classes are picked in `main` (or a
 | `Score::IScoreSheet` (read) / `Score::IBowlingGame` (+ `roll`, `reset`) | Score | `Score::ScoreCalculator` | all three apps, `Alley::Lane` |
 | `Alley::IPhysicsWorld` | Alley | Bullet3 (`makeBulletWorld()`) | `Alley::Lane` |
 | `Render::ICanvas2D` | Render | `Render::Overlay` (OpenGL) | `paintScoreboard`, BowlingGL `drawHud` |
+| `Audio::IAudioOutput` | Audio | miniaudio (`createDeviceOutput()`), `makeSilentOutput()` without a device | BowlingGL `SoundDirector` |
 | `Console::ITerminal` | BowlingConsole | `SystemTerminal` (stdin/stdout) | `Console::Screen` |
 
 `Score/Notation.h` owns the 21-slot roll encoding (`Mark::Strike`, `Spare`, ...) and its
