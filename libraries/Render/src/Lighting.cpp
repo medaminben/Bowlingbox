@@ -43,6 +43,11 @@ Aabb shadowBox(const SceneGeometry& g) {
     return {{-x, kPitTopY - 0.1f, -g.approach}, {x, kShadowTopY, g.laneLength + kPitLength}};
 }
 
+Aabb reflectionBox(const SceneGeometry& g) {
+    const float x = g.laneHalfWidth + g.gutterWidth + 0.3f;
+    return {{-x, 0.f, -g.approach}, {x, kShadowTopY, g.laneLength + kPitLength}};
+}
+
 std::vector<std::size_t> propsInBox(const std::vector<Prop>& props, const SceneGeometry& g, const Aabb& box) {
     std::vector<std::size_t> out;
     for (std::size_t i = 0; i < props.size(); ++i) {

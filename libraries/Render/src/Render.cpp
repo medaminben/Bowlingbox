@@ -188,6 +188,12 @@ glm::mat4 Camera::projection() const {
 
 // ---------------------------------------------------------------- SceneRenderer
 namespace {
+void bindUnit(unsigned unit, unsigned tex) {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glActiveTexture(GL_TEXTURE0);
+}
+
 /// Per-pass settings for the lit shader.
 struct PassParams {
     glm::mat4 view {1.f}, proj {1.f};
@@ -210,6 +216,9 @@ struct SceneRenderer::Impl {
     std::unique_ptr<PostChain> post;
     std::unique_ptr<ShadowMap> shadow;
     std::vector<std::size_t> shadowCasters;  // indices into props, rebuilt by setTheme
+    GlFramebuffer reflection;
+    glm::ivec2 reflectionSize {0};
+    std::vector<std::size_t> reflectionCasters;  // rebuilt by setTheme
     LightFrustum light;
     unsigned skyVao = 0;  // core profile needs a bound VAO even for attribute-less draws
 
@@ -243,6 +252,7 @@ struct SceneRenderer::Impl {
         props = buildProps(*current, g);
         shadowCasters = propsInBox(props, g, shadowBox(g));
         light = fitLightFrustum(current->lightDir, shadowBox(g));
+        reflectionCasters = propsInBox(props, g, reflectionBox(g));
     }
 
     const GlMesh& meshFor(Shape shape) const {
@@ -371,6 +381,39 @@ struct SceneRenderer::Impl {
         shadow->end();
     }
 
+    bool ensureReflection(glm::ivec2 size) {
+        if (size == reflectionSize)
+            return true;
+        reflectionSize = size;
+        if (reflection.create({size.x, size.y, 0, GL_RGBA16F, true, false}))
+            return true;
+        reflectionSize = glm::ivec2(0);
+        return false;
+    }
+
+    /// Ball, pins and nearby props mirrored in the lane plane (y = 0). Alpha marks covered pixels.
+    void reflectionPass(const PassParams& camera, const SceneDescription& scene) {
+        PassParams pp = camera;
+        pp.view = camera.view * glm::scale(glm::mat4(1.f), glm::vec3(1.f, -1.f, 1.f));
+        pp.eye = {camera.eye.x, -camera.eye.y, camera.eye.z};
+        pp.clipPlane = {0.f, 1.f, 0.f, 0.f};  // keep y >= 0
+        pp.toneMap = false;
+        pp.shadows = false;
+        pp.reflection = false;
+        reflection.bind();
+        glClearColor(0.f, 0.f, 0.f, 0.f);
+        glDepthMask(GL_TRUE);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glEnable(GL_CLIP_DISTANCE0);
+        GlShader& s = *ctx.data().lit;
+        setFrameUniforms(s, pp);
+        drawOpaque(s, pp, scene, &reflectionCasters, false);
+        glDisable(GL_CLIP_DISTANCE0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     void drawSky(bool toneMap) {
         const Theme& t = *current;
         glDisable(GL_DEPTH_TEST);
@@ -435,7 +478,7 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
         return;  // minimised, or the HUD bands take the whole window
     ContextData& d = p.ctx.data();
     const FrameSizes sizes = frameSizes(p.ctx.width(), viewportH);
-    if (d.fullPipeline && !p.post->ensureSize(sizes, d.samples)) {
+    if (d.fullPipeline && (!p.post->ensureSize(sizes, d.samples) || !p.ensureReflection(sizes.reflection))) {
         std::fprintf(stderr, "render: offscreen targets incomplete at %dx%d; using the basic path\n",
                      sizes.scene.x, sizes.scene.y);
         d.fullPipeline = false;
@@ -452,11 +495,13 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
     pp.shadows = true;
     pp.lightViewProj = p.light.viewProjection();
     // Unit 1; PostChain::present rebinds and then unbinds it.
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, p.shadow->depthTexture());
-    glActiveTexture(GL_TEXTURE0);
+    bindUnit(1, p.shadow->depthTexture());
+    p.reflectionPass(pp, scene);
+    pp.reflection = true;
+    bindUnit(2, p.reflection.colorTexture());
     p.post->beginScene();
     p.mainPass(pp, scene);
+    bindUnit(2, 0);  // the reflection target is not sampled after the main pass
     p.post->present(viewportY, p.current->exposure, p.current->bloomStrength);
 }
 

@@ -33,6 +33,9 @@ BOWLINGBOX_RENDER_API Aabb shadowBox(const SceneGeometry& g);
 /// Indices of the props whose world box overlaps `box` (used to pick shadow and reflection casters).
 BOWLINGBOX_RENDER_API std::vector<std::size_t> propsInBox(const std::vector<Prop>& props, const SceneGeometry& g,
                                                          const Aabb& box);
+/// What the lane mirrors: above the lane surface, the lane and gutters plus 0.3 m each side
+/// (the ball returns), from the approach to the end of the pit.
+BOWLINGBOX_RENDER_API Aabb reflectionBox(const SceneGeometry& g);
 
 }  // namespace Render
 }  // namespace Bowlingbox

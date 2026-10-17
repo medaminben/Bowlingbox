@@ -123,3 +123,29 @@ TEST(test_lighting, shadow_casters_skip_the_ceiling_and_keep_the_ball_returns) {
         }
     }
 }
+
+TEST(test_lighting, reflection_casters_skip_the_floor_and_the_neighbour_lanes) {
+    for (ThemeId id : kThemes) {
+        const Theme& t = theme(id);
+        const auto props = buildProps(t, kG);
+        const auto casters = propsInBox(props, kG, reflectionBox(kG));
+        const auto isCaster = [&](std::size_t i) { return std::count(casters.begin(), casters.end(), i) != 0; };
+        int below = 0, neighbours = 0;
+        for (std::size_t i = 0; i < props.size(); ++i) {
+            if (bounds(props[i], kG).max.y <= 0.f) {
+                ++below;
+                EXPECT_FALSE(isCaster(i)) << t.name << " prop " << i << " is below the lane";
+            }
+            if (props[i].material.pattern == Pattern::Wood) {
+                ++neighbours;
+                EXPECT_FALSE(isCaster(i)) << t.name << " prop " << i << " is a neighbour lane";
+            }
+        }
+        EXPECT_GT(below, 0) << t.name << ": nothing to exclude";
+        EXPECT_GT(neighbours, 0) << t.name << ": nothing to exclude";
+        const bool hasReturn = std::any_of(casters.begin(), casters.end(), [&](std::size_t i) {
+            return std::abs(bounds(props[i], kG).max.y - kReturnHeight) < 1e-4f;
+        });
+        EXPECT_TRUE(hasReturn) << t.name;
+    }
+}
