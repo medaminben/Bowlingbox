@@ -14,6 +14,7 @@ bowlingbox_embed_file(
 )
 set(TARGET_HEADERS
     src/EmbeddedFont.h
+    src/Shaders.h
     src/GlShader.h
     src/GlMesh.h
     src/ContextData.h
@@ -36,6 +37,7 @@ set(TARGET_SOURCES
     src/Environment.cpp
     src/EnvironmentDecor.cpp
     src/Lighting.cpp
+    src/Shaders.cpp
     src/GlShader.cpp
     src/GlMesh.cpp
     src/FontAtlas.cpp

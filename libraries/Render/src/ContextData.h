@@ -12,6 +12,7 @@ struct ContextData {
     std::unique_ptr<GlShader> sky;   // background gradient behind the 3D scene
     int width = 1;
     int height = 1;
+    bool reportedGlError = false;  // debug builds report the first GL error once
 };
 
 }  // namespace Render
