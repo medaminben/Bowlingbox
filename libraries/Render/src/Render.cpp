@@ -1,6 +1,7 @@
 #include <Bowlingbox/Render/Render.h>
 #include "ContextData.h"
 #include "GlMesh.h"
+#include <Bowlingbox/Render/Lighting.h>
 #include <glad/gl.h>
 #include <stb_easy_font.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -243,7 +244,7 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
     s.setMat4("uView", camera.view());
     s.setMat4("uProj", camera.projection());
     s.setVec3("uLightDir", t.lightDir);
-    s.setFloat("uAmbient", t.ambient);
+    s.setFloat("uAmbient", linearToSrgb(glm::dot(t.skyAmbient, glm::vec3(0.2126f, 0.7152f, 0.0722f))));
     s.setBool("uFog", true);
     s.setVec3("uFogColor", t.fogColor);
     s.setFloat("uFogStart", t.fogStart);
@@ -252,7 +253,7 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
 
     const glm::vec2 neck {0.55f * g.pinHeight - g.pinComHeight, 0.65f * g.pinHeight - g.pinComHeight};
     for (const Prop& prop : p.props)
-        p.drawMaterial(p.meshFor(prop.shape), prop.transform.matrix(), prop.material, prop.stripes,
+        p.drawMaterial(p.meshFor(prop.shape), prop.transform.matrix(), prop.material, prop.material.pattern == Pattern::Wood,
                        prop.pinBand ? neck : kNoBand);
 
     const float outerX = g.laneHalfWidth + g.gutterWidth;

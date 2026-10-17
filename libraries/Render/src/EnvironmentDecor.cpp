@@ -14,7 +14,7 @@ using detail::slab;
 
 constexpr float kStrip = 0.06f;  // neon strip thickness
 constexpr float kScreenY = 2.3f;
-const Material kIconWhite {{1.f, 1.f, 1.f}, true};
+const Material kIconWhite {{1.f, 1.f, 1.f}, true, 1.f, 0.f, 1.f, Pattern::None};
 
 struct Tree {
     float x, z, s;
