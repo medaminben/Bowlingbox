@@ -25,7 +25,7 @@ BOWLINGBOX_RENDER_API MeshData latheData(const std::vector<std::pair<float, floa
 /// Bowling pin with its origin comHeight above the base (so it matches the
 /// physics body). Spans y in [-comHeight, height - comHeight].
 BOWLINGBOX_RENDER_API MeshData pinData(float height, float maxRadius, float comHeight,
-                                    int segments = 24);
+                                    int segments = 40);
 
 }  // namespace Render
 }  // namespace Bowlingbox
