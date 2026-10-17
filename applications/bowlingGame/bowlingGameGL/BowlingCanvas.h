@@ -3,6 +3,7 @@
 #include "Command.h"
 #include "FixedStep.h"
 #include "FollowCamera.h"
+#include "InputMapper.h"
 #include "SoundDirector.h"
 #include "SoundSettings.h"
 #include <Bowlingbox/Alley/Alley.h>
@@ -61,9 +62,7 @@ private:
     wxString _status;  // last text sent to onStatus
     bool _failed = false;
     Bowlingbox::Render::ThemeId _theme = Bowlingbox::Render::ThemeId::NeonHall;
-    bool _themeKeyHeld = false;  // auto-repeat would otherwise flash through themes
-    bool _muteKeyHeld = false;   // auto-repeat would otherwise flicker the mute
-    bool _ambienceKeyHeld = false;
+    InputMapper::KeyLatch _keys;  // toggle keys fire once per press
     bool _themeChosen = false;   // the first setTheme starts the ambience without a chime
     std::unique_ptr<Bowlingbox::Audio::IAudioOutput> _audio;
     SoundDirector _sound;        // talks to *_audio

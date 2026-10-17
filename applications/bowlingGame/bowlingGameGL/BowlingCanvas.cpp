@@ -46,6 +46,7 @@ BowlingCanvas::BowlingCanvas(wxWindow* parent, const wxGLAttributes& attrs)
         Bind(evt, &BowlingCanvas::OnMouse, this);
     Bind(wxEVT_ENTER_WINDOW, [this](wxMouseEvent& e) { SetFocus(); e.Skip(); });
     Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {});
+    Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& e) { _keys.clear(); e.Skip(); });
 
     _timer.Start(16);
 }
@@ -151,28 +152,16 @@ void BowlingCanvas::OnTimer(wxTimerEvent&) {
 
 void BowlingCanvas::OnKeyDown(wxKeyEvent& e) {
     const Command c = InputMapper::keyDown(e.GetKeyCode(), e.ControlDown(), _lane.snapshot().phase);
-    if (c.type == Command::Type::CycleTheme) {
-        if (_themeKeyHeld) return;  // auto-repeat would otherwise flash through themes
-        _themeKeyHeld = true;
-    }
-    if (c.type == Command::Type::ToggleMute) {
-        if (_muteKeyHeld) return;
-        _muteKeyHeld = true;
-    }
-    if (c.type == Command::Type::ToggleAmbience) {
-        if (_ambienceKeyHeld) return;
-        _ambienceKeyHeld = true;
-    }
-    if (c.type == Command::Type::None)
+    if (c.type == Command::Type::None) {
         e.Skip();
-    else
+        return;
+    }
+    if (_keys.accept(e.GetKeyCode(), c))
         apply(c);
 }
 
 void BowlingCanvas::OnKeyUp(wxKeyEvent& e) {
-    if (e.GetKeyCode() == 'T' || e.GetKeyCode() == 't') _themeKeyHeld = false;
-    if (e.GetKeyCode() == 'M' || e.GetKeyCode() == 'm') _muteKeyHeld = false;
-    if (e.GetKeyCode() == 'B' || e.GetKeyCode() == 'b') _ambienceKeyHeld = false;
+    _keys.release(e.GetKeyCode());
     const Command c = InputMapper::keyUp(e.GetKeyCode(), _lane.snapshot().phase);
     if (c.type == Command::Type::None)
         e.Skip();

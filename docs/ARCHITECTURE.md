@@ -235,7 +235,7 @@ both link.
 | `BowlingCanvas` | `wxGLCanvas`: owns the GL resources and the `Lane`, runs the timer, forwards wx events |
 | `FixedStep` | Turns irregular timer ticks into 1/60 s physics steps; drops the backlog after a stall |
 | `Command.h` | `Command {type, amount}`: `MoveAim` (metres), `RotateAim` (degrees), `StartCharge`, `Release`, `NewGame`, `CycleTheme`, `ToggleMute`, `VolumeUp`, `VolumeDown`, `ToggleAmbience`, `Quit`; `targetOf()` sorts each type into `CommandTarget` (`Lane`, `View`, `Sound`, `App`), with no default case |
-| `InputMapper` | Pure functions: key, button or mouse move + current `Phase` → `Command` |
+| `InputMapper` | Pure functions: key, button or mouse move + current `Phase` → `Command`; `KeyLatch` lets theme, mute and ambience fire once per key press (wx auto-repeats key-down) |
 | `LaneCommands` | `execute(Command, Lane&)` → `Result<>` for `CommandTarget::Lane` commands |
 | `FollowCamera` | Waits behind the foul line, follows the ball down the lane, eases back |
 | `SceneAdapter` | The only place that converts Alley floats into Render/GLM types |

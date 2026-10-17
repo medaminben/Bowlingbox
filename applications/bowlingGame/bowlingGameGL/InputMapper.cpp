@@ -8,6 +8,10 @@ namespace {
 bool canAim(Phase p) {
     return p == Phase::Aiming || p == Phase::Charging;
 }
+
+int upperCased(int keyCode) {
+    return (keyCode >= 'a' && keyCode <= 'z') ? keyCode - 'a' + 'A' : keyCode;
+}
 }  // namespace
 
 namespace InputMapper {
@@ -68,6 +72,20 @@ Command mouseMove(int dx, bool leftDown, bool rightDown, int canvasWidthPx, Phas
     if (canvasWidthPx <= 0)  // minimised: no meaningful scale
         return {};
     return {Type::MoveAim, kMouseOffsetSpan * static_cast<float>(dx) / static_cast<float>(canvasWidthPx)};
+}
+
+bool isToggle(Type type) {
+    return type == Type::CycleTheme || type == Type::ToggleMute || type == Type::ToggleAmbience;
+}
+
+bool KeyLatch::accept(int keyCode, const Command& command) {
+    if (!isToggle(command.type))
+        return true;
+    return _held.insert(upperCased(keyCode)).second;
+}
+
+void KeyLatch::release(int keyCode) {
+    _held.erase(upperCased(keyCode));
 }
 
 }  // namespace InputMapper
