@@ -1,6 +1,7 @@
 #ifndef BOWLINGBOX_SCORE_IMPL_H
 #define BOWLINGBOX_SCORE_IMPL_H
 #include <Bowlingbox/Score/Notation.h>
+#include <Bowlingbox/Score/IBowlingGame.h>
 #include <array>
 #include <vector>
 namespace Bowlingbox {
@@ -10,7 +11,7 @@ namespace Score {
 struct BowlingSet {
     BowlingSet() { reset(); }
 
-    bool roll(int pins);
+    RollStatus roll(int pins);
     void reset();
     std::vector<int> rolls() const;
     std::vector<int> scores() const;

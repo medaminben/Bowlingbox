@@ -135,19 +135,19 @@ TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
     Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
 
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::result(s, sheet), "STRIKE!");
 
-    sheet.roll(3);
+    EXPECT_EQ(sheet.roll(3), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 3;
     EXPECT_EQ(HudText::result(s, sheet), "3 pins");
 
-    sheet.roll(7);
+    EXPECT_EQ(sheet.roll(7), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 7;
     EXPECT_EQ(HudText::result(s, sheet), "SPARE!");
 
-    sheet.roll(0);
+    EXPECT_EQ(sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 0;
     EXPECT_EQ(HudText::result(s, sheet), "Gutter");
 
@@ -158,8 +158,8 @@ TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
 TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
     Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
-    sheet.roll(0);
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::result(s, sheet), "SPARE!");
 }
@@ -167,10 +167,10 @@ TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
 TEST(test_hud_text, throw_result_ten_after_a_gutter_ball_is_a_spare) {
     Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
-    sheet.roll(0);
+    EXPECT_EQ(sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 0;
     EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Gutter);
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Spare);
 }
@@ -178,10 +178,10 @@ TEST(test_hud_text, throw_result_ten_after_a_gutter_ball_is_a_spare) {
 TEST(test_hud_text, throw_result_names_strikes_and_counts_and_nothing_outside_frame_done) {
     Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Strike);
-    sheet.roll(4);
+    EXPECT_EQ(sheet.roll(4), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 4;
     EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Pins);
     EXPECT_EQ(HudText::throwResult(snapshotIn(Phase::Rolling), sheet), HudText::ThrowResult::None);
@@ -189,7 +189,7 @@ TEST(test_hud_text, throw_result_names_strikes_and_counts_and_nothing_outside_fr
 
 TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
     Score::ScoreCalculator sheet;
-    sheet.roll(4);
+    EXPECT_EQ(sheet.roll(4), Bowlingbox::Score::RollStatus::Accepted);
     auto s = snapshotIn(Phase::Settling);
     s.pinStanding.fill(true);
     s.pinStanding[0] = false;
@@ -199,7 +199,7 @@ TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
 // ------------------------------------------------------------ Hud
 TEST(test_hud, draws_scoreboard_hint_and_result_without_gl) {
     Score::ScoreCalculator sheet;
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     auto s = snapshotIn(Phase::FrameDone);
     s.lastPinsDown = 10;
     RecordingCanvas canvas;

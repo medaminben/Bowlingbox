@@ -14,7 +14,7 @@ namespace {
 class CountingGame final : public Bowlingbox::Score::IBowlingGame {
 public:
     explicit CountingGame(int& resets) : _resets(resets) {}
-    bool roll(int pins) override { return _inner.roll(pins); }
+    Bowlingbox::Score::RollStatus roll(int pins) override { return _inner.roll(pins); }
     void reset() override {
         ++_resets;
         _inner.reset();

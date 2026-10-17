@@ -19,7 +19,7 @@ public:
     void TearDown() {}
     void roll_n_times(int n, int pins) {
         for (auto i = 0; i < n; i++) {
-            bowlingGame->roll(pins);
+            EXPECT_EQ(bowlingGame->roll(pins), RollStatus::Accepted);
         }
     }
 };
@@ -37,9 +37,9 @@ TEST_F(test_score, roll_all_ones) {
 }
 
 TEST_F(test_score, roll_a_spare) {
-    bowlingGame->roll(5);
-    bowlingGame->roll(5);
-    bowlingGame->roll(6);
+    EXPECT_EQ(bowlingGame->roll(5), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(5), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(6), RollStatus::Accepted);
     roll_n_times(17, 0);
     EXPECT_EQ(22, bowlingGame->score());
 }
@@ -50,13 +50,13 @@ TEST_F(test_score, roll_a_perfect_game) {
 }
 
 TEST_F(test_score, play_a_normal_game) {
-    bowlingGame->roll(5);   // 0 | score 5
-    bowlingGame->roll(0);   // 1 | score 5
-    bowlingGame->roll(10);  // 2 and 3 | score 30
-    bowlingGame->roll(10);  // 4 and 5 | score 50
-    bowlingGame->roll(5);   // 6 | score 55
-    bowlingGame->roll(5);   // 7 | score 64
-    bowlingGame->roll(4);   // 8 and 9 | score 68
+    EXPECT_EQ(bowlingGame->roll(5), RollStatus::Accepted);   // 0 | score 5
+    EXPECT_EQ(bowlingGame->roll(0), RollStatus::Accepted);   // 1 | score 5
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);  // 2 and 3 | score 30
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);  // 4 and 5 | score 50
+    EXPECT_EQ(bowlingGame->roll(5), RollStatus::Accepted);   // 6 | score 55
+    EXPECT_EQ(bowlingGame->roll(5), RollStatus::Accepted);   // 7 | score 64
+    EXPECT_EQ(bowlingGame->roll(4), RollStatus::Accepted);   // 8 and 9 | score 68
     roll_n_times(11, 0);
     // result should be 68
     EXPECT_EQ(68, bowlingGame->score());
@@ -69,30 +69,30 @@ TEST_F(test_score, isOver_returns_true) {
 
 TEST_F(test_score, isOver_returns_false_spare) {
     roll_n_times(18, 0);
-    bowlingGame->roll(1);
-    bowlingGame->roll(9);
+    EXPECT_EQ(bowlingGame->roll(1), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(9), RollStatus::Accepted);
     EXPECT_FALSE(bowlingGame->isOver());
 }
 
 TEST_F(test_score, isOver_returns_true_nothing) {
     roll_n_times(18, 0);
-    bowlingGame->roll(1);
-    bowlingGame->roll(2);
+    EXPECT_EQ(bowlingGame->roll(1), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(2), RollStatus::Accepted);
     EXPECT_TRUE(bowlingGame->isOver());
 }
 
 TEST_F(test_score, isOver_returns_false_strike) {
     roll_n_times(18, 0);
-    bowlingGame->roll(10);
-    bowlingGame->roll(10);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
     EXPECT_FALSE(bowlingGame->isOver());
 }
 
 TEST_F(test_score, isOver_returns_true_strike) {
     roll_n_times(18, 0);
-    bowlingGame->roll(10);
-    bowlingGame->roll(10);
-    bowlingGame->roll(10);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
     EXPECT_TRUE(bowlingGame->isOver());
 }
 
@@ -108,8 +108,8 @@ TEST_F(test_score, frame_score_perfect_game) {
 }
 
 TEST_F(test_score, frame_score_reset_game) {
-    bowlingGame->roll(10);
-    bowlingGame->roll(10);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(10), RollStatus::Accepted);
     bowlingGame->reset();
     EXPECT_EQ(0, bowlingGame->frameScore(9));
 }
@@ -119,14 +119,27 @@ TEST_F(test_score, roll_almost_perfect_game) {
     EXPECT_EQ(270, bowlingGame->score());
 }
 
-TEST_F(test_score, roll_returns_true_while_playing) {
-    EXPECT_TRUE(bowlingGame->roll(3));
-    EXPECT_TRUE(bowlingGame->roll(4));
+TEST_F(test_score, roll_is_accepted_while_playing) {
+    EXPECT_EQ(bowlingGame->roll(3), RollStatus::Accepted);
+    EXPECT_EQ(bowlingGame->roll(4), RollStatus::Accepted);
 }
 
-TEST_F(test_score, roll_returns_false_when_game_is_over) {
+TEST_F(test_score, roll_is_refused_when_game_is_over) {
     roll_n_times(20, 0);
-    EXPECT_FALSE(bowlingGame->roll(1));
+    EXPECT_EQ(bowlingGame->roll(1), RollStatus::GameOver);
+}
+
+TEST_F(test_score, game_over_is_reported_before_a_bad_count) {
+    roll_n_times(20, 0);
+    EXPECT_EQ(bowlingGame->roll(11), RollStatus::GameOver);
+    EXPECT_EQ(bowlingGame->roll(-1), RollStatus::GameOver);
+}
+
+TEST(test_score_status, describe_names_every_status) {
+    EXPECT_STREQ(describe(RollStatus::Accepted), "accepted");
+    EXPECT_STREQ(describe(RollStatus::GameOver), "the game is over");
+    EXPECT_STREQ(describe(RollStatus::Negative), "a roll cannot be negative");
+    EXPECT_STREQ(describe(RollStatus::TooManyPins), "more pins than are standing");
 }
 
 TEST_F(test_score, new_game_starts_blank_without_reset) {
@@ -140,7 +153,7 @@ TEST_F(test_score, new_game_starts_blank_without_reset) {
 
 TEST_F(test_score, usable_through_the_interfaces) {
     IBowlingGame& game = *bowlingGame;
-    game.roll(10);
+    EXPECT_EQ(game.roll(10), RollStatus::Accepted);
     const IScoreSheet& sheet = game;
     EXPECT_EQ(sheet.rolls()[0], toInt(Mark::Strike));
     EXPECT_EQ(sheet.rolls()[1], toInt(Mark::Empty));
@@ -162,11 +175,11 @@ TEST(test_score_notation, follows_score_sheet_conventions) {
 namespace {
 void rollAll(ScoreCalculator& game, std::initializer_list<int> balls) {
     for (int pins : balls)
-        ASSERT_TRUE(game.roll(pins)) << "roll(" << pins << ") was refused";
+        ASSERT_EQ(game.roll(pins), RollStatus::Accepted) << "roll(" << pins << ") was refused";
 }
 void rollZeros(ScoreCalculator& game, int n) {
     for (int i = 0; i < n; ++i)
-        game.roll(0);
+        EXPECT_EQ(game.roll(0), RollStatus::Accepted);
 }
 }  // namespace
 
@@ -176,7 +189,7 @@ TEST(test_score_tenth_frame, strike_then_open_balls_gets_both_bonus_balls) {
     rollAll(game, {10, 3});
     EXPECT_FALSE(game.isOver());
     EXPECT_EQ(game.pinsLeft(), 7);
-    EXPECT_FALSE(game.roll(8));  // only 7 pins are standing
+    EXPECT_EQ(game.roll(8), RollStatus::TooManyPins);  // only 7 pins are standing
     rollAll(game, {4});
     EXPECT_TRUE(game.isOver());
     EXPECT_EQ(game.score(), 17);
@@ -228,11 +241,11 @@ TEST(test_score_tenth_frame, gutter_then_ten_is_a_spare) {
 
 TEST(test_score_validation, refuses_impossible_pin_counts) {
     ScoreCalculator game;
-    EXPECT_FALSE(game.roll(11));
-    EXPECT_FALSE(game.roll(-1));
-    EXPECT_TRUE(game.roll(7));
-    EXPECT_FALSE(game.roll(4));  // 7 + 4 > 10 in one frame
-    EXPECT_TRUE(game.roll(3));
+    EXPECT_EQ(game.roll(11), RollStatus::TooManyPins);
+    EXPECT_EQ(game.roll(-1), RollStatus::Negative);
+    EXPECT_EQ(game.roll(7), RollStatus::Accepted);
+    EXPECT_EQ(game.roll(4), RollStatus::TooManyPins);  // 7 + 4 > 10 in one frame
+    EXPECT_EQ(game.roll(3), RollStatus::Accepted);
     EXPECT_EQ(game.score(), 10);
     EXPECT_EQ(game.rolls()[1], toInt(Mark::Spare));
 }
@@ -266,7 +279,7 @@ TEST(test_score_totals, frame_total_is_blank_until_its_bonus_is_known) {
 TEST(test_score_totals, frame_score_clamps_the_frame_index) {
     ScoreCalculator game;
     for (int i = 0; i < 20; ++i)
-        game.roll(1);
+        EXPECT_EQ(game.roll(1), RollStatus::Accepted);
     EXPECT_EQ(game.frameScore(10), 20);
     EXPECT_EQ(game.frameScore(-1), 2);
 }
@@ -288,7 +301,7 @@ TEST(test_score_frames, empty_sheet_has_ten_blank_frames) {
 TEST(test_score_frames, frames_follow_the_21_slot_encoding) {
     ScoreCalculator game;
     for (int pins : {10, 7, 3})
-        game.roll(pins);
+        EXPECT_EQ(game.roll(pins), RollStatus::Accepted);
     const auto views = frames(game);
     EXPECT_EQ(views[0].rolls[0], toInt(Mark::Strike));
     EXPECT_EQ(views[0].rolls[1], toInt(Mark::Empty));
@@ -301,9 +314,9 @@ TEST(test_score_frames, frames_follow_the_21_slot_encoding) {
 TEST(test_score_frames, tenth_frame_has_three_rolls) {
     ScoreCalculator game;
     for (int i = 0; i < 18; ++i)
-        game.roll(0);
+        EXPECT_EQ(game.roll(0), RollStatus::Accepted);
     for (int pins : {7, 3, 5})
-        game.roll(pins);
+        EXPECT_EQ(game.roll(pins), RollStatus::Accepted);
     const auto views = frames(game);
     const FrameView& last = views[9];
     EXPECT_EQ(last.rollCount, 3);

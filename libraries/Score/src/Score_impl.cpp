@@ -6,15 +6,18 @@ namespace Score {
 
 /**
  * @brief Records a ball.
- * @return false when the game is over or `pins` is not between 0 and the
- *         pins standing; the game is unchanged then.
+ * @return Accepted, or why it was refused; the game is unchanged then.
  */
-bool BowlingSet::roll(int pins) {
+RollStatus BowlingSet::roll(int pins) {
     const Position p = position();
-    if (p.frame == kFrames || pins < 0 || pins > p.standing)
-        return false;
+    if (p.frame == kFrames)
+        return RollStatus::GameOver;
+    if (pins < 0)
+        return RollStatus::Negative;
+    if (pins > p.standing)
+        return RollStatus::TooManyPins;
     _balls[_count++] = pins;
-    return true;
+    return RollStatus::Accepted;
 }
 
 void BowlingSet::reset() {

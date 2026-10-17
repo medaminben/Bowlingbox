@@ -283,11 +283,11 @@ public:
     int rollsUntilOver = 100;
     int pinsLeftValue = 10;
 
-    bool roll(int pins) override {
+    Bowlingbox::Score::RollStatus roll(int pins) override {
         if (isOver())
-            return false;
+            return Bowlingbox::Score::RollStatus::GameOver;
         recorded.push_back(pins);
-        return true;
+        return Bowlingbox::Score::RollStatus::Accepted;
     }
     void reset() override { recorded.clear(); }
     std::vector<int> rolls() const override { return recorded; }

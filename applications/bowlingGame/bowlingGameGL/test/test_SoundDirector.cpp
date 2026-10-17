@@ -185,7 +185,7 @@ TEST(test_sound_director, the_same_kind_waits_for_its_cooldown) {
 TEST(test_sound_director, strike_stinger_plays_once_on_entering_frame_done) {
     Fixture f;
     f.update(at(Phase::Settling));
-    f.sheet.roll(10);
+    EXPECT_EQ(f.sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     auto s = at(Phase::FrameDone);
     s.lastPinsDown = 10;
     f.update(s);
@@ -196,13 +196,13 @@ TEST(test_sound_director, strike_stinger_plays_once_on_entering_frame_done) {
 TEST(test_sound_director, ten_after_a_gutter_ball_plays_the_spare_stinger) {
     Fixture f;
     f.update(at(Phase::Settling));
-    f.sheet.roll(0);
+    EXPECT_EQ(f.sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
     auto s = at(Phase::FrameDone);
     s.lastPinsDown = 0;
     f.update(s);
     EXPECT_TRUE(f.out.played.empty());  // a gutter ball has no stinger
     f.update(at(Phase::Settling));
-    f.sheet.roll(10);
+    EXPECT_EQ(f.sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     f.update(s);
     EXPECT_EQ(f.out.count(SoundId::Spare), 1);
@@ -212,7 +212,7 @@ TEST(test_sound_director, ten_after_a_gutter_ball_plays_the_spare_stinger) {
 TEST(test_sound_director, a_plain_count_plays_no_stinger) {
     Fixture f;
     f.update(at(Phase::Settling));
-    f.sheet.roll(7);
+    EXPECT_EQ(f.sheet.roll(7), Bowlingbox::Score::RollStatus::Accepted);
     auto s = at(Phase::FrameDone);
     s.lastPinsDown = 7;
     f.update(s);

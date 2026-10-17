@@ -43,7 +43,7 @@ void Session::handle(std::string_view input) {
 
     const auto pins = parsePins(choice);
     // roll() refuses counts outside 0..pinsLeft(); no need to check them here.
-    if (_mode != Mode::Playing || !pins || !_game->roll(*pins)) {
+    if (_mode != Mode::Playing || !pins || _game->roll(*pins) != Bowlingbox::Score::RollStatus::Accepted) {
         _message = "Your choice: " + std::string(choice) + "\nInvalid choice!";
         return;
     }

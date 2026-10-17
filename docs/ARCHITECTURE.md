@@ -40,7 +40,7 @@ The same links as a table:
 - The third-party code in *italics* in each box is listed in the table above; the
   [Dependencies](#dependencies) table has the versions.
 - `Score` and `Core` are the base libraries and link nothing, not even each other: the scoring rules
-  report a refused roll with `bool`, not with `Core::Result`.
+  report a refused roll with their own `RollStatus`, not with `Result`.
 
 ## Libraries
 
@@ -55,7 +55,7 @@ The scoring rules of ten-pin bowling (the [codingdojo bowling kata](https://codi
 
 | Header | Purpose |
 |---|---|
-| `IBowlingGame.h` | `IScoreSheet` (read-only view: `rolls`, `scores`, `score`, `frameScore`, `pinsLeft`, `isOver`) and `IBowlingGame` (adds `roll`, `reset`) |
+| `IBowlingGame.h` | `RollStatus`, `describe`, `IScoreSheet` (read-only view: `rolls`, `scores`, `score`, `frameScore`, `pinsLeft`, `isOver`) and `IBowlingGame` (adds `roll`, `reset`) |
 | `Score.h` | `ScoreCalculator`, the default `IBowlingGame` (pimpl over `BowlingSet`) |
 | `Notation.h` | Constants (`kFrames = 10`, `kPins = 10`, `kRollSlots = 21`), the `Mark` sentinels and `notation()` |
 | `Frames.h` | `FrameView` and `frames()`: the 21 slots and 10 totals cut into ten frames (the tenth has three rolls) |
@@ -73,8 +73,8 @@ frame totals. A slot is either a pin count or a `Mark` sentinel:
 
 Every display (Render, console, BowlingDisplay) calls `notation()`, so they all show the same marks.
 
-**Rules enforced.** `roll()` refuses negative counts, counts above `pinsLeft()` and any roll after
-the game is over. `pinsLeft()` follows the tenth frame's rack and is 0 once the game is over. A
+**Rules enforced.** `roll()` returns `RollStatus::Accepted`, or refuses with `GameOver` (checked first),
+`Negative` or `TooManyPins` (more than `pinsLeft()`); `describe()` names each status. `pinsLeft()` follows the tenth frame's rack and is 0 once the game is over. A
 frame's entry in `scores()` stays `Mark::None` until it is final; `score()` and `frameScore()`
 count the balls thrown so far.
 

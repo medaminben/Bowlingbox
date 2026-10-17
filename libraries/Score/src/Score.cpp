@@ -15,10 +15,20 @@ Bowlingbox::Score::ScoreCalculator::~ScoreCalculator() = default;
  * @brief Rolls a number of pins in the bowling game.
  *
  * @param pins The number of pins knocked down by this ball.
- * @return false, and nothing changes, when the game is over or `pins` is not between 0 and the pins standing.
+ * @return Accepted, or why the ball was refused (the game is unchanged then).
  */
-bool Bowlingbox::Score::ScoreCalculator::roll(int pins) {
+Bowlingbox::Score::RollStatus Bowlingbox::Score::ScoreCalculator::roll(int pins) {
     return _gameSet->roll(pins);
+}
+
+const char* Bowlingbox::Score::describe(RollStatus status) {
+    switch (status) {
+        case RollStatus::Accepted:    return "accepted";
+        case RollStatus::GameOver:    return "the game is over";
+        case RollStatus::Negative:    return "a roll cannot be negative";
+        case RollStatus::TooManyPins: return "more pins than are standing";
+    }
+    return "unknown roll status";
 }
 
 /**
