@@ -29,18 +29,30 @@ and PCRE2 are not in the binary. (wxMSW requires libpng, which needs no notice.)
 
 ## Getting an installer
 
-Actions → **Windows installer** → *Run workflow* (on `main`). When it finishes,
-download the `BowlingBox_Setup` artifact. From a terminal:
+Every release has it: download `BowlingBox_Setup_<version>.exe` from the
+[Releases](https://github.com/medaminben/Bowlingbox/releases) page.
+
+Merging a pull request into `main` makes `.github/workflows/version.yml` tag the
+merge `vX.Y.Z` and publish a release (unless the pull request is labelled
+`semver:none`). It then calls `.github/workflows/windows-installer.yml` with that
+tag, which builds the installer from the tag and attaches it to the release about
+20 minutes later. The installer's version is the one CMake reads from the tag
+(`cmake/GitVersion.cmake`); the upload step refuses a file whose version does not
+match.
+
+By hand, Actions → **Windows installer** → *Run workflow*:
+
+- with an existing tag (for example `v1.5.0`), it builds that tag and attaches the
+  installer to its release (for releases made before this was automatic, or to
+  replace an installer);
+- with no tag, it builds the chosen branch and only uploads the `BowlingBox_Setup`
+  workflow artifact.
 
 ```bash
-gh workflow run windows-installer.yml --ref main
+gh workflow run windows-installer.yml --ref main -f tag=v1.5.0
 gh run watch "$(gh run list --workflow windows-installer.yml --limit 1 --json databaseId -q '.[0].databaseId')"
-gh run download --name BowlingBox_Setup --dir build/windows/dist
+gh release download v1.5.0 --pattern 'BowlingBox_Setup_*.exe' --dir build/windows/dist
 ```
-
-The workflow is manual for now. The version is the one CMake configures: the
-nearest `vX.Y.Z` tag, which `.github/workflows/version.yml` creates for every
-merged pull request (see `cmake/GitVersion.cmake`).
 
 ## Building on a Windows PC
 
