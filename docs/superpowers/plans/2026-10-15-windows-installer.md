@@ -338,7 +338,7 @@ Components whose licences need no notice in binary copies:
   - libgcc, libstdc++      GPL-3.0 with the GCC Runtime Library Exception
 
 Components whose notices follow in full:
-  - GLM 1.0.1              MIT (or Happy Bunny Licence)
+  - GLM 1.0.1              MIT (or Happy Bunny License)
   - glad 2 OpenGL loader   (WTFPL OR CC0-1.0) AND Apache-2.0; khrplatform.h: Khronos MIT-style
   - mingw-w64 runtime      CRT startup code and winpthreads
 

@@ -16,5 +16,5 @@ an answer within a week. Once a fix is released, the advisory is published and y
 unless you prefer not to be.
 
 Bowlingbox downloads Bullet3, GLM, GoogleTest and possibly wxWidgets at configure time. Problems in
-those projects belong with their maintainers. Do report it here if Bowlingbox pins a vulnerable
-version.
+those projects belong with their maintainers. If Bowlingbox pins a vulnerable version, do report
+that here.

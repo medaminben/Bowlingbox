@@ -81,6 +81,7 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | `ENABLE_CLANG_TIDY` | `OFF` | Run `clang-tidy` during compilation |
 | `BUILD_VERBOSE_OUTPUT` | `OFF` | Verbose makefiles and CMake variable dumps |
 | `BOWLINGBOX_FETCH_OFFLINE` | `OFF` | Use only already-downloaded dependencies |
+| `BOWLINGBOX_STATIC_RUNTIME` | `OFF` | MinGW GCC only: link the GCC runtime into every binary (used by the Windows installer build) |
 
 The dependency versions can be overridden with `BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
 `BOWLINGBOX_WX_VERSION` and `BOWLINGBOX_GTEST_VERSION`.
@@ -311,7 +312,7 @@ cmake --build build/tidy
 - C++20, no compiler extensions, warnings as errors.
 - Public API in `include/Bowlingbox/<Lib>/`, namespaced `Bowlingbox::<Lib>`, and exported with
   `BOWLINGBOX_<LIB>_API`. Everything else stays in `src/`.
-- Depend on interfaces (`IBowlingGame`, `IPhysicsWorld`, `ICanvas2D`, `ITerminal`). Choose the
+- Depend on interfaces (`IBowlingGame`, `IPhysicsWorld`, `ICanvas2D`, `IAudioOutput`, `ITerminal`). Choose the
   concrete class in `main` or a default constructor, and inject fakes in tests.
 - Commands that can be refused return `Result<>` and do not throw.
 - Test names must start with `test_` and be lowercase.

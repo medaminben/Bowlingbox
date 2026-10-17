@@ -1,5 +1,5 @@
 # The project name is used internally by CMake, but is not relevant for
-# anything else. To avoid confusion, it should however match with the
+# anything else. To avoid confusion, it should, however, match the
 # directory name. Camel case is okay.
 project(Score VERSION 1.2.0 LANGUAGES CXX)
 

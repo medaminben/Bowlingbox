@@ -24,7 +24,7 @@ public:
     }
 };
 
-// Test case names must start with the name of the executable they are
+// Test case names must start with the name of the executable they are in.
 TEST_F(test_score, roll_all_zeros) {
     roll_n_times(20, 0);
     auto result = bowlingGame->score();

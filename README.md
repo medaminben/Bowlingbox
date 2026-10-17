@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A C++20 bowling game built from small, testable libraries: a ten-pin score calculator,
-a Bullet3 physics lane, an OpenGL renderer, and three front-ends (wxWidgets/OpenGL,
+a Bullet3 physics lane, an OpenGL renderer, a sound library, and three front-ends (wxWidgets/OpenGL,
 console, and a wxWidgets score display).
 
 ![BowlingGL](docs/Bowlingbox_%20Neon%20Strike.png)
@@ -46,10 +46,13 @@ On Windows, install Bowling Box with the installer from the **Windows installer*
 | [`libraries/Score`](libraries/Score) | `Bowlingbox::Score`: `ScoreCalculator` score calculator, `IBowlingGame` interface, X / - notation |
 | [`libraries/Core`](libraries/Core) | `Bowlingbox::Core`: `Result<T, E>` / `Error<E>` types |
 | [`libraries/Alley`](libraries/Alley) | `Bowlingbox::Alley`: the throw state machine (`Lane`) on top of a swappable physics world (Bullet3) |
-| [`libraries/Render`](libraries/Render) | `Bowlingbox::Render`: OpenGL 3.3 scene renderer, 2D overlay, scoreboard painter |
+| [`libraries/Render`](libraries/Render) | `Bowlingbox::Render`: OpenGL 3.3 scene renderer (themes, shadows, reflection, bloom), 2D overlay, scoreboard painter |
+| [`libraries/Audio`](libraries/Audio) | `Bowlingbox::Audio`: `IAudioOutput` over miniaudio, with the sounds embedded |
 | [`applications/bowlingGame`](applications/bowlingGame) | `BowlingGL` (wxWidgets + OpenGL), `BowlingConsole`, `BowlingDisplay` (wxWidgets) |
-| [`cmake`](cmake) | Build helpers, dependency fetching, scaffold templates, install/export config |
-| [`3rdparty`](3rdparty) | In-tree GLAD loader and `stb_easy_font` |
+| [`cmake`](cmake) | Build helpers, dependency fetching, git-tag versioning, file embedding, scaffold templates, install/export config |
+| [`3rdparty`](3rdparty) | In-tree GLAD loader, stb headers, miniaudio, the Rubik font and the sound files |
+| [`ci`](ci) | Install smoke test (`ci/consumer`) and the version-bump scripts |
+| [`installer`](installer), [`scripts`](scripts) | Windows installer (Inno Setup script, notices) and its build and check scripts |
 | [`licenses`](licenses) | Third-party licence list and texts |
 | [`docs`](docs) | Architecture, manual, design specs and plans |
 

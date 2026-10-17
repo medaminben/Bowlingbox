@@ -18,19 +18,19 @@ public:
 TEST_F(test_session, starts_in_the_menu) {
     EXPECT_EQ(session.mode(), Mode::Menu);
     EXPECT_EQ(session.message(), "Welcome to the Bowling Game!");
-    EXPECT_EQ(session.prompt(), "Select a choice:\n q - quit p - play to continue...");
+    EXPECT_EQ(session.prompt(), "Choose an option:\n p - play, q - quit");
     EXPECT_FALSE(session.quit());
 }
 
 TEST_F(test_session, play_then_roll) {
     session.handle("p");
     EXPECT_EQ(session.mode(), Mode::Playing);
-    EXPECT_EQ(session.message(), "New game started! Good Luck!");
+    EXPECT_EQ(session.message(), "New game started! Good luck!");
     session.handle("7");
     EXPECT_EQ(game->rolls()[0], 7);
     EXPECT_EQ(session.message(), "You have scored: 7\n");  // today's text: no echo, trailing blank line
     EXPECT_EQ(session.prompt(),
-              "Enter a number between 0 and 3\nor the letter:  q - quit r - restart to continue...");
+              "Enter a number between 0 and 3\nor a letter: r - restart, q - quit");
 }
 
 TEST_F(test_session, number_in_the_menu_is_rejected) {
@@ -66,8 +66,8 @@ TEST_F(test_session, perfect_game_ends_and_rejects_more_rolls) {
     for (int i = 0; i < 12; ++i)
         session.handle("10");
     EXPECT_EQ(session.mode(), Mode::GameOver);
-    EXPECT_EQ(session.message(), "Game Over!\t You have scored: 300\n");
-    EXPECT_EQ(session.prompt(), "Select a choice:\n q - quit p - play to continue...");
+    EXPECT_EQ(session.message(), "Game over! You scored: 300\n");
+    EXPECT_EQ(session.prompt(), "Choose an option:\n p - play, q - quit");
     session.handle("5");
     EXPECT_EQ(session.message(), "Your choice: 5\nInvalid choice!");
     EXPECT_EQ(game->score(), 300);

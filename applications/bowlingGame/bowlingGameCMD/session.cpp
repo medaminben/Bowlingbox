@@ -37,7 +37,7 @@ void Session::handle(std::string_view input) {
     if (choice == "p" || choice == "r") {
         _game->reset();
         _mode = Mode::Playing;
-        _message = "New game started! Good Luck!";
+        _message = "New game started! Good luck!";
         return;
     }
 
@@ -52,7 +52,7 @@ void Session::handle(std::string_view input) {
     const std::string total = std::to_string(_game->score());
     if (_game->isOver()) {
         _mode = Mode::GameOver;
-        _message = "Game Over!\t You have scored: " + total + "\n";
+        _message = "Game over! You scored: " + total + "\n";
     } else {
         _message = "You have scored: " + total + "\n";
     }
@@ -61,8 +61,8 @@ void Session::handle(std::string_view input) {
 std::string Session::prompt() const {
     if (_mode == Mode::Playing)
         return "Enter a number between 0 and " + std::to_string(_game->pinsLeft()) +
-               "\nor the letter:  q - quit r - restart to continue...";
-    return "Select a choice:\n q - quit p - play to continue...";
+               "\nor a letter: r - restart, q - quit";
+    return "Choose an option:\n p - play, q - quit";
 }
 
 }  // namespace Console

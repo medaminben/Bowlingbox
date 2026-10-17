@@ -5,7 +5,7 @@
  * @brief Constructs a new ScoreCalculator instance.
  *
  * This constructor initializes a unique pointer to a BowlingSet object,
- * which is used to store the game states.
+ * which is used to store the game state.
  */
 Bowlingbox::Score::ScoreCalculator::ScoreCalculator() : _gameSet(std::make_unique<BowlingSet>()) {}
 
@@ -14,8 +14,8 @@ Bowlingbox::Score::ScoreCalculator::~ScoreCalculator() = default;
 /**
  * @brief Rolls a number of pins in the bowling game.
  *
- * @param pins The number of pins rolled in the current turn.
- * @return false when the game is already over.
+ * @param pins The number of pins knocked down by this ball.
+ * @return false, and nothing changes, when the game is over or `pins` is not between 0 and the pins standing.
  */
 bool Bowlingbox::Score::ScoreCalculator::roll(int pins) {
     return _gameSet->roll(pins);

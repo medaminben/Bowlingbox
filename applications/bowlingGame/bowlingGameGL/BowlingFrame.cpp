@@ -41,7 +41,7 @@ void saveSoundSettings(const SoundSettings& s) {
 }  // namespace
 
 BowlingFrame::BowlingFrame(Bowlingbox::Render::ThemeId initialTheme, bool muted)
-    : wxFrame(nullptr, wxID_ANY, "Bowling GL", wxDefaultPosition, wxSize(1280, 800)) {
+    : wxFrame(nullptr, wxID_ANY, "BowlingGL", wxDefaultPosition, wxSize(1280, 800)) {
     auto* game = new wxMenu;
     game->Append(wxID_NEW, "&New Game\tCtrl+N");
     game->AppendSeparator();
@@ -142,7 +142,7 @@ void BowlingFrame::OnControls(wxCommandEvent&) {
 }
 
 void BowlingFrame::OnAbout(wxCommandEvent&) {
-    wxMessageBox("Bowling GL\nwxWidgets + OpenGL front-end for the Bowlingbox score calculator.\n"
+    wxMessageBox("BowlingGL\nwxWidgets + OpenGL front-end for the Bowlingbox score calculator.\n"
                  "Physics: Bullet3.",
                  "About", wxOK | wxICON_INFORMATION, this);
 }

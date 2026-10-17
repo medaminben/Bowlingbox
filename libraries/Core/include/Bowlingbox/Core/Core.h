@@ -8,9 +8,9 @@ static_assert(sizeof(void*) == 8, "expected 64-bit platform");
 namespace Bowlingbox {
 namespace Core {
 /**
- * @brief an error wrapper
+ * @brief An error wrapper.
  *
- * @param E any movable error type
+ * @tparam E Any movable error type.
  */
 template <typename E = std::string>
 struct Error {
@@ -27,10 +27,10 @@ protected:
 }  // namespace Bowlingbox
 
 /**
- * @brief  a result wrapper
+ * @brief A result wrapper.
  *
- * @param T  a value type
- * @param ET  an error type
+ * @tparam T The value type.
+ * @tparam ET The error type.
  */
 template <typename T = std::monostate, typename ET = Bowlingbox::Core::Error<>>
 struct Result {

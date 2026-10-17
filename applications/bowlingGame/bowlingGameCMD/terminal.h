@@ -16,7 +16,7 @@ public:
     virtual std::optional<std::string> readLine() = 0;
 };
 
-/// stdin / stdout with platform specific width and clear.
+/// stdin / stdout with platform-specific width and clear.
 class SystemTerminal final : public ITerminal {
 public:
     int width() const override;

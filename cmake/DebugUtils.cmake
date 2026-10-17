@@ -31,7 +31,7 @@ function(dump_cmake_vars)
 endfunction()
 
 # Print the name and the value of a variable
-# usefull for quick check
+# Useful for a quick check.
 function(print)
     set (args ${ARGN})
     foreach(arg ${args})
@@ -40,7 +40,7 @@ function(print)
 endfunction()
 
 
-# prompt a message in verbose case
+# Print a message in verbose mode.
 function(prompt)
     if(NOT BUILD_VERBOSE_OUTPUT)
         return()

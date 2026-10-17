@@ -62,11 +62,11 @@ TEST(test_console, more_pins_than_standing_are_rejected) {
 
 TEST(test_console, banner_matches_todays_text) {
     // Captured from plotIntr() on main (9bbbf6b) at 80 columns: 14 spaces on each side of the title.
-    const std::string title = "Execution of BowlingGame from Bowlingbox Library";
+    const std::string title = "Execution of BowlingGame from Bowlingbox library";
     const std::string expected = std::string(79, '#') + "\n" +
                                  std::string(14, ' ') + title + std::string(14, ' ') + "\n" +
                                  std::string(79, '#') + "\n" +
-                                 "This console game is an interface to the bowling game implemented under the "
+                                 "This console game is an interface to the bowling game implemented in the "
                                  "Bowlingbox library.\n"
                                  "=About=\n"
                                  " Made by: github.com/medaminben\n" +
@@ -75,7 +75,7 @@ TEST(test_console, banner_matches_todays_text) {
 }
 
 TEST(test_console, banner_fits_the_terminal) {
-    const std::string title = "Execution of BowlingGame from Bowlingbox Library";
+    const std::string title = "Execution of BowlingGame from Bowlingbox library";
     // Today's title padding: none up to 52 columns, then one space each side at 53 and 54.
     EXPECT_NE(Console::banner(52).find("\n" + title + "\n"), std::string::npos);
     EXPECT_NE(Console::banner(54).find("\n " + title + " \n"), std::string::npos);
@@ -101,7 +101,7 @@ TEST(test_console, a_number_after_game_over_is_invalid) {
     auto game = std::make_shared<Bowlingbox::Score::ScoreCalculator>();
     Console::Screen screen(game, terminal);
     screen.start();
-    EXPECT_NE(terminal.output.find("Game Over!\t You have scored: 300\n\nSelect a choice:\n"), std::string::npos);
-    EXPECT_NE(terminal.output.find("Your choice: 5\nInvalid choice!\nSelect a choice:\n"), std::string::npos);
+    EXPECT_NE(terminal.output.find("Game over! You scored: 300\n\nChoose an option:\n"), std::string::npos);
+    EXPECT_NE(terminal.output.find("Your choice: 5\nInvalid choice!\nChoose an option:\n"), std::string::npos);
     EXPECT_EQ(terminal.output.find("starting"), std::string::npos);
 }
