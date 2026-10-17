@@ -16,6 +16,9 @@ std::string litFs();
 extern const char* const kFlatVs;  // 2D overlay rectangles
 extern const char* const kFlatFs;
 
+extern const char* const kTextVs;  // 2D glyph quads: position + atlas uv
+extern const char* const kTextFs;  // colour * atlas coverage
+
 extern const char* const kSkyVs;  // attribute-less full-screen triangle, vT = 0 bottom .. 1 top
 std::string skyFs();
 

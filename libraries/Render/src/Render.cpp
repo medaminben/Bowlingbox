@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -54,6 +55,30 @@ Result<std::unique_ptr<Context>> Context::create() {
     ctx->_d->lit->use();
     ctx->_d->lit->setInt("uShadowMap", 1);
     ctx->_d->lit->setInt("uReflection", 2);
+    auto text = GlShader::build(shaders::kTextVs, shaders::kTextFs);
+    auto font = FontAtlas::bakeEmbedded();
+    if (text.isError()) {
+        std::fprintf(stderr, "render: text shader failed (%s); using the built-in font\n", text.error().c_str());
+    } else if (font.isError()) {
+        std::fprintf(stderr, "render: HUD font unavailable (%s); using the built-in font\n", font.error().c_str());
+    } else {
+        ContextData& d = *ctx->_d;
+        d.text = text();
+        d.font = font();
+        d.fontTexture.create();
+        glBindTexture(GL_TEXTURE_2D, d.fontTexture.id());
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, FontAtlas::kSize, FontAtlas::kSize, 0, GL_RED, GL_UNSIGNED_BYTE,
+                     d.font->pixels().data());
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, FontAtlas::kMaxMipLevel);  // see kPadding
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
     glUseProgram(0);
     return Result<std::unique_ptr<Context>>(std::move(ctx));
 }
@@ -329,6 +354,11 @@ struct Overlay::Impl {
     glm::mat4 proj {1.f};
     std::vector<char> textBuffer = std::vector<char>(200000);
     std::vector<unsigned> indices;
+    struct TextVertex {
+        float x, y, u, v;
+    };
+    unsigned textVao = 0, textVbo = 0;
+    std::vector<TextVertex> textVertices;
 
     explicit Impl(Context& c) : ctx(c) {
         glGenVertexArrays(1, &vao);
@@ -340,8 +370,20 @@ struct Overlay::Impl {
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), nullptr);
         glBindVertexArray(0);
+        glGenVertexArrays(1, &textVao);
+        glGenBuffers(1, &textVbo);
+        glBindVertexArray(textVao);
+        glBindBuffer(GL_ARRAY_BUFFER, textVbo);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(TextVertex), nullptr);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TextVertex),
+                              reinterpret_cast<void*>(static_cast<std::uintptr_t>(2 * sizeof(float))));
+        glBindVertexArray(0);
     }
     ~Impl() {
+        glDeleteBuffers(1, &textVbo);
+        glDeleteVertexArrays(1, &textVao);
         glDeleteBuffers(1, &ebo);
         glDeleteBuffers(1, &vbo);
         glDeleteVertexArrays(1, &vao);
@@ -366,6 +408,31 @@ struct Overlay::Impl {
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
     }
+
+    void drawGlyphs(const std::vector<GlyphQuad>& quads, glm::vec2 offset, glm::vec4 color) {
+        textVertices.clear();
+        for (const GlyphQuad& q : quads) {
+            const float x0 = q.p0.x + offset.x, y0 = q.p0.y + offset.y;
+            const float x1 = q.p1.x + offset.x, y1 = q.p1.y + offset.y;
+            textVertices.insert(textVertices.end(), {{x0, y0, q.uv0.x, q.uv0.y}, {x1, y0, q.uv1.x, q.uv0.y},
+                                                     {x1, y1, q.uv1.x, q.uv1.y}, {x0, y0, q.uv0.x, q.uv0.y},
+                                                     {x1, y1, q.uv1.x, q.uv1.y}, {x0, y1, q.uv0.x, q.uv1.y}});
+        }
+        GlShader& s = *ctx.data().text;
+        s.use();
+        s.setMat4("uMVP", proj);
+        s.setVec4("uColor", color);
+        s.setInt("uAtlas", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ctx.data().fontTexture.id());
+        glBindVertexArray(textVao);
+        glBindBuffer(GL_ARRAY_BUFFER, textVbo);
+        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(textVertices.size() * sizeof(TextVertex)),
+                     textVertices.data(), GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(textVertices.size()));
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 };
 
 Overlay::Overlay(Context& ctx) : _p(std::make_unique<Impl>(ctx)) {}
@@ -382,6 +449,12 @@ void Overlay::begin(int width, int height) {
 void Overlay::drawText(std::string_view text, glm::vec2 px, float scale, glm::vec3 rgb) {
     if (text.empty())
         return;
+    if (const auto& font = _p->ctx.data().font) {
+        const auto quads = font->layout(text, px, font->pixelHeight(scale));
+        _p->drawGlyphs(quads, {1.f, 1.f}, {0.f, 0.f, 0.f, 0.5f});  // drop shadow
+        _p->drawGlyphs(quads, {0.f, 0.f}, glm::vec4(rgb, 1.f));
+        return;
+    }
     std::string s(text);
     const int quads = stb_easy_font_print(0.f, 0.f, s.data(), nullptr, _p->textBuffer.data(),
                                           static_cast<int>(_p->textBuffer.size()));
@@ -391,6 +464,8 @@ void Overlay::drawText(std::string_view text, glm::vec2 px, float scale, glm::ve
 }
 
 glm::vec2 Overlay::measureText(std::string_view text, float scale) const {
+    if (const auto& font = _p->ctx.data().font)
+        return font->measure(text, font->pixelHeight(scale));
     std::string s(text);
     return {static_cast<float>(stb_easy_font_width(s.data())) * scale,
             static_cast<float>(stb_easy_font_height(s.data())) * scale};

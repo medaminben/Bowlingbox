@@ -17,6 +17,7 @@ set(TARGET_HEADERS
     src/Shaders.h
     src/GlShader.h
     src/GlMesh.h
+    src/GlTexture.h
     src/ContextData.h
     src/PropBuilders.h
     src/EnvironmentDecor.h
@@ -40,6 +41,7 @@ set(TARGET_SOURCES
     src/Shaders.cpp
     src/GlShader.cpp
     src/GlMesh.cpp
+    src/GlTexture.cpp
     src/FontAtlas.cpp
     src/Render.cpp
     ${RUBIK_CPP}

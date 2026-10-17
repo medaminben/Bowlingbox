@@ -41,6 +41,20 @@ uniform vec4 uColor;
 out vec4 FragColor;
 void main() { FragColor = uColor; })";
 
+const char* const kTextVs = R"(#version 330 core
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aUv;
+uniform mat4 uMVP;
+out vec2 vUv;
+void main() { vUv = aUv; gl_Position = uMVP * vec4(aPos, 0.0, 1.0); })";
+
+const char* const kTextFs = R"(#version 330 core
+in vec2 vUv;
+uniform sampler2D uAtlas;
+uniform vec4 uColor;
+out vec4 FragColor;
+void main() { FragColor = vec4(uColor.rgb, uColor.a * texture(uAtlas, vUv).r); })";
+
 // One triangle that covers the viewport; vT runs 0 (bottom) to 1 (top).
 const char* const kSkyVs = R"(#version 330 core
 out float vT;
