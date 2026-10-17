@@ -3,9 +3,8 @@
 #include "Command.h"
 #include <Bowlingbox/Alley/Alley.h>
 
-/// Applies a game command to the lane, using its amount for MoveAim / RotateAim.
-/// CycleTheme, the sound commands (ToggleMute, VolumeUp, VolumeDown, ToggleAmbience),
-/// Quit and None are not lane commands and succeed without effect; the caller handles them.
+/// Applies a CommandTarget::Lane command to the lane, using its amount for MoveAim / RotateAim.
+/// Any other command succeeds without effect; BowlingCanvas::apply never passes one.
 namespace LaneCommands {
 Bowlingbox::Result<> execute(Command command, Bowlingbox::Alley::Lane& lane);
 }  // namespace LaneCommands

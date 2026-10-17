@@ -74,6 +74,31 @@ TEST(test_lane_commands, sound_commands_leave_the_lane_alone) {
     EXPECT_EQ(lane.snapshot().phase, before.phase);
 }
 
+TEST(test_command_target, every_command_has_one_owner) {
+    using T = Command::Type;
+    EXPECT_EQ(targetOf(T::None), CommandTarget::None);
+    for (auto t : {T::MoveAim, T::RotateAim, T::StartCharge, T::Release, T::NewGame})
+        EXPECT_EQ(targetOf(t), CommandTarget::Lane);
+    EXPECT_EQ(targetOf(T::CycleTheme), CommandTarget::View);
+    for (auto t : {T::ToggleMute, T::VolumeUp, T::VolumeDown, T::ToggleAmbience})
+        EXPECT_EQ(targetOf(t), CommandTarget::Sound);
+    EXPECT_EQ(targetOf(T::Quit), CommandTarget::App);
+}
+
+TEST(test_sound_settings, after_applies_each_sound_command) {
+    SoundSettings s;
+    EXPECT_TRUE(s.after(Command::Type::ToggleMute).muted);
+    EXPECT_EQ(s.after(Command::Type::VolumeUp).volume, 90);
+    EXPECT_EQ(s.after(Command::Type::VolumeDown).volume, 70);
+    EXPECT_FALSE(s.after(Command::Type::ToggleAmbience).ambience);
+}
+
+TEST(test_sound_settings, after_ignores_other_commands) {
+    const SoundSettings s;
+    for (auto t : {Command::Type::None, Command::Type::NewGame, Command::Type::CycleTheme, Command::Type::Quit})
+        EXPECT_EQ(s.after(t), s);
+}
+
 TEST(test_sound_settings, volume_steps_by_ten_clamps_and_unmutes) {
     SoundSettings s;
     EXPECT_EQ(s.volume, SoundSettings::kDefaultVolume);

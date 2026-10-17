@@ -195,25 +195,20 @@ void BowlingCanvas::OnMouse(wxMouseEvent& e) {
 }
 
 void BowlingCanvas::apply(Command command) {
-    if (command.type == Command::Type::Quit) {
-        if (onQuit) onQuit();
-        return;
-    }
-    if (command.type == Command::Type::CycleTheme) {
-        setTheme(Render::nextTheme(_theme));
-        return;
-    }
-    if (command.type == Command::Type::ToggleMute || command.type == Command::Type::VolumeUp ||
-        command.type == Command::Type::VolumeDown || command.type == Command::Type::ToggleAmbience) {
-        SoundSettings next = _soundSettings;
-        switch (command.type) {
-            case Command::Type::ToggleMute:     next.muted = !next.muted; break;
-            case Command::Type::VolumeUp:       next.stepVolume(1); break;
-            case Command::Type::VolumeDown:     next.stepVolume(-1); break;
-            default:                            next.ambience = !next.ambience; break;
-        }
-        setSoundSettings(next);
-        return;
+    switch (targetOf(command.type)) {
+        case CommandTarget::None:
+            return;
+        case CommandTarget::App:  // Quit
+            if (onQuit) onQuit();
+            return;
+        case CommandTarget::View:  // CycleTheme
+            setTheme(Render::nextTheme(_theme));
+            return;
+        case CommandTarget::Sound:
+            setSoundSettings(_soundSettings.after(command.type));
+            return;
+        case CommandTarget::Lane:
+            break;
     }
     auto r = LaneCommands::execute(command, _lane);
     if (r.isError())
