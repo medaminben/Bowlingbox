@@ -335,4 +335,7 @@ void main() {
     FragColor = vec4(r / 16.0, 1.0);
 })";
 
+const char* const kDepthFs = R"(#version 330 core
+void main() {})";
+
 }  // namespace Bowlingbox::Render::shaders

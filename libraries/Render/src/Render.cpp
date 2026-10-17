@@ -3,6 +3,7 @@
 #include "GlFramebuffer.h"
 #include "GlMesh.h"
 #include "PostChain.h"
+#include "ShadowMap.h"
 #include "Shaders.h"
 #include <Bowlingbox/Render/Lighting.h>
 #include <glad/gl.h>
@@ -44,12 +45,15 @@ bool enableFullPipeline(ContextData& d) {
     d.composite = composite();
     struct Stage {
         std::unique_ptr<GlShader>& slot;
+        const char* vs;
         const char* fs;
         const char* name;
     };
-    for (Stage st : {Stage {d.bright, shaders::kBrightFs, "bright"}, Stage {d.bloomDown, shaders::kBloomDownFs, "bloom down"},
-                     Stage {d.bloomUp, shaders::kBloomUpFs, "bloom up"}}) {
-        auto built = GlShader::build(shaders::kPostVs, st.fs);
+    for (Stage st : {Stage {d.bright, shaders::kPostVs, shaders::kBrightFs, "bright"},
+                     Stage {d.bloomDown, shaders::kPostVs, shaders::kBloomDownFs, "bloom down"},
+                     Stage {d.bloomUp, shaders::kPostVs, shaders::kBloomUpFs, "bloom up"},
+                     Stage {d.depth, shaders::kLitVs, shaders::kDepthFs, "depth"}}) {
+        auto built = GlShader::build(st.vs, st.fs);
         if (built.isError()) {
             std::fprintf(stderr, "render: %s shader failed (%s); using the basic path\n", st.name, built.error().c_str());
             return false;
@@ -62,6 +66,14 @@ bool enableFullPipeline(ContextData& d) {
         return false;
     }
     d.resolve = resolve();
+    // The shadow map is 1024x4096.
+    GLint maxTexture = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexture);
+    if (maxTexture < ShadowMap::kHeight) {
+        std::fprintf(stderr, "render: GL_MAX_TEXTURE_SIZE %d is below the %d px shadow map; using the basic path\n",
+                     maxTexture, ShadowMap::kHeight);
+        return false;
+    }
     GlFramebuffer probe;
     if (!probe.create({4, 4, d.samples, GL_RGBA16F, true, false})) {
         std::fprintf(stderr, "render: RGBA16F x%d target incomplete; using the basic path\n", d.samples);
@@ -196,6 +208,9 @@ struct SceneRenderer::Impl {
     std::vector<Prop> props;
     GlMesh lane, gutter, wall, ball, pin, guide, unitBox, unitCylinder, unitCone;
     std::unique_ptr<PostChain> post;
+    std::unique_ptr<ShadowMap> shadow;
+    std::vector<std::size_t> shadowCasters;  // indices into props, rebuilt by setTheme
+    LightFrustum light;
     unsigned skyVao = 0;  // core profile needs a bound VAO even for attribute-less draws
 
     Impl(Context& c, const SceneGeometry& geo, ThemeId id)
@@ -213,12 +228,21 @@ struct SceneRenderer::Impl {
         setTheme(id);
         if (ctx.data().fullPipeline)
             post = std::make_unique<PostChain>(ctx.data());
+        if (ctx.data().fullPipeline) {
+            shadow = std::make_unique<ShadowMap>();
+            if (!shadow->create()) {
+                std::fprintf(stderr, "render: shadow map incomplete; using the basic path\n");
+                ctx.data().fullPipeline = false;
+            }
+        }
     }
     ~Impl() { glDeleteVertexArrays(1, &skyVao); }
 
     void setTheme(ThemeId id) {  // CPU only
         current = &theme(id);
         props = buildProps(*current, g);
+        shadowCasters = propsInBox(props, g, shadowBox(g));
+        light = fitLightFrustum(current->lightDir, shadowBox(g));
     }
 
     const GlMesh& meshFor(Shape shape) const {
@@ -333,6 +357,20 @@ struct SceneRenderer::Impl {
         drawMesh(s, ball, scene.ball.matrix(), t.ball);
     }
 
+    void shadowPass(const SceneDescription& scene) {
+        GlShader& s = *ctx.data().depth;
+        PassParams pp;
+        pp.view = light.view;
+        pp.proj = light.projection;
+        s.use();
+        s.setMat4("uView", pp.view);
+        s.setMat4("uProj", pp.proj);
+        s.setVec4("uClipPlane", pp.clipPlane);
+        shadow->begin();
+        drawOpaque(s, pp, scene, &shadowCasters, true);
+        shadow->end();
+    }
+
     void drawSky(bool toneMap) {
         const Theme& t = *current;
         glDisable(GL_DEPTH_TEST);
@@ -410,6 +448,13 @@ void SceneRenderer::draw(const Camera& camera, const SceneDescription& scene, in
         p.mainPass(pp, scene);
         return;
     }
+    p.shadowPass(scene);
+    pp.shadows = true;
+    pp.lightViewProj = p.light.viewProjection();
+    // Unit 1; PostChain::present rebinds and then unbinds it.
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, p.shadow->depthTexture());
+    glActiveTexture(GL_TEXTURE0);
     p.post->beginScene();
     p.mainPass(pp, scene);
     p.post->present(viewportY, p.current->exposure, p.current->bloomStrength);

@@ -43,5 +43,16 @@ Aabb shadowBox(const SceneGeometry& g) {
     return {{-x, kPitTopY - 0.1f, -g.approach}, {x, kShadowTopY, g.laneLength + kPitLength}};
 }
 
+std::vector<std::size_t> propsInBox(const std::vector<Prop>& props, const SceneGeometry& g, const Aabb& box) {
+    std::vector<std::size_t> out;
+    for (std::size_t i = 0; i < props.size(); ++i) {
+        const Aabb b = bounds(props[i], g);
+        if (b.min.x < box.max.x && b.max.x > box.min.x && b.min.y < box.max.y && b.max.y > box.min.y &&
+            b.min.z < box.max.z && b.max.z > box.min.z)
+            out.push_back(i);
+    }
+    return out;
+}
+
 }  // namespace Render
 }  // namespace Bowlingbox

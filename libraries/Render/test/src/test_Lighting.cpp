@@ -92,3 +92,34 @@ TEST(test_lighting, straight_down_light_gives_a_finite_frustum) {
         for (int r = 0; r < 4; ++r)
             EXPECT_TRUE(std::isfinite(m[c][r])) << c << "," << r;
 }
+
+TEST(test_lighting, shadow_casters_skip_the_ceiling_and_keep_the_ball_returns) {
+    for (ThemeId id : kThemes) {
+        const Theme& t = theme(id);
+        const auto props = buildProps(t, kG);
+        const auto casters = propsInBox(props, kG, shadowBox(kG));
+        ASSERT_FALSE(casters.empty()) << t.name;
+        int above = 0;
+        for (std::size_t i = 0; i < props.size(); ++i) {
+            if (bounds(props[i], kG).min.y < kShadowTopY)
+                continue;
+            ++above;
+            EXPECT_EQ(std::count(casters.begin(), casters.end(), i), 0) << t.name << " prop " << i << " is above the box";
+        }
+        if (t.indoor) {
+            EXPECT_GT(above, 0) << t.name << ": the ceiling lies above the shadow box";
+        }
+        const bool hasReturn = std::any_of(casters.begin(), casters.end(), [&](std::size_t i) {
+            const Aabb b = bounds(props[i], kG);
+            return std::abs(b.max.y - kReturnHeight) < 1e-4f &&
+                   std::abs((b.min.x + b.max.x) / 2 - lanePitch(kG) / 2) < 1e-3f;
+        });
+        EXPECT_TRUE(hasReturn) << t.name << ": the ball return beside the lane casts";
+        if (t.indoor) {
+            const bool ceilingCasts = std::any_of(casters.begin(), casters.end(), [&](std::size_t i) {
+                return bounds(props[i], kG).min.y >= kHallHeight - 1e-3f;
+            });
+            EXPECT_FALSE(ceilingCasts) << t.name;
+        }
+    }
+}

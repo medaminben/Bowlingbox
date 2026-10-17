@@ -3,6 +3,8 @@
 #include <Bowlingbox/Render/Bowlingbox_Render_export.h>
 #include <Bowlingbox/Render/Environment.h>
 #include <glm/glm.hpp>
+#include <cstddef>
+#include <vector>
 
 namespace Bowlingbox {
 namespace Render {
@@ -28,6 +30,9 @@ struct LightFrustum {
 BOWLINGBOX_RENDER_API LightFrustum fitLightFrustum(glm::vec3 lightDir, const Aabb& box);
 /// What the key light's shadow map covers: lane, gutters, approach, deck and pit, up to kShadowTopY.
 BOWLINGBOX_RENDER_API Aabb shadowBox(const SceneGeometry& g);
+/// Indices of the props whose world box overlaps `box` (used to pick shadow and reflection casters).
+BOWLINGBOX_RENDER_API std::vector<std::size_t> propsInBox(const std::vector<Prop>& props, const SceneGeometry& g,
+                                                         const Aabb& box);
 
 }  // namespace Render
 }  // namespace Bowlingbox

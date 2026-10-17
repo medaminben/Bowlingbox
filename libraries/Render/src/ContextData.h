@@ -18,6 +18,7 @@ struct ContextData {
     std::unique_ptr<GlShader> composite;  // HDR -> tone map -> sRGB (full pipeline only)
     std::unique_ptr<GlShader> resolve;    // weighted MSAA resolve (full pipeline only)
     std::unique_ptr<GlShader> bright, bloomDown, bloomUp;  // bloom chain (full pipeline only)
+    std::unique_ptr<GlShader> depth;  // shadow pass (full pipeline only)
     std::optional<FontAtlas> font;   // empty: the overlay falls back to stb_easy_font
     GlTexture fontTexture;           // R8 atlas with mip levels 0..FontAtlas::kMaxMipLevel
     RenderOptions options;
