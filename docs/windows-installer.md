@@ -30,7 +30,12 @@ and PCRE2 are not in the binary. (wxMSW requires libpng, which needs no notice.)
 ## Getting an installer
 
 Every release has it: download `BowlingBox_Setup_<version>.exe` from the
-[Releases](https://github.com/medaminben/Bowlingbox/releases) page.
+[Releases](https://github.com/medaminben/Bowlingbox/releases) page. Each release also
+carries an unversioned copy, `BowlingBox_Setup.exe`, so
+<https://github.com/medaminben/Bowlingbox/releases/latest/download/BowlingBox_Setup.exe>
+always downloads the newest installer (the README links it). The release notes open with
+a link to the installer; the "Source code" archives under it are added by GitHub to every
+release and cannot be removed.
 
 Merging a pull request into `main` makes `.github/workflows/version.yml` tag the
 merge `vX.Y.Z` and publish a release (unless the pull request is labelled

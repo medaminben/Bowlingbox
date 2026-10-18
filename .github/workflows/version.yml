@@ -91,8 +91,12 @@ jobs:
           tag="v$(ci/next-version.sh "$bump")"
           title=$(jq -r '.title' <<<"$pr_json")
           url=$(jq -r '.url' <<<"$pr_json")
+          # The installer job attaches this file about 20 minutes later; GitHub's own
+          # "Source code" links cannot be removed, so the notes point past them.
+          setup="BowlingBox_Setup_${tag#v}.exe"
+          notes="⬇ **Download [$setup](https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/$setup)**, the Windows 10/11 installer. To build from source, clone the repository and follow the [README](https://github.com/$GITHUB_REPOSITORY#readme)."
           gh release create "$tag" --target "$sha" --title "$tag" \
-            --notes "$title ([#$PR]($url)), $bump release."
+            --notes "$notes"$'\n\n'"$title ([#$PR]($url)), $bump release."
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Released $tag for PR #$PR ($bump)." >> "$GITHUB_STEP_SUMMARY"
 
