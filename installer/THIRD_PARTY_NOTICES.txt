@@ -10,6 +10,9 @@ Components whose licences need no notice in binary copies:
   - Bullet3 3.25           Zlib
   - stb_easy_font 1.1      public domain (Unlicense option)
   - stb_truetype 1.26      public domain (Unlicense option)
+  - miniaudio 0.11.25      public domain (Unlicense option)
+  - sound effects          CC0 1.0 (Kenney; Freesound: ZusIsKing, Bruce Burbank, Rob_Marion,
+                           5ro4, Santi171, dagray, SamuelGremaud)
   - zlib, NanoSVG          Zlib (built into wxWidgets)
   - libpng                 PNG Reference Library License v2 (built into wxWidgets)
   - libgcc, libstdc++      GPL-3.0 with the GCC Runtime Library Exception

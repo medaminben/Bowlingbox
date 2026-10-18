@@ -1,4 +1,4 @@
-stb_easy_font.h v1.1 (3rdparty/stb/) - Sean Barrett, https://github.com/nothings/stb
+stb_easy_font.h v1.1, stb_truetype.h v1.26 and stb_vorbis.c (commit 2c980bb, sound_convert dev tool only) (3rdparty/stb/) - Sean Barrett, https://github.com/nothings/stb
 
 This software is available under 2 licenses -- choose whichever you prefer.
 ALTERNATIVE A - MIT License

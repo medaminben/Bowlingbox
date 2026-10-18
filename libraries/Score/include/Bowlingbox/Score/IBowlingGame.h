@@ -6,6 +6,12 @@
 namespace Bowlingbox {
 namespace Score {
 
+/// The outcome of IBowlingGame::roll(). When a ball breaks several rules, GameOver wins.
+enum class [[nodiscard]] RollStatus { Accepted, GameOver, Negative, TooManyPins };
+
+/// A short English description, e.g. "more pins than are standing".
+BOWLINGBOX_SCORE_API const char* describe(RollStatus status);
+
 /// Read-only view of a bowling game. Displays depend on this, not on a
 /// concrete calculator.
 class BOWLINGBOX_SCORE_API IScoreSheet {
@@ -28,9 +34,8 @@ public:
 /// A score sheet that also accepts rolls.
 class BOWLINGBOX_SCORE_API IBowlingGame : public IScoreSheet {
 public:
-    /// Records a roll. Returns false, and changes nothing, when the game is
-    /// over or pins is not between 0 and pinsLeft().
-    virtual bool roll(int pins) = 0;
+    /// Records a roll. Anything but Accepted changes nothing.
+    virtual RollStatus roll(int pins) = 0;
     virtual void reset() = 0;
 };
 

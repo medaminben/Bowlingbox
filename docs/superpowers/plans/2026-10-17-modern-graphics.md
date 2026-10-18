@@ -16,7 +16,7 @@
 
 ## Global Constraints
 
-- **Hardware floor:** OpenGL 3.3 core on integrated GPUs, 60 fps. Use only GL 3.3 core features: `GL_DEPTH_CLAMP`, `gl_ClipDistance`, `sampler2DShadow` and `GL_TIME_ELAPSED` are all core. No extensions.
+- **Hardware floor:** OpenGL 3.3 core on integrated GPUs, 60 fps. Use only GL 3.3 core features: `GL_DEPTH_CLAMP`, `gl_ClipDistance`, `sampler2DShadow`, multisample textures (`glTexImage2DMultisample`, `sampler2DMS`) and `GL_TIME_ELAPSED` are all core. No extensions.
 - **Warnings:** every target builds with `-Wall -Wextra -Wpedantic -Werror` (`bowlingbox_set_warnings`).
   - An aggregate initialiser that leaves out a field fails `-Wmissing-field-initializers`. Name every field, or use the helper functions shown.
 - **Public API:** `Context`, `Camera`, `SceneRenderer`, `Overlay` and `ICanvas2D` keep their signatures. Additions are allowed (`Camera::eye()`).
@@ -35,32 +35,39 @@ cmake --build build -j"$(nproc)"
 ctest --test-dir build --label-regex unit --output-on-failure
 ```
 
-- **Smoke run (GL tasks):** this starts each theme, takes a screenshot and fails if anything was printed to stderr. Debug builds print `render: GL error 0x....` from Task 5 on.
+- **Smoke run (GL tasks):** this starts each theme, takes a screenshot and reports every `render:` line printed to stderr. Debug builds print `render: GL error 0x....` from Task 5 on. GTK and wxWidgets may print their own warnings, so only `render:` lines count.
 
 ```bash
 mkdir -p build/shots
 for t in neon classic outdoor; do
   build/bin/BowlingGL --theme=$t 2> build/shots/$t.err & pid=$!
   sleep 4; import -window root build/shots/$TASK-$t.png; kill $pid; wait $pid 2>/dev/null
-  if [ -s build/shots/$t.err ]; then echo "== $t stderr"; cat build/shots/$t.err; fi
+  if grep -q '^render:' build/shots/$t.err; then echo "== $t"; grep '^render:' build/shots/$t.err; fi
 done
 ```
 
+"No stderr output" in the tasks below means no `render:` line.
+
 (Set `TASK=task5` etc. first. Look at the PNGs: `build/shots/` is in the build tree, so it's never committed.)
 
-## Spec clarifications (decided here, apply to all tasks)
+## Decisions taken while planning (all recorded in the spec)
 
 - **Licence files** go in `licenses/` at the repo root, where the existing ones are, not `3rdparty/licenses/`.
-- **Testable functions are public.** Because of hidden visibility, `Lighting.h`, `RenderOptions.h` and `FontAtlas.h` are public exported headers.
-- **No texel snapping for shadows.** The shadow frustum is fitted to a fixed box (`shadowBox`), so it never depends on the camera. The spec's texel snapping is unnecessary, and "moving the camera never moves the volume" is true by construction: `fitLightFrustum` has no camera input.
+- **Testable functions are public.** Because of hidden visibility, `Lighting.h`, `RenderOptions.h` and `FontAtlas.h` are public exported headers. `Lighting.h` holds the sRGB functions; there's no separate `ColorSpace.h`.
+- **Shadow map fit.** The shadow frustum is fitted to a fixed box (`shadowBox`), so it never depends on the camera and needs no texel snapping. The light view uses the lane direction (+z) as its up vector, so the lane lies along the map's long axis. The map is 1024×4096: the same memory as 2048², with about 5–6 mm per texel along the lane instead of about 1 cm.
 - **Shadow box height.** The shadow box reaches up to `kShadowTopY = 2.5 m`, so the masking unit over the pinsetters (y 0.9–2.4) casts a shadow. Ceilings (4.5 m) and ceiling lights fall outside it and never cast. Without that cut, the whole lane would sit in the ceiling's shadow.
-- **Pin profile.** It has 45 points (4 samples per Catmull-Rom span over the 11 spans), not "~28", so the test's 30° smoothness bound holds at the head.
-- **HUD text** uses a coverage atlas with mipmaps and trilinear filtering. The spec's `smoothstep` edge trick belongs to distance-field fonts and is dropped.
+- **Pin profile.** It has 45 points (4 samples per Catmull-Rom span over the 11 spans). The worst step between neighbouring normals is about 19°, under the test's 25° bound.
+- **HUD text** uses a coverage atlas with 4 px glyph padding and mipmaps (levels 0–2) with trilinear filtering. The `smoothstep` edge trick belongs to distance-field fonts and isn't used.
 - **Material colours** are converted sRGB → linear in each draw call. It's three `pow`s per draw, about 150 draws, so it's negligible.
 - **Aim guide.** It's now an emissive cyan with alpha 0.40, so it reads the same under every theme's lighting.
-- **Reflection** is sampled only by the main lane. Its alpha channel marks where something is reflected, so areas with nothing in them don't darken the lane. Neighbour lanes don't reflect.
+- **Lane boards.** There are 39 across, as on a real lane (≈ 26.9 mm each), counted from the lane edge, so the arrows on boards 5…35 sit symmetrically about board 20, the middle board.
+- **Glow.** Neon Hall's emissives are strength 4–5. Classic Alley's ceiling panels (`accentA`) are 1.5, so they get a faint glow. Outdoor has nothing above 1.
+- **Highlights.** The MSAA resolve weights each sample by `1 / (1 + max(c))`, and the bright pass clamps to 16, so the ball's sharp highlight neither aliases nor makes the bloom flicker.
+- **Reflection** is sampled only by the main lane. The texture is premultiplied (cleared to transparent black) and blended as `rgb × (1 − k·a) + k·refl.rgb`, so edges don't darken and areas with nothing reflected are untouched. Neighbour lanes don't reflect.
 - **Lane arrows and dots** are painted on the main lane only (|x| < laneHalfWidth).
 - **Minimised window.** When the 3D band is under 1 px tall, `SceneRenderer::draw` returns early. `frameSizes` still clamps every size to ≥ 1.
+- **Uniforms.** `GlShader` caches uniform locations (Task 5), since the extra passes roughly triple the uniform calls per frame.
+- **GPU timing** keeps three frames of queries in flight and reads a result only when it's available, so stats mode never stalls.
 
 ## Review Focus
 
@@ -68,7 +75,7 @@ done
 2. **`BOWLINGBOX_RENDER=Basic`, `=full`, `=` (empty) or unset; `BOWLINGBOX_RENDER_STATS=0`.** Only `basic` (any case) forces the basic path. Only `1` turns stats on. Pinned by Task 7 (`render_options_read_the_environment_strictly`).
 3. **HUD text with characters the font doesn't have** (é in UTF-8, control characters). They draw and measure as `?`, with no crash or garbage. Pinned by Task 4 (`characters_outside_ascii_draw_as_question_marks`).
 4. **Pressing T mid-roll with the full pipeline running.** The casters and light frustum are rebuilt for the new theme in `setTheme` (CPU only), so every theme has sensible casters. Pinned by Task 9 (`shadow_casters_skip_the_ceiling_and_keep_the_ball_returns`) and Task 10 (`reflection_casters_skip_the_floor_and_the_neighbour_lanes`). Both loop over every theme.
-5. **A GPU that can't render RGBA16F or 4× MSAA.** It falls back to the basic path and the game runs. This can't be unit-tested. Pinned by Task 7 (samples clamped to `GL_MAX_SAMPLES`, the probe framebuffer, and smoke Step 8 with `BOWLINGBOX_RENDER=basic`).
+5. **A GPU that can't render RGBA16F or 4× MSAA.** It falls back to the basic path and the game runs. This can't be unit-tested. Pinned by Task 7 (samples clamped to `GL_MAX_COLOR_TEXTURE_SAMPLES` and `GL_MAX_DEPTH_TEXTURE_SAMPLES`, the probe framebuffer, and smoke Step 8 with `BOWLINGBOX_RENDER=basic`).
 
 ## Execution order
 
@@ -176,6 +183,16 @@ TEST(test_lighting, light_frustum_depth_grows_along_the_light) {
     EXPECT_LT(toClip(f, c).z, toClip(f, c + glm::normalize(dir) * 0.1f).z);
 }
 
+TEST(test_lighting, the_lane_runs_along_the_light_maps_long_axis) {
+    const Aabb box = shadowBox(kG);
+    for (ThemeId id : kThemes) {
+        const LightFrustum f = fitLightFrustum(theme(id).lightDir, box);
+        const glm::vec3 foul = toClip(f, {0.f, 0.f, 0.f}), down = toClip(f, {0.f, 0.f, 10.f});
+        EXPECT_NEAR(foul.x, down.x, 1e-4f) << "moving down the lane stays in one map column: " << theme(id).name;
+        EXPECT_GT(std::abs(down.y - foul.y), 0.1f) << theme(id).name;
+    }
+}
+
 TEST(test_lighting, straight_down_light_gives_a_finite_frustum) {
     const glm::mat4 m = fitLightFrustum({0.f, -1.f, 0.f}, shadowBox(kG)).viewProjection();
     for (int c = 0; c < 4; ++c)
@@ -230,6 +247,7 @@ struct LightFrustum {
 
 /// Orthographic light camera looking along `lightDir` whose volume is the tightest fit
 /// around `box`. It depends only on the light and the box, never on the player's camera.
+/// Its up vector is the lane direction (+z), so the lane runs along the map's y axis.
 BOWLINGBOX_RENDER_API LightFrustum fitLightFrustum(glm::vec3 lightDir, const Aabb& box);
 /// What the key light's shadow map covers: lane, gutters, approach, deck and pit, up to kShadowTopY.
 BOWLINGBOX_RENDER_API Aabb shadowBox(const SceneGeometry& g);
@@ -268,7 +286,9 @@ glm::vec3 linearToSrgb(glm::vec3 c) {
 LightFrustum fitLightFrustum(glm::vec3 lightDir, const Aabb& box) {
     const glm::vec3 dir = glm::normalize(lightDir);
     const glm::vec3 centre = (box.min + box.max) * 0.5f;
-    const glm::vec3 up = std::abs(dir.y) > 0.99f ? glm::vec3(0.f, 0.f, 1.f) : glm::vec3(0.f, 1.f, 0.f);
+    // Up = down the lane: the light-space x axis then has no z part, so the long, thin lane fills
+    // the map's long (y) axis. A light along the lane can't use that up; it never happens in a theme.
+    const glm::vec3 up = std::abs(dir.z) > 0.99f ? glm::vec3(0.f, 1.f, 0.f) : glm::vec3(0.f, 0.f, 1.f);
     const glm::mat4 view = glm::lookAt(centre - dir, centre, up);
     glm::vec3 lo(std::numeric_limits<float>::max()), hi(std::numeric_limits<float>::lowest());
     for (int i = 0; i < 8; ++i) {
@@ -296,7 +316,7 @@ Register both in `libraries/Render/CMakeLists.txt`. Add `include/Bowlingbox/Rend
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `cmake --build build -j"$(nproc)" && ctest --test-dir build -R test_lighting --output-on-failure`
-Expected: PASS, 6 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 6: Commit**
 
@@ -395,13 +415,23 @@ TEST(test_environment, every_material_has_roughness_and_specular_in_range) {
         }
 }
 
-TEST(test_environment, only_neon_hall_glows_hot_enough_to_bloom) {
-    for (ThemeId id : kThemes) {
-        const auto materials = allMaterials(theme(id));
-        const bool hot = std::any_of(materials.begin(), materials.end(),
-                                     [](const Material& m) { return m.emissive && m.emissiveStrength > 1.f; });
-        EXPECT_EQ(hot, id == ThemeId::NeonHall) << theme(id).name;
-    }
+namespace {
+/// The strongest glow in a theme (1 if nothing glows harder than its plain colour).
+float hottestGlow(const Theme& t) {
+    float hottest = 1.f;
+    for (const Material& m : allMaterials(t))
+        if (m.emissive)
+            hottest = std::max(hottest, m.emissiveStrength);
+    return hottest;
+}
+}  // namespace
+
+TEST(test_environment, neon_hall_glows_hottest_and_outdoor_not_at_all) {
+    const float neon = hottestGlow(theme(ThemeId::NeonHall));
+    const float classic = hottestGlow(theme(ThemeId::ClassicAlley));
+    EXPECT_GT(neon, classic);
+    EXPECT_GT(classic, 1.f) << "the bright pass keeps only what exceeds 1: Classic's ceiling panels glow faintly";
+    EXPECT_FLOAT_EQ(hottestGlow(theme(ThemeId::Outdoor)), 1.f);
 }
 
 TEST(test_environment, the_lane_is_wood_and_the_ball_swirls) {
@@ -528,6 +558,7 @@ In `kClassicAlley`, replace `.ambient = 0.55f,` with:
 
 - `.lane = wood(0.86f, 0.70f, 0.50f),`
 - `.gutter = metal(0.25f, 0.25f, 0.28f),`
+- `.accentA = glow(1.f, 0.96f, 0.85f, 1.5f),` (the ceiling panels: just over the bloom threshold, a faint glow)
 
 In `kOutdoor`, replace `.ambient = 0.45f,` with:
 
@@ -575,7 +606,7 @@ Add `#include <Bowlingbox/Render/Lighting.h>` after `#include "GlMesh.h"`. Then 
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `cmake --build build -j"$(nproc)" && ctest --test-dir build --label-regex unit --output-on-failure`
-Expected: PASS for all, including the 4 new or renamed `test_environment` tests.
+Expected: PASS for all, including the 5 new or renamed `test_environment` tests.
 
 - [ ] **Step 7: Commit**
 
@@ -611,7 +642,7 @@ TEST(test_render_geometry, pin_profile_is_smooth) {
     const std::size_t stride = static_cast<std::size_t>(segments) + 1;
     const std::size_t rings = m.vertexCount() / stride;
     ASSERT_GE(rings, 40u);
-    const float maxStep = 30.f * 3.14159265f / 180.f;
+    const float maxStep = 25.f * 3.14159265f / 180.f;  // the worst step is about 19°
     bool havePrev = false;
     float prev = 0.f;
     for (std::size_t i = 0; i < rings; ++i) {
@@ -714,7 +745,7 @@ git commit -m "feat(render): smooth pin silhouette from a Catmull-Rom profile"
 - Consumes: `Result`, `Bowlingbox::Core::Error<>` from `Bowlingbox/Core/Core.h`.
 - Produces:
   - `struct GlyphQuad { glm::vec2 p0, p1, uv0, uv1; }`.
-  - `class FontAtlas`, with `kSize = 512`, `kBakePx = 48`, and these members:
+  - `class FontAtlas`, with `kSize = 512`, `kBakePx = 48`, `kPadding = 4`, `kMaxMipLevel = 2`, and these members:
     - `static Result<FontAtlas> bake(const unsigned char*, std::size_t)`
     - `static Result<FontAtlas> bakeEmbedded()`
     - `const std::vector<unsigned char>& pixels() const`
@@ -875,7 +906,10 @@ TEST(test_font_atlas, glyphs_do_not_overlap_in_the_atlas) {
     for (char a = '!'; a < '~'; ++a)
         for (char b = static_cast<char>(a + 1); b <= '~'; ++b) {
             const auto r1 = font().atlasRect(a), r2 = font().atlasRect(b);
-            const bool overlap = r1.x0 < r2.x1 && r2.x0 < r1.x1 && r1.y0 < r2.y1 && r2.y0 < r1.y1;
+            // Grow one rectangle by the padding minus one pixel: the gap must survive two mip halvings.
+            const int pad = FontAtlas::kPadding - 1;
+            const bool overlap = r1.x0 - pad < r2.x1 && r2.x0 < r1.x1 + pad && r1.y0 - pad < r2.y1 &&
+                                 r2.y0 < r1.y1 + pad;
             EXPECT_FALSE(overlap) << a << " and " << b;
         }
 }
@@ -949,6 +983,10 @@ public:
     static constexpr int kSize = 512;       // atlas width and height, pixels
     static constexpr float kBakePx = 48.f;  // ascent - descent at bake time
     static constexpr char kFirst = 32, kLast = 126;
+    /// Empty pixels between glyphs. The Overlay samples mip levels 0..kMaxMipLevel, and
+    /// 4 px at level 0 is still 1 px at level 2, so glyphs never bleed into each other.
+    static constexpr int kPadding = 4;
+    static constexpr int kMaxMipLevel = 2;
 
     struct AtlasRect {
         int x0, y0, x1, y1;
@@ -1016,7 +1054,7 @@ Result<FontAtlas> FontAtlas::bake(const unsigned char* ttf, std::size_t size) {
     FontAtlas atlas;
     atlas._pixels.assign(static_cast<std::size_t>(kSize) * kSize, 0);
     stbtt_pack_context pc;
-    if (!stbtt_PackBegin(&pc, atlas._pixels.data(), kSize, kSize, 0, 1, nullptr))
+    if (!stbtt_PackBegin(&pc, atlas._pixels.data(), kSize, kSize, 0, kPadding, nullptr))
         return Bowlingbox::Core::Error<>("could not start packing glyphs");
     std::array<stbtt_packedchar, kCount> packed {};
     const int ok = stbtt_PackFontRange(&pc, ttf, 0, kBakePx, kFirst, kCount, packed.data());
@@ -1125,7 +1163,7 @@ This task changes what the game looks like without adding offscreen passes: all 
 **Files:**
 - Create: `libraries/Render/src/Shaders.h`, `libraries/Render/src/Shaders.cpp`
 - Modify: `libraries/Render/src/Render.cpp` (shader strings move out; `SceneRenderer::Impl` and `draw` rewritten; ball 48 segments; GL error report)
-- Modify: `libraries/Render/src/GlShader.h/.cpp` (`setInt`)
+- Modify: `libraries/Render/src/GlShader.h/.cpp` (`setInt`, cached uniform locations)
 - Modify: `libraries/Render/src/ContextData.h` (`reportedGlError`)
 - Modify: `libraries/Render/include/Bowlingbox/Render/Render.h` (`Camera::eye()`)
 - Modify: `libraries/Render/CMakeLists.txt`
@@ -1134,18 +1172,35 @@ This task changes what the game looks like without adding offscreen passes: all 
 - Consumes: `Material`, `Pattern`, `PointLight`, the `Theme` lighting fields (Task 2), `srgbToLinear` (Task 1).
 - Produces:
   - `namespace shaders` with `kLitVs`, `litFs()`, `kFlatVs`, `kFlatFs`, `kSkyVs`, `skyFs()` and `kToneMapGlsl`.
-  - `GlShader::setInt(const char*, int)`.
+  - `GlShader::setInt(const char*, int)`; every setter now uses cached uniform locations.
   - `Camera::eye()`.
   - In `SceneRenderer::Impl`: `struct PassParams`, `setFrameUniforms(GlShader&, const PassParams&)`, `drawOpaque(GlShader&, const PassParams&, const SceneDescription&, const std::vector<std::size_t>* only, bool withLane)`, `drawSky(bool toneMap)`, `drawGuide(GlShader&, const SceneDescription&)` and `mainPass(const PassParams&, const SceneDescription&)`.
   - Lit-shader uniforms used by later tasks: `uShadows`, `uShadowMap` (unit 1), `uLightVP`, `uReflect`, `uReflection` (unit 2), `uViewportSize`, `uClipPlane` and `uToneMap`.
 
-- [ ] **Step 1: Add `setInt`, `Camera::eye()` and the GL error flag**
+- [ ] **Step 1: Add `setInt`, a uniform-location cache, `Camera::eye()` and the GL error flag**
 
-`GlShader.h`: add `void setInt(const char* name, int v) const;` after `setBool`. `GlShader.cpp`:
+The passes added in Tasks 7–10 set about ten uniforms per draw, ~150 draws, up to three passes a frame. Today every setter calls `glGetUniformLocation`, so cache the locations.
+
+`GlShader.h`: add `#include <string>` and `#include <unordered_map>`. Add `void setInt(const char* name, int v) const;` after `setBool`. In the private section, add:
 
 ```cpp
+    int location(const char* name) const;  // cached glGetUniformLocation; -1 if unused
+    mutable std::unordered_map<std::string, int> _locations;
+```
+
+`GlShader.cpp`: add the two functions below. Then, in every existing setter, replace `glGetUniformLocation(_program, name)` with `location(name)`.
+
+```cpp
+int GlShader::location(const char* name) const {
+    if (const auto it = _locations.find(name); it != _locations.end())
+        return it->second;
+    const int loc = glGetUniformLocation(_program, name);
+    _locations.emplace(name, loc);
+    return loc;
+}
+
 void GlShader::setInt(const char* name, int v) const {
-    glUniform1i(glGetUniformLocation(_program, name), v);
+    glUniform1i(location(name), v);
 }
 ```
 
@@ -1242,13 +1297,13 @@ uniform bool uShadows; uniform sampler2DShadow uShadowMap;  // texture unit 1
 uniform bool uReflect; uniform sampler2D uReflection;       // texture unit 2
 uniform vec2 uViewportSize;
 uniform float uLaneHalfWidth; uniform float uDeckZ;
+uniform float uBoard;  // board width: 2 * laneHalfWidth / 39
 
 uniform bool uToneMap; uniform float uExposure;
 
 out vec4 FragColor;
 
 const float PI = 3.14159265;
-const float kBoard = 0.025;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -1271,22 +1326,26 @@ float fbm3(vec3 p) {
 }
 
 // Dark-red inlay on the main lane: 7 arrows about 4.6 m down and 7 dots on the approach,
-// on boards 5, 10, ... 35 counted from the right-hand edge.
+// on boards 5, 10, ... 35 of 39. Board 20 is the middle board, so the pattern is symmetric
+// and it doesn't matter which edge counts as board 1.
 float marking(vec3 p) {
     if (abs(p.x) > uLaneHalfWidth) return 0.0;
-    float fromRight = (uLaneHalfWidth - p.x) / kBoard;
-    float board = floor(fromRight) + 1.0;
+    float fromEdge = (p.x + uLaneHalfWidth) / uBoard;
+    float board = floor(fromEdge) + 1.0;                        // 1 .. 39
     if (board < 5.0 || board > 35.0 || mod(board, 5.0) != 0.0) return 0.0;
-    float u = fract(fromRight) - 0.5;                           // -0.5 .. 0.5 across the board
+    float u = fract(fromEdge) - 0.5;                            // -0.5 .. 0.5 across the board
     float tip = 4.3 + 0.6 * (1.0 - abs(board - 20.0) / 15.0);   // the middle arrow is furthest
     float along = (tip - p.z) / 0.15;                           // 0 at the tip, 1 at the base
     float arrow = (along >= 0.0 && along <= 1.0 && abs(u) <= 0.5 * along) ? 1.0 : 0.0;
-    float spot = length(vec2(u * kBoard, p.z + 0.15)) < 0.008 ? 1.0 : 0.0;
+    float spot = length(vec2(u * uBoard, p.z + 0.15)) < 0.008 ? 1.0 : 0.0;
     return max(arrow, spot);
 }
 
+// Boards are counted from the main lane's edge, so its 39 boards line up with both edges.
+// Neighbour lanes reuse the same grid; it's off their edges by under a millimetre.
 vec3 wood(vec3 base, vec3 p) {
-    float board = floor(p.x / kBoard);
+    float fromEdge = (p.x + uLaneHalfWidth) / uBoard;
+    float board = floor(fromEdge);
     float tint = 1.0 + 0.16 * (hash(vec2(board, 7.0)) - 0.5);
     float phase = hash(vec2(board, 13.0)) * 50.0;
     float fine = clamp(1.0 - fwidth(p.x) * 750.0, 0.0, 1.0);  // fade grain finer than a pixel
@@ -1294,8 +1353,8 @@ vec3 wood(vec3 base, vec3 p) {
                 + 0.4 * fine * noise(vec2(p.x * 1500.0, p.z * 9.0 + phase));
     float streak = smoothstep(0.75, 0.95, noise(vec2(board * 3.1, p.z * 0.4 + phase)));
     vec3 c = base * tint * (0.92 + 0.12 * grain) * (1.0 - 0.18 * streak);
-    float seam = smoothstep(0.92, 1.0, abs(fract(p.x / kBoard) - 0.5) * 2.0);
-    c *= 1.0 - 0.35 * seam * clamp(1.0 - fwidth(p.x) / kBoard, 0.0, 1.0);
+    float seam = smoothstep(0.92, 1.0, abs(fract(fromEdge) - 0.5) * 2.0);
+    c *= 1.0 - 0.35 * seam * clamp(1.0 - fwidth(p.x) / uBoard, 0.0, 1.0);
     if (p.z < 0.0) c *= vec3(1.04, 1.02, 0.97);           // approach
     else if (p.z > uDeckZ) c *= vec3(0.96, 0.94, 0.92);   // pin deck
     return mix(c, vec3(0.30, 0.02, 0.02), marking(p));
@@ -1376,7 +1435,9 @@ void main() {
             vec4 r = 0.25 * (texture(uReflection, uv + vec2(o, 0.0)) + texture(uReflection, uv - vec2(o, 0.0))
                            + texture(uReflection, uv + vec2(0.0, o)) + texture(uReflection, uv - vec2(0.0, o)));
             float fresnel = uSpecular + (1.0 - uSpecular) * pow(1.0 - max(dot(n, v), 0.0), 5.0);
-            rgb = mix(rgb, r.rgb, clamp(fresnel * (1.0 - uRoughness) * 0.6, 0.0, 1.0) * r.a);
+            float k = clamp(fresnel * (1.0 - uRoughness) * 0.6, 0.0, 1.0);
+            // r is premultiplied (cleared to transparent black): a plain mix would darken soft edges.
+            rgb = rgb * (1.0 - k * r.a) + k * r.rgb;
         }
     }
     if (uFog) {
@@ -1542,13 +1603,18 @@ struct SceneRenderer::Impl {
         s.setVec3("uKeyColor", t.keyColor * t.keyIntensity);
         s.setVec3("uSkyAmbient", t.skyAmbient);
         s.setVec3("uGroundAmbient", t.groundAmbient);
+        static constexpr std::array<const char*, kMaxPointLights> kPos {"uPointPos[0]", "uPointPos[1]",
+                                                                         "uPointPos[2]", "uPointPos[3]"};
+        static constexpr std::array<const char*, kMaxPointLights> kColor {"uPointColor[0]", "uPointColor[1]",
+                                                                           "uPointColor[2]", "uPointColor[3]"};
+        static constexpr std::array<const char*, kMaxPointLights> kRange {"uPointRange[0]", "uPointRange[1]",
+                                                                           "uPointRange[2]", "uPointRange[3]"};
         s.setInt("uPointCount", t.pointLightCount);
-        for (int i = 0; i < t.pointLightCount; ++i) {
-            const PointLight& l = t.pointLights[static_cast<std::size_t>(i)];
-            const std::string n = std::to_string(i);
-            s.setVec3(("uPointPos[" + n + "]").c_str(), l.position);
-            s.setVec3(("uPointColor[" + n + "]").c_str(), l.color * l.intensity);
-            s.setFloat(("uPointRange[" + n + "]").c_str(), l.range);
+        for (std::size_t i = 0; i < static_cast<std::size_t>(t.pointLightCount); ++i) {
+            const PointLight& l = t.pointLights[i];
+            s.setVec3(kPos[i], l.position);
+            s.setVec3(kColor[i], l.color * l.intensity);
+            s.setFloat(kRange[i], l.range);
         }
         s.setBool("uFog", true);
         s.setVec3("uFogColor", srgbToLinear(t.fogColor));
@@ -1563,6 +1629,7 @@ struct SceneRenderer::Impl {
         s.setVec2("uViewportSize", pp.viewportSize);
         s.setBool("uReflect", false);
         s.setFloat("uLaneHalfWidth", g.laneHalfWidth);
+        s.setFloat("uBoard", 2.f * g.laneHalfWidth / 39.f);  // a real lane has 39 boards
         s.setFloat("uDeckZ", g.headPinZ - 0.3f);
         s.setFloat("uAlpha", 1.f);
     }
@@ -1695,7 +1762,7 @@ Run the smoke loop from *Global Constraints* with `TASK=task5`.
 
 Expected:
 - No stderr output, so no `render: GL error` and no shader compile error.
-- In the screenshots, every theme shows wood boards with grain and seams, arrows on the lane about 4.6 m out, a glossy marbled ball with finger holes, glossy pins with a specular highlight, and steel-looking gutters.
+- In the screenshots, every theme shows wood boards with grain and seams, and seven arrows about 4.6 m out. The arrows form a symmetric V centred on the lane, with the middle arrow furthest and the outer two 4 boards in from each edge. There's a glossy marbled ball with finger holes, glossy pins with a specular highlight, and steel-looking gutters.
 
 If a theme is much too dark or bright, tune only that theme's `keyIntensity`, `skyAmbient`/`groundAmbient` and point-light intensities in `Environment.cpp`, within the ranges the tests enforce. Rerun the tests after any tuning.
 
@@ -1830,7 +1897,7 @@ void main() { FragColor = vec4(uColor.rgb, uColor.a * texture(uAtlas, vUv).r); }
 ```cpp
     std::unique_ptr<GlShader> text;  // 2D glyph quads from the font atlas
     std::optional<FontAtlas> font;   // empty: the overlay falls back to stb_easy_font
-    GlTexture fontTexture;           // R8 atlas with mipmaps
+    GlTexture fontTexture;           // R8 atlas with mip levels 0..FontAtlas::kMaxMipLevel
 ```
 
 In `Context::create()`, after the samplers block from Task 5, add:
@@ -1852,6 +1919,7 @@ In `Context::create()`, after the samplers block from Task 5, add:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, FontAtlas::kSize, FontAtlas::kSize, 0, GL_RED, GL_UNSIGNED_BYTE,
                      d.font->pixels().data());
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, FontAtlas::kMaxMipLevel);  // see kPadding
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1986,8 +2054,8 @@ git commit -m "feat(render): HUD text from the Rubik atlas, with stb_easy_font a
   - `struct RenderOptions { bool forceBasic, stats; }` and `RenderOptions renderOptions(const char* render, const char* stats)`.
   - `class GlFramebuffer` (`Spec`, `create`, `bind`, `blitColorTo`, `colorTexture`, `depthTexture`, `width`, `height`).
   - `class PostChain { bool ensureSize(const FrameSizes&, int samples); void beginScene(); void present(int viewportY, float exposure, float bloomStrength); }`.
-  - In `ContextData`: `options`, `fullPipeline`, `samples`, `composite`.
-  - `shaders::kPostVs` and `shaders::compositeFs()`.
+  - In `ContextData`: `options`, `fullPipeline`, `samples`, `composite`, `resolve`.
+  - `shaders::kPostVs`, `shaders::kResolveFs` and `shaders::compositeFs()`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2140,7 +2208,7 @@ class GlFramebuffer {
 public:
     struct Spec {
         int width = 1, height = 1;
-        int samples = 0;            // > 0: multisampled renderbuffers; resolve with blitColorTo
+        int samples = 0;            // > 0: multisample textures (colour and depth), resolved by PostChain's shader
         unsigned colorFormat = 0;   // e.g. GL_RGBA16F; 0 = no colour attachment
         bool depth = false;         // depth renderbuffer
         bool depthTexture = false;  // depth as a comparable texture (shadow maps); replaces `depth`
@@ -2154,7 +2222,8 @@ public:
     /// (Re)creates the attachments. False (and nothing allocated) if the framebuffer is incomplete.
     bool create(const Spec& spec);
     void bind() const;  // binds and sets the viewport to the whole target
-    void blitColorTo(const GlFramebuffer& dst) const;
+    void blitColorTo(const GlFramebuffer& dst) const;  // single-sample targets only
+    /// GL_TEXTURE_2D, or GL_TEXTURE_2D_MULTISAMPLE when samples > 0.
     unsigned colorTexture() const { return _colorTex; }
     unsigned depthTexture() const { return _depthTex; }
     int width() const { return _spec.width; }
@@ -2162,7 +2231,7 @@ public:
 
 private:
     void release();
-    unsigned _fbo = 0, _colorTex = 0, _colorRb = 0, _depthRb = 0, _depthTex = 0;
+    unsigned _fbo = 0, _colorTex = 0, _depthRb = 0, _depthTex = 0;
     Spec _spec;
 };
 
@@ -2196,23 +2265,24 @@ void GlFramebuffer::release() {
     if (_depthTex) glDeleteTextures(1, &_depthTex);
     if (_colorTex) glDeleteTextures(1, &_colorTex);
     if (_depthRb) glDeleteRenderbuffers(1, &_depthRb);
-    if (_colorRb) glDeleteRenderbuffers(1, &_colorRb);
     if (_fbo) glDeleteFramebuffers(1, &_fbo);
-    _fbo = _colorTex = _colorRb = _depthRb = _depthTex = 0;
+    _fbo = _colorTex = _depthRb = _depthTex = 0;
 }
 
 bool GlFramebuffer::create(const Spec& spec) {
     release();
     _spec = spec;
     const GLsizei w = spec.width, h = spec.height;
+    const bool ms = spec.samples > 0;
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     if (spec.colorFormat != 0) {
-        if (spec.samples > 0) {
-            glGenRenderbuffers(1, &_colorRb);
-            glBindRenderbuffer(GL_RENDERBUFFER, _colorRb);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, spec.samples, spec.colorFormat, w, h);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _colorRb);
+        if (ms) {
+            // A texture, not a renderbuffer, so PostChain's resolve shader can read every sample.
+            glGenTextures(1, &_colorTex);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _colorTex);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, spec.samples, spec.colorFormat, w, h, GL_TRUE);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _colorTex, 0);
         } else {
             glGenTextures(1, &_colorTex);
             glBindTexture(GL_TEXTURE_2D, _colorTex);
@@ -2232,18 +2302,23 @@ bool GlFramebuffer::create(const Spec& spec) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
+    } else if (spec.depth && ms) {
+        // Also a texture: a renderbuffer may round the sample count differently, which leaves
+        // the framebuffer incomplete.
+        glGenTextures(1, &_depthTex);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _depthTex);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, spec.samples, GL_DEPTH_COMPONENT24, w, h, GL_TRUE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, _depthTex, 0);
     } else if (spec.depth) {
         glGenRenderbuffers(1, &_depthRb);
         glBindRenderbuffer(GL_RENDERBUFFER, _depthRb);
-        if (spec.samples > 0)
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, spec.samples, GL_DEPTH_COMPONENT24, w, h);
-        else
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthRb);
     }
     const bool complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     if (!complete)
         release();
@@ -2272,7 +2347,8 @@ void GlFramebuffer::blitColorTo(const GlFramebuffer& dst) const {
 `Shaders.h`:
 
 ```cpp
-extern const char* const kPostVs;  // attribute-less full-screen triangle with vUv
+extern const char* const kPostVs;     // attribute-less full-screen triangle with vUv
+extern const char* const kResolveFs;  // MSAA -> one sample, weighted so bright samples don't swamp edges
 /// Scene (+ bloom) * exposure -> ACES -> sRGB.
 std::string compositeFs();
 ```
@@ -2286,6 +2362,23 @@ void main() {
     vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
     vUv = (p + 1.0) * 0.5;
     gl_Position = vec4(p, 0.0, 1.0);
+})";
+
+// A plain average lets one sample of a neon strip (5.0) or the ball's highlight (~40) dominate an
+// edge pixel, so edges look jagged again after tone mapping. Averaging c / (1 + max(c)) and
+// inverting that curve afterwards keeps the edge gradient.
+const char* const kResolveFs = R"(#version 330 core
+uniform sampler2DMS uSrc; uniform int uSamples;
+out vec4 FragColor;
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec3 sum = vec3(0.0);
+    for (int i = 0; i < uSamples; ++i) {
+        vec3 c = texelFetch(uSrc, p, i).rgb;
+        sum += c / (1.0 + max(max(c.r, c.g), c.b));
+    }
+    vec3 t = sum / float(uSamples);
+    FragColor = vec4(t / max(1.0 - max(max(t.r, t.g), t.b), 1e-4), 1.0);
 })";
 
 // (in the anonymous namespace)
@@ -2336,6 +2429,9 @@ public:
     void present(int viewportY, float exposure, float bloomStrength);
 
 private:
+    void resolve();             // _msaa -> _resolved
+    void drawTriangle() const;  // the full-screen triangle of kPostVs
+
     ContextData& _d;
     glm::ivec2 _size {0};
     int _samples = 0;
@@ -2385,8 +2481,32 @@ void PostChain::beginScene() {
     glEnable(GL_DEPTH_TEST);
 }
 
+void PostChain::drawTriangle() const {
+    glBindVertexArray(_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
+}
+
+void PostChain::resolve() {
+    if (_samples == 0) {  // no MSAA on this GPU: both targets are plain textures
+        _msaa.blitColorTo(_resolved);
+        return;
+    }
+    _resolved.bind();
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    GlShader& s = *_d.resolve;
+    s.use();
+    s.setInt("uSrc", 0);
+    s.setInt("uSamples", _samples);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _msaa.colorTexture());
+    drawTriangle();
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+}
+
 void PostChain::present(int viewportY, float exposure, float bloomStrength) {
-    _msaa.blitColorTo(_resolved);
+    resolve();
     // Task 8 inserts the bloom chain here.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, viewportY, _size.x, _size.y);
@@ -2401,9 +2521,7 @@ void PostChain::present(int viewportY, float exposure, float bloomStrength) {
     s.setFloat("uExposure", exposure);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _resolved.colorTexture());
-    glBindVertexArray(_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glBindVertexArray(0);
+    drawTriangle();
     glBindTexture(GL_TEXTURE_2D, 0);
     glEnable(GL_DEPTH_TEST);
 }
@@ -2420,9 +2538,10 @@ Add `GlFramebuffer.h/.cpp` and `PostChain.h/.cpp` to the CMake lists.
 
 ```cpp
     std::unique_ptr<GlShader> composite;  // HDR -> tone map -> sRGB (full pipeline only)
+    std::unique_ptr<GlShader> resolve;    // weighted MSAA resolve (full pipeline only)
     RenderOptions options;
     bool fullPipeline = false;  // shadows, reflection, HDR + bloom; false = basic path
-    int samples = 4;            // main-pass MSAA, clamped to GL_MAX_SAMPLES
+    int samples = 4;            // main-pass MSAA, clamped to what multisample textures support
 ```
 
 In `Render.cpp`, add `#include "GlFramebuffer.h"`, `#include "PostChain.h"` and `#include <cstdlib>`. Then add this to the anonymous namespace:
@@ -2431,15 +2550,23 @@ In `Render.cpp`, add `#include "GlFramebuffer.h"`, `#include "PostChain.h"` and 
 /// Builds the full pipeline's shaders and checks the GPU can render to RGBA16F with MSAA.
 /// On failure prints why and returns false: the basic path runs instead.
 bool enableFullPipeline(ContextData& d) {
-    GLint maxSamples = 0;
-    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-    d.samples = std::clamp(static_cast<int>(maxSamples), 0, 4);
+    // The main pass uses multisample *textures*, whose limits are separate from GL_MAX_SAMPLES.
+    GLint colorSamples = 0, depthSamples = 0;
+    glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &colorSamples);
+    glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &depthSamples);
+    d.samples = std::clamp(static_cast<int>(std::min(colorSamples, depthSamples)), 0, 4);
     auto composite = GlShader::build(shaders::kPostVs, shaders::compositeFs().c_str());
     if (composite.isError()) {
         std::fprintf(stderr, "render: composite shader failed (%s); using the basic path\n", composite.error().c_str());
         return false;
     }
     d.composite = composite();
+    auto resolve = GlShader::build(shaders::kPostVs, shaders::kResolveFs);
+    if (resolve.isError()) {
+        std::fprintf(stderr, "render: resolve shader failed (%s); using the basic path\n", resolve.error().c_str());
+        return false;
+    }
+    d.resolve = resolve();
     GlFramebuffer probe;
     if (!probe.create({4, 4, d.samples, GL_RGBA16F, true, false})) {
         std::fprintf(stderr, "render: RGBA16F x%d target incomplete; using the basic path\n", d.samples);
@@ -2506,7 +2633,7 @@ Expected: PASS for all.
 Run the smoke loop with `TASK=task7`.
 Expected:
 - No stderr output.
-- Edges of the pins, the lane and the gutter walls are clearly smoother than in `task6-*.png` (MSAA).
+- Edges of the pins, the lane and the gutter walls are clearly smoother than in `task6-*.png` (MSAA). So are the edges of the Neon Hall strips and of the ball's highlight (weighted resolve).
 
 Then run the basic path:
 
@@ -2549,7 +2676,7 @@ git commit -m "feat(render): HDR MSAA main pass with ACES tone mapping and a bas
 `Shaders.h`:
 
 ```cpp
-extern const char* const kBrightFs;     // keeps what exceeds uThreshold
+extern const char* const kBrightFs;     // keeps what exceeds uThreshold, clamped to kMaxBright
 extern const char* const kBloomDownFs;  // 13-tap downsample
 extern const char* const kBloomUpFs;    // 3x3 tent upsample (drawn additively)
 ```
@@ -2561,8 +2688,11 @@ const char* const kBrightFs = R"(#version 330 core
 in vec2 vUv;
 uniform sampler2D uSrc; uniform float uThreshold;
 out vec4 FragColor;
+// The ball's highlight reaches ~40 on a few pixels; unclamped, those pixels make the glow
+// flicker as the ball rolls. Neon (5) and anything a viewer reads as a light stay below this.
+const float kMaxBright = 16.0;
 void main() {
-    vec3 c = texture(uSrc, vUv).rgb;
+    vec3 c = min(texture(uSrc, vUv).rgb, vec3(kMaxBright));
     float peak = max(max(c.r, c.g), c.b);
     FragColor = vec4(c * max(peak - uThreshold, 0.0) / max(peak, 1e-4), 1.0);
 })";
@@ -2622,19 +2752,9 @@ In `enableFullPipeline`, after `d.composite = composite();`:
 
 - [ ] **Step 3: Allocate and run the chain**
 
-`PostChain.h`: add `#include <array>` and the member `std::array<GlFramebuffer, 4> _bloom;`. Also add a member `void drawTriangle() const;`.
+`PostChain.h`: add `#include <array>` and the member `std::array<GlFramebuffer, 4> _bloom;`. (`drawTriangle` exists since Task 7.)
 
-`PostChain.cpp`:
-
-```cpp
-void PostChain::drawTriangle() const {
-    glBindVertexArray(_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glBindVertexArray(0);
-}
-```
-
-In `ensureSize`, extend `ok`:
+In `PostChain.cpp`'s `ensureSize`, extend `ok`:
 
 ```cpp
     bool ok = _msaa.create({_size.x, _size.y, samples, GL_RGBA16F, true, false}) &&
@@ -2692,7 +2812,7 @@ In the composite part of `present`, change `s.setBool("uHasBloom", false);` to `
     glActiveTexture(GL_TEXTURE0);
 ```
 
-Replace the composite's own `glBindVertexArray(_vao); glDrawArrays(...); glBindVertexArray(0);` with `drawTriangle();`. After drawing, unbind unit 1 the same way.
+After the composite's `drawTriangle();`, unbind unit 1 the same way.
 
 - [ ] **Step 4: Build, test, smoke**
 
@@ -2703,8 +2823,9 @@ Run the smoke loop with `TASK=task8`.
 Expected:
 - No stderr output.
 - Neon Hall: the neon strips and wall screens have a soft glow halo.
-- Classic: only a faint glow around the ceiling panels.
+- Classic: only a faint glow around the ceiling panels (strength 1.5).
 - Outdoor: practically unchanged from `task7-outdoor.png`.
+- Throw a ball in Neon Hall and watch it roll: its highlight may glow a little, but it doesn't sparkle or flicker from frame to frame. If it does, lower `kMaxBright`.
 
 - [ ] **Step 5: Commit**
 
@@ -2728,7 +2849,7 @@ git commit -m "feat(render): bloom with a four-level downsample/upsample chain"
 - Consumes: `fitLightFrustum`, `shadowBox` and `kShadowTopY` (Task 1); `GlFramebuffer` (Task 7); `drawOpaque` and `PassParams` (Task 5).
 - Produces:
   - `std::vector<std::size_t> propsInBox(const std::vector<Prop>&, const SceneGeometry&, const Aabb&)`.
-  - `class ShadowMap { static constexpr int kSize = 2048; bool create(); void begin() const; void end() const; unsigned depthTexture() const; }`.
+  - `class ShadowMap { static constexpr int kWidth = 1024, kHeight = 4096; bool create(); void begin() const; void end() const; unsigned depthTexture() const; }`.
   - `ContextData::depth`.
 
 - [ ] **Step 1: Write the failing test**
@@ -2791,7 +2912,7 @@ std::vector<std::size_t> propsInBox(const std::vector<Prop>& props, const SceneG
 ```
 
 Run: `cmake --build build -j"$(nproc)" && ctest --test-dir build -R test_lighting --output-on-failure`
-Expected: PASS, 7 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 4: `ShadowMap` and the depth shader**
 
@@ -2808,7 +2929,8 @@ namespace Render {
 /// The key light's depth map, sampled through sampler2DShadow.
 class ShadowMap {
 public:
-    static constexpr int kSize = 2048;
+    // Same memory as 2048², shaped like the lane: fitLightFrustum puts the lane along y.
+    static constexpr int kWidth = 1024, kHeight = 4096;
     bool create();        // false if the depth framebuffer is incomplete
     void begin() const;   // binds, clears depth, turns on depth clamp and slope-scaled polygon offset
     void end() const;     // turns them off, binds the default framebuffer
@@ -2833,7 +2955,7 @@ namespace Bowlingbox {
 namespace Render {
 
 bool ShadowMap::create() {
-    return _fbo.create({kSize, kSize, 0, 0, false, true});
+    return _fbo.create({kWidth, kHeight, 0, 0, false, true});
 }
 
 void ShadowMap::begin() const {
@@ -2946,6 +3068,7 @@ Run the smoke loop with `TASK=task9`.
 Expected:
 - No stderr output.
 - Pins cast soft shadows on the deck, the ball has a shadow under it, and the ball returns shade the gutters.
+- The ball's shadow touches the ball where it meets the lane. Its outline is sharp near the foul line and still sharp at the pins: the map has the same resolution along the whole lane.
 - The lane isn't covered in a ceiling shadow.
 - There's no shadow acne (striped self-shadowing) on the lane or the pins.
 
@@ -3021,7 +3144,7 @@ Aabb reflectionBox(const SceneGeometry& g) {
 ```
 
 Run: `cmake --build build -j"$(nproc)" && ctest --test-dir build -R test_lighting --output-on-failure`
-Expected: PASS, 8 tests.
+Expected: PASS, 9 tests.
 
 - [ ] **Step 4: Reflection pass**
 
@@ -3136,15 +3259,18 @@ git commit -m "feat(render): planar reflection on the oiled lane"
 #define BOWLINGBOX_RENDER_GPUTIMER_H
 #include <array>
 #include <chrono>
+#include <cstddef>
 
 namespace Bowlingbox {
 namespace Render {
 
-/// GL_TIME_ELAPSED per pass. Results are read one frame late so the CPU never waits on them,
-/// and the averages go to stderr about once a second (BOWLINGBOX_RENDER_STATS=1).
+/// GL_TIME_ELAPSED per pass, BOWLINGBOX_RENDER_STATS=1. The queries rotate through kFrames sets.
+/// A result is read only when GL_QUERY_RESULT_AVAILABLE says it's ready, so the CPU never waits
+/// on the GPU (drivers often queue 2-3 frames). The averages go to stderr about once a second.
 class GpuTimer {
 public:
     enum Pass { Shadow, Reflection, Main, Post, kPassCount };
+    static constexpr std::size_t kFrames = 3;
     GpuTimer();
     ~GpuTimer();
     GpuTimer(const GpuTimer&) = delete;
@@ -3155,10 +3281,15 @@ public:
     void endFrame();
 
 private:
-    std::array<std::array<unsigned, kPassCount>, 2> _queries {};
-    std::array<std::array<bool, kPassCount>, 2> _issued {};
+    void collect(std::size_t set);  // adds every finished query of `set` to the sums
+
+    std::array<std::array<unsigned, kPassCount>, kFrames> _queries {};
+    std::array<std::array<bool, kPassCount>, kFrames> _issued {};  // begun, result not read yet
     std::array<double, kPassCount> _sumMs {};
-    int _write = 0, _frames = 0;
+    std::array<int, kPassCount> _samples {};  // results summed per pass since the last print
+    std::size_t _write = 0;
+    bool _open = false;  // begin() started a query that end() must close
+    int _frames = 0;
     std::chrono::steady_clock::time_point _last = std::chrono::steady_clock::now();
 };
 
@@ -3187,31 +3318,48 @@ GpuTimer::~GpuTimer() {
 }
 
 void GpuTimer::begin(Pass pass) {
-    const auto w = static_cast<std::size_t>(_write), p = static_cast<std::size_t>(pass);
-    glBeginQuery(GL_TIME_ELAPSED, _queries[w][p]);
-    _issued[w][p] = true;
+    const auto p = static_cast<std::size_t>(pass);
+    if (_issued[_write][p])  // the GPU is kFrames behind: drop this measurement rather than wait
+        return;
+    glBeginQuery(GL_TIME_ELAPSED, _queries[_write][p]);
+    _issued[_write][p] = true;
+    _open = true;
 }
 void GpuTimer::end() {
-    glEndQuery(GL_TIME_ELAPSED);
+    if (_open)
+        glEndQuery(GL_TIME_ELAPSED);
+    _open = false;
+}
+
+void GpuTimer::collect(std::size_t set) {
+    for (std::size_t p = 0; p < kPassCount; ++p) {
+        if (!_issued[set][p])
+            continue;
+        GLint ready = GL_FALSE;
+        glGetQueryObjectiv(_queries[set][p], GL_QUERY_RESULT_AVAILABLE, &ready);
+        if (!ready)
+            continue;
+        GLuint64 ns = 0;
+        glGetQueryObjectui64v(_queries[set][p], GL_QUERY_RESULT, &ns);
+        _sumMs[p] += static_cast<double>(ns) / 1e6;
+        ++_samples[p];
+        _issued[set][p] = false;
+    }
 }
 
 void GpuTimer::endFrame() {
-    const auto read = static_cast<std::size_t>(1 - _write);  // last frame's queries
-    for (std::size_t p = 0; p < kPassCount; ++p)
-        if (_issued[read][p]) {
-            GLuint64 ns = 0;
-            glGetQueryObjectui64v(_queries[read][p], GL_QUERY_RESULT, &ns);
-            _sumMs[p] += static_cast<double>(ns) / 1e6;
-            _issued[read][p] = false;
-        }
-    _write = 1 - _write;
+    for (std::size_t set = 0; set < kFrames; ++set)
+        if (set != _write)
+            collect(set);
+    _write = (_write + 1) % kFrames;
     ++_frames;
     const auto now = std::chrono::steady_clock::now();
     if (now - _last >= std::chrono::seconds(1)) {
-        const double n = _frames;
+        const auto avg = [this](Pass p) { return _samples[p] > 0 ? _sumMs[p] / _samples[p] : 0.0; };
         std::fprintf(stderr, "render: shadow %.2f ms, reflection %.2f ms, main %.2f ms, post %.2f ms (GPU, %d frames)\n",
-                     _sumMs[Shadow] / n, _sumMs[Reflection] / n, _sumMs[Main] / n, _sumMs[Post] / n, _frames);
+                     avg(Shadow), avg(Reflection), avg(Main), avg(Post), _frames);
         _sumMs = {};
+        _samples = {};
         _frames = 0;
         _last = now;
     }
@@ -3279,9 +3427,9 @@ to the terminal. Two environment variables help when something looks wrong:
 In `docs/ARCHITECTURE.md`, in the Render library section, add:
 
 ```markdown
-**Frame pipeline (full path).** `SceneRenderer::draw` runs, in order: a 2048² shadow map from the key
+**Frame pipeline (full path).** `SceneRenderer::draw` runs, in order: a 1024×4096 shadow map from the key
 light (fitted to `shadowBox`), a half-resolution mirror of the scene in the lane plane, the HDR main
-pass (RGBA16F, 4× MSAA) and `PostChain::present` (resolve, 4-level bloom, ACES tone map, sRGB) into
+pass (RGBA16F, 4× MSAA) and `PostChain::present` (weighted MSAA resolve, 4-level bloom, ACES tone map, sRGB) into
 the 3D band. The *basic path* draws the main pass straight into the window, with tone mapping done in
 the lit shader. It runs when `Context::create` finds no usable RGBA16F/MSAA target, a full-pipeline
 shader fails, or `BOWLINGBOX_RENDER=basic` is set.

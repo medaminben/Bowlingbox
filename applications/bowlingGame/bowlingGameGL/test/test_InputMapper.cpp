@@ -75,3 +75,69 @@ TEST(test_input_mapper, t_cycles_the_theme_in_every_phase) {
         EXPECT_EQ(InputMapper::keyDown('t', false, p), cmd(Type::CycleTheme));
     }
 }
+
+TEST(test_input_mapper, m_toggles_mute_in_every_phase) {
+    for (Phase p : {Phase::Aiming, Phase::Charging, Phase::Rolling, Phase::Settling, Phase::FrameDone,
+                    Phase::GameOver}) {
+        EXPECT_EQ(InputMapper::keyDown('M', false, p), cmd(Type::ToggleMute));
+        EXPECT_EQ(InputMapper::keyDown('m', false, p), cmd(Type::ToggleMute));
+        EXPECT_EQ(InputMapper::keyUp('M', p), cmd(Type::None));
+    }
+}
+
+TEST(test_input_mapper, plus_minus_and_b_control_the_sound_in_every_phase) {
+    for (Phase p : {Phase::Aiming, Phase::Charging, Phase::Rolling, Phase::Settling, Phase::FrameDone,
+                    Phase::GameOver}) {
+        for (int key : {int('+'), int('='), int(WXK_ADD), int(WXK_NUMPAD_ADD)})
+            EXPECT_EQ(InputMapper::keyDown(key, false, p), cmd(Type::VolumeUp)) << key;
+        for (int key : {int('-'), int(WXK_SUBTRACT), int(WXK_NUMPAD_SUBTRACT)})
+            EXPECT_EQ(InputMapper::keyDown(key, false, p), cmd(Type::VolumeDown)) << key;
+        EXPECT_EQ(InputMapper::keyDown('B', false, p), cmd(Type::ToggleAmbience));
+        EXPECT_EQ(InputMapper::keyDown('b', false, p), cmd(Type::ToggleAmbience));
+    }
+}
+
+TEST(test_key_latch, toggles_fire_once_per_press) {
+    InputMapper::KeyLatch latch;
+    EXPECT_TRUE(latch.accept('T', cmd(Type::CycleTheme)));
+    EXPECT_FALSE(latch.accept('T', cmd(Type::CycleTheme)));  // auto-repeat
+    latch.release('T');
+    EXPECT_TRUE(latch.accept('T', cmd(Type::CycleTheme)));
+}
+
+TEST(test_key_latch, movement_keys_repeat) {
+    InputMapper::KeyLatch latch;
+    const Command left = cmd(Type::MoveAim, -InputMapper::kKeyOffsetStep);
+    EXPECT_TRUE(latch.accept(WXK_LEFT, left));
+    EXPECT_TRUE(latch.accept(WXK_LEFT, left));
+}
+
+TEST(test_key_latch, keys_latch_independently) {
+    InputMapper::KeyLatch latch;
+    EXPECT_TRUE(latch.accept('M', cmd(Type::ToggleMute)));
+    EXPECT_TRUE(latch.accept('B', cmd(Type::ToggleAmbience)));
+    EXPECT_FALSE(latch.accept('M', cmd(Type::ToggleMute)));
+}
+
+TEST(test_key_latch, release_matches_either_case) {
+    InputMapper::KeyLatch latch;
+    EXPECT_TRUE(latch.accept('t', cmd(Type::CycleTheme)));
+    latch.release('T');
+    EXPECT_TRUE(latch.accept('t', cmd(Type::CycleTheme)));
+}
+
+TEST(test_key_latch, clear_forgets_held_keys) {
+    InputMapper::KeyLatch latch;
+    EXPECT_TRUE(latch.accept('T', cmd(Type::CycleTheme)));
+    latch.clear();  // focus lost: no key-up will come
+    EXPECT_TRUE(latch.accept('T', cmd(Type::CycleTheme)));
+}
+
+TEST(test_key_latch, only_theme_mute_and_ambience_are_toggles) {
+    EXPECT_TRUE(InputMapper::isToggle(Type::CycleTheme));
+    EXPECT_TRUE(InputMapper::isToggle(Type::ToggleMute));
+    EXPECT_TRUE(InputMapper::isToggle(Type::ToggleAmbience));
+    EXPECT_FALSE(InputMapper::isToggle(Type::VolumeUp));
+    EXPECT_FALSE(InputMapper::isToggle(Type::NewGame));
+    EXPECT_FALSE(InputMapper::isToggle(Type::None));
+}

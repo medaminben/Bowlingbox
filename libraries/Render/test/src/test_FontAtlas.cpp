@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace Bowlingbox::Render;
@@ -13,7 +14,7 @@ const FontAtlas& font() {
         auto baked = FontAtlas::bakeEmbedded();
         if (baked.isError())
             throw std::runtime_error(baked.error());
-        return baked();
+        return std::move(baked).value();
     }();
     return atlas;
 }

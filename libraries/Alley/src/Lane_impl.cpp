@@ -111,7 +111,7 @@ void LaneImpl::enter(Phase p) {
 
 void LaneImpl::finishThrow() {
     const int down = fallenPins();
-    if (!_game->roll(down)) {
+    if (_game->roll(down) != Score::RollStatus::Accepted) {
         // The scorer refused the roll (only possible when the game is already
         // over, which the FrameDone transition prevents). Fail safe.
         _lastPinsDown = -1;

@@ -5,6 +5,7 @@
 #include <Bowlingbox/Core/Core.h>
 #include <Bowlingbox/Score/IBowlingGame.h>
 #include <memory>
+#include <vector>
 
 namespace Bowlingbox {
 namespace Alley {
@@ -35,6 +36,8 @@ public:
     // Read.
     Snapshot snapshot() const;
     const Score::IScoreSheet& scoreSheet() const;
+    /// New physics contacts since the last call (for sound), oldest first.
+    std::vector<Impact> drainImpacts();
 
 private:
     std::unique_ptr<LaneImpl> _impl;

@@ -12,7 +12,7 @@ namespace {
 /// X | 7/ | 9- | X | -8 | 8/ | -6 | X | X | X81 = 167
 void play(IBowlingGame& game) {
     for (int pins : {10, 7, 3, 9, 0, 10, 0, 8, 8, 2, 0, 6, 10, 10, 10, 8, 1})
-        game.roll(pins);
+        EXPECT_EQ(game.roll(pins), Bowlingbox::Score::RollStatus::Accepted);
 }
 
 std::size_t lineCount(const std::string& text) {

@@ -65,6 +65,73 @@ TEST(test_lane_commands, cycle_theme_leaves_the_lane_alone) {
     EXPECT_FLOAT_EQ(after.power, before.power);
 }
 
+TEST(test_lane_commands, sound_commands_leave_the_lane_alone) {
+    Alley::Lane lane;
+    const Alley::Snapshot before = lane.snapshot();
+    for (auto type : {Command::Type::ToggleMute, Command::Type::VolumeUp, Command::Type::VolumeDown,
+                      Command::Type::ToggleAmbience})
+        EXPECT_TRUE(LaneCommands::execute({type}, lane).isValue());
+    EXPECT_EQ(lane.snapshot().phase, before.phase);
+}
+
+TEST(test_command_target, every_command_has_one_owner) {
+    using T = Command::Type;
+    EXPECT_EQ(targetOf(T::None), CommandTarget::None);
+    for (auto t : {T::MoveAim, T::RotateAim, T::StartCharge, T::Release, T::NewGame})
+        EXPECT_EQ(targetOf(t), CommandTarget::Lane);
+    EXPECT_EQ(targetOf(T::CycleTheme), CommandTarget::View);
+    for (auto t : {T::ToggleMute, T::VolumeUp, T::VolumeDown, T::ToggleAmbience})
+        EXPECT_EQ(targetOf(t), CommandTarget::Sound);
+    EXPECT_EQ(targetOf(T::Quit), CommandTarget::App);
+}
+
+TEST(test_sound_settings, after_applies_each_sound_command) {
+    SoundSettings s;
+    EXPECT_TRUE(s.after(Command::Type::ToggleMute).muted);
+    EXPECT_EQ(s.after(Command::Type::VolumeUp).volume, 90);
+    EXPECT_EQ(s.after(Command::Type::VolumeDown).volume, 70);
+    EXPECT_FALSE(s.after(Command::Type::ToggleAmbience).ambience);
+}
+
+TEST(test_sound_settings, after_ignores_other_commands) {
+    const SoundSettings s;
+    for (auto t : {Command::Type::None, Command::Type::NewGame, Command::Type::CycleTheme, Command::Type::Quit})
+        EXPECT_EQ(s.after(t), s);
+}
+
+TEST(test_sound_settings, volume_steps_by_ten_clamps_and_unmutes) {
+    SoundSettings s;
+    EXPECT_EQ(s.volume, SoundSettings::kDefaultVolume);
+    s.muted = true;
+    s.stepVolume(1);
+    EXPECT_EQ(s.volume, 90);
+    EXPECT_FALSE(s.muted);
+    s.stepVolume(5);
+    EXPECT_EQ(s.volume, 100);
+    s.stepVolume(-20);
+    EXPECT_EQ(s.volume, 0);
+}
+
+TEST(test_sound_settings, gain_is_the_squared_volume) {
+    SoundSettings s;
+    s.volume = 50;
+    EXPECT_FLOAT_EQ(s.gain(), 0.25f);
+    s.volume = 100;
+    EXPECT_FLOAT_EQ(s.gain(), 1.f);
+    s.volume = 0;
+    EXPECT_FLOAT_EQ(s.gain(), 0.f);
+}
+
+TEST(test_hud_text, sound_status_shows_volume_mute_and_ambience) {
+    SoundSettings s;
+    s.volume = 70;
+    EXPECT_EQ(HudText::soundStatus(s), "volume 70%");
+    s.muted = true;
+    EXPECT_EQ(HudText::soundStatus(s), "sound muted");
+    s.ambience = false;
+    EXPECT_EQ(HudText::soundStatus(s), "sound muted, no ambience");
+}
+
 // ------------------------------------------------------------ FollowCamera
 TEST(test_follow_camera, stays_home_while_aiming) {
     FollowCamera cam;
@@ -93,19 +160,19 @@ TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
     Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
 
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::result(s, sheet), "STRIKE!");
 
-    sheet.roll(3);
+    EXPECT_EQ(sheet.roll(3), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 3;
     EXPECT_EQ(HudText::result(s, sheet), "3 pins");
 
-    sheet.roll(7);
+    EXPECT_EQ(sheet.roll(7), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 7;
     EXPECT_EQ(HudText::result(s, sheet), "SPARE!");
 
-    sheet.roll(0);
+    EXPECT_EQ(sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 0;
     EXPECT_EQ(HudText::result(s, sheet), "Gutter");
 
@@ -116,15 +183,38 @@ TEST(test_hud_text, result_names_strikes_spares_and_gutters) {
 TEST(test_hud_text, ten_pins_after_a_gutter_ball_is_a_spare) {
     Score::ScoreCalculator sheet;
     auto s = snapshotIn(Phase::FrameDone);
-    sheet.roll(0);
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     s.lastPinsDown = 10;
     EXPECT_EQ(HudText::result(s, sheet), "SPARE!");
 }
 
+TEST(test_hud_text, throw_result_ten_after_a_gutter_ball_is_a_spare) {
+    Score::ScoreCalculator sheet;
+    auto s = snapshotIn(Phase::FrameDone);
+    EXPECT_EQ(sheet.roll(0), Bowlingbox::Score::RollStatus::Accepted);
+    s.lastPinsDown = 0;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Gutter);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
+    s.lastPinsDown = 10;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Spare);
+}
+
+TEST(test_hud_text, throw_result_names_strikes_and_counts_and_nothing_outside_frame_done) {
+    Score::ScoreCalculator sheet;
+    auto s = snapshotIn(Phase::FrameDone);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
+    s.lastPinsDown = 10;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Strike);
+    EXPECT_EQ(sheet.roll(4), Bowlingbox::Score::RollStatus::Accepted);
+    s.lastPinsDown = 4;
+    EXPECT_EQ(HudText::throwResult(s, sheet), HudText::ThrowResult::Pins);
+    EXPECT_EQ(HudText::throwResult(snapshotIn(Phase::Rolling), sheet), HudText::ThrowResult::None);
+}
+
 TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
     Score::ScoreCalculator sheet;
-    sheet.roll(4);
+    EXPECT_EQ(sheet.roll(4), Bowlingbox::Score::RollStatus::Accepted);
     auto s = snapshotIn(Phase::Settling);
     s.pinStanding.fill(true);
     s.pinStanding[0] = false;
@@ -134,7 +224,7 @@ TEST(test_hud_text, status_line_shows_phase_score_and_standing_pins) {
 // ------------------------------------------------------------ Hud
 TEST(test_hud, draws_scoreboard_hint_and_result_without_gl) {
     Score::ScoreCalculator sheet;
-    sheet.roll(10);
+    EXPECT_EQ(sheet.roll(10), Bowlingbox::Score::RollStatus::Accepted);
     auto s = snapshotIn(Phase::FrameDone);
     s.lastPinsDown = 10;
     RecordingCanvas canvas;
@@ -182,7 +272,8 @@ TEST(test_hud, layout_reserves_top_and_bottom_bands) {
 
 TEST(test_hud_text, controls_help_names_every_binding) {
     const std::string help = HudText::controlsHelp();
-    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q", "T: change the scenery"})
+    for (const char* key : {"Left / Right", "A / D", "Space", "N", "Esc", "Ctrl+Q", "T: change the scenery",
+                            "M: mute sound", "+ / -: volume", "B: background ambience"})
         EXPECT_NE(help.find(key), std::string::npos) << key;
 }
 

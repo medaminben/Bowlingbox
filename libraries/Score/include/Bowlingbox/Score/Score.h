@@ -17,7 +17,7 @@ public:
     ~ScoreCalculator() override;
 
 public:
-    bool roll(int pins) override;
+    RollStatus roll(int pins) override;
     void reset() override;
 
     std::vector<int> rolls() const override;

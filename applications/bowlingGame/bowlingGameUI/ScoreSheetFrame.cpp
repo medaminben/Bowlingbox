@@ -98,7 +98,9 @@ MainWindow::MainWindow(wxWindow* parent, std::unique_ptr<Bowlingbox::Score::IBow
 }
 
 void MainWindow::roll(int pins) {
-    _game->roll(pins);
+    // refresh() disables the pin buttons above pinsLeft(), so a refusal leaves nothing to redraw.
+    if (_game->roll(pins) != Bowlingbox::Score::RollStatus::Accepted)
+        return;
     refresh();
 }
 

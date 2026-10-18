@@ -1,6 +1,8 @@
 #include "BulletWorld.h"
 #include <btBulletDynamicsCommon.h>
+#include <algorithm>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 namespace Bowlingbox {
@@ -14,6 +16,17 @@ constexpr float kPinMass = 1.5f;
 constexpr float kSlowLinear = 0.05f;   // m/s
 constexpr float kSlowAngular = 0.2f;   // rad/s
 constexpr float kStandingCos = 0.7071f;  // cos 45°
+constexpr float kImpactRecordThreshold = 0.3f;  // N·s; a resting pin pushes ~0.12 per sub-step
+constexpr std::size_t kMaxImpacts = 256;
+// Spawn overlap makes the standing rack bounce for about a second. Those
+// contacts are pin-lane, not a hit; ignore pin contacts until the ball is
+// this close to the head pin (metres).
+constexpr float kPinImpactMinBallZ = kLane.headPinZ - 2.f;
+
+Body tagOf(const btCollisionObject* o) {
+    const int i = o->getUserIndex();
+    return (i >= 0 && i <= static_cast<int>(Body::Other)) ? static_cast<Body>(i) : Body::Other;
+}
 
 Pose toPose(const btTransform& t) {
     Pose p;
@@ -45,8 +58,12 @@ struct BulletWorld::Impl {
     std::unique_ptr<btRigidBody> ball;
     std::array<std::unique_ptr<btRigidBody>, 10> pins;
     std::array<bool, 10> inPlay {};
+    std::vector<Impact> impacts;
 
-    Impl() { build(); }
+    Impl() {
+        build();
+        world.setInternalTickCallback(&Impl::onTick, this);
+    }
     ~Impl() {
         // Bodies must leave the world before they are destroyed.
         for (int i = 0; i < 10; ++i)
@@ -62,14 +79,15 @@ struct BulletWorld::Impl {
         return shapes.back().get();
     }
 
-    void addStatic(btCollisionShape* shape, const btTransform& t, float friction, float rolling,
-                   float restitution) {
+    void addStatic(Body tag, btCollisionShape* shape, const btTransform& t, float friction,
+                   float rolling, float restitution) {
         motions.push_back(std::make_unique<btDefaultMotionState>(t));
         btRigidBody::btRigidBodyConstructionInfo info(0.f, motions.back().get(), shape);
         info.m_friction = friction;
         info.m_rollingFriction = rolling;
         info.m_restitution = restitution;
         statics.push_back(std::make_unique<btRigidBody>(info));
+        statics.back()->setUserIndex(static_cast<int>(tag));
         world.addRigidBody(statics.back().get());
     }
 
@@ -97,32 +115,33 @@ struct BulletWorld::Impl {
         // static surfaces use 1.0 and the dynamic bodies carry the real value.
         // Lane: approach + lane, top surface at y = 0.
         const float laneLen = d.length + d.approach;
-        addStatic(keep(std::make_unique<btBoxShape>(btVector3(d.halfWidth, 0.05f, laneLen / 2))),
+        addStatic(Body::Lane, keep(std::make_unique<btBoxShape>(btVector3(d.halfWidth, 0.05f, laneLen / 2))),
                   at(0.f, -0.05f, (d.length - d.approach) / 2), 1.f, 1.f, 1.f);
         // Gutters, gutterDepth below the lane.
         auto* gutter = keep(std::make_unique<btBoxShape>(
             btVector3(d.gutterWidth / 2, 0.05f, d.length / 2)));
         for (float sx : {-1.f, 1.f})
-            addStatic(gutter, at(sx * (d.halfWidth + d.gutterWidth / 2), -d.gutterDepth - 0.05f,
+            addStatic(Body::Gutter, gutter, at(sx * (d.halfWidth + d.gutterWidth / 2), -d.gutterDepth - 0.05f,
                                  d.length / 2), 1.f, 1.f, 1.f);
         // Gutter outer walls so the ball cannot leave the alley sideways. Inner
         // face at outerX + 0.06 = 0.825 > kMaxAimOffset + ballRadius (0.809).
         auto* wall = keep(std::make_unique<btBoxShape>(btVector3(0.02f, 0.15f, d.length / 2)));
         for (float sx : {-1.f, 1.f})
-            addStatic(wall, at(sx * (outerX + 0.08f), 0.05f, d.length / 2), 1.f, 1.f, 1.f);
+            addStatic(Body::Gutter, wall, at(sx * (outerX + 0.08f), 0.05f, d.length / 2), 1.f, 1.f, 1.f);
         // Pit behind the deck: floor, back wall, side walls.
         const float pitZ = d.length + kPitLength / 2;
-        addStatic(keep(std::make_unique<btBoxShape>(btVector3(outerX + 0.12f, 0.05f, kPitLength / 2))),
+        addStatic(Body::Pit, keep(std::make_unique<btBoxShape>(btVector3(outerX + 0.12f, 0.05f, kPitLength / 2))),
                   at(0.f, -kPitDepth - 0.05f, pitZ), 1.f, 1.f, 0.2f);
-        addStatic(keep(std::make_unique<btBoxShape>(btVector3(outerX + 0.12f, 0.6f, 0.05f))),
+        addStatic(Body::Pit, keep(std::make_unique<btBoxShape>(btVector3(outerX + 0.12f, 0.6f, 0.05f))),
                   at(0.f, -0.3f, d.length + kPitLength + 0.05f), 1.f, 1.f, 0.2f);
         auto* pitSide = keep(std::make_unique<btBoxShape>(btVector3(0.05f, 0.6f, kPitLength / 2)));
         for (float sx : {-1.f, 1.f})
-            addStatic(pitSide, at(sx * (outerX + 0.17f), -0.3f, pitZ), 1.f, 1.f, 0.2f);
+            addStatic(Body::Pit, pitSide, at(sx * (outerX + 0.17f), -0.3f, pitZ), 1.f, 1.f, 0.2f);
 
         // Ball.
         auto* ballShape = keep(std::make_unique<btSphereShape>(d.ballRadius));
         ball = makeDynamic(ballShape, kBallMass, at(0.f, d.ballRadius, kBallStartZ), 0.1f, 0.005f, 0.1f);
+        ball->setUserIndex(static_cast<int>(Body::Ball));
         ball->setCcdMotionThreshold(0.05f);
         ball->setCcdSweptSphereRadius(d.ballRadius * 0.8f);
         world.addRigidBody(ball.get());
@@ -139,6 +158,7 @@ struct BulletWorld::Impl {
             pins[i] = makeDynamic(pinShapePtr, kPinMass,
                                   at(positions[i].first, d.pinComHeight, positions[i].second),
                                   0.3f, 0.05f, 0.5f);
+            pins[i]->setUserIndex(static_cast<int>(Body::Pin));
             pins[i]->setCcdMotionThreshold(0.02f);
             pins[i]->setCcdSweptSphereRadius(0.03f);
             world.addRigidBody(pins[i].get());
@@ -158,6 +178,35 @@ struct BulletWorld::Impl {
     static bool slow(const btRigidBody& b) {
         return !b.isActive() || (b.getLinearVelocity().length() < kSlowLinear &&
                                  b.getAngularVelocity().length() < kSlowAngular);
+    }
+
+    static void onTick(btDynamicsWorld* w, btScalar) {
+        static_cast<Impl*>(w->getWorldUserInfo())->collectImpacts();
+    }
+
+    /// Bullet refreshes a new contact point once in the sub-step that adds it,
+    /// so lifetime <= 1 means "new in this sub-step".
+    void collectImpacts() {
+        const int manifolds = dispatcher.getNumManifolds();
+        for (int m = 0; m < manifolds; ++m) {
+            const btPersistentManifold* pm = dispatcher.getManifoldByIndexInternal(m);
+            const Body a = tagOf(pm->getBody0());
+            const Body b = tagOf(pm->getBody1());
+            for (int c = 0; c < pm->getNumContacts(); ++c) {
+                const btManifoldPoint& pt = pm->getContactPoint(c);
+                if (pt.getLifeTime() > 1 || pt.getAppliedImpulse() < kImpactRecordThreshold)
+                    continue;
+                if ((a == Body::Pin || b == Body::Pin) &&
+                    ball->getWorldTransform().getOrigin().z() < kPinImpactMinBallZ)
+                    continue;
+                if (impacts.size() >= kMaxImpacts)
+                    return;
+                const btVector3& p = pt.getPositionWorldOnB();
+                Impact im {std::min(a, b), std::max(a, b), static_cast<float>(pt.getAppliedImpulse()),
+                           {static_cast<float>(p.x()), static_cast<float>(p.y()), static_cast<float>(p.z())}};
+                impacts.push_back(im);
+            }
+        }
     }
 };
 
@@ -207,6 +256,7 @@ void BulletWorld::removePin(int i) {
         return;
     _p->world.removeRigidBody(_p->pins[i].get());
     _p->inPlay[i] = false;
+    _p->impacts.clear();
 }
 
 Pose BulletWorld::ballPose() const {
@@ -246,6 +296,10 @@ bool BulletWorld::allSlow() const {
         if (_p->inPlay[i] && !Impl::slow(*_p->pins[i]))
             return false;
     return true;
+}
+
+std::vector<Impact> BulletWorld::drainImpacts() {
+    return std::exchange(_p->impacts, {});
 }
 
 std::array<std::pair<float, float>, 10> BulletWorld::pinPositions() {

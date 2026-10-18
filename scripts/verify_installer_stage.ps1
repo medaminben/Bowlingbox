@@ -25,7 +25,8 @@ $ShippedDlls = @(
   "libBowlingboxScore.dll",
   "libBowlingboxCore.dll",
   "libBowlingboxAlley.dll",
-  "libBowlingboxRender.dll"
+  "libBowlingboxRender.dll",
+  "libBowlingboxAudio.dll"
 )
 $Shipped = @("BowlingGL.exe") + $ShippedDlls + @("LICENSE", "THIRD_PARTY_NOTICES.txt")
 

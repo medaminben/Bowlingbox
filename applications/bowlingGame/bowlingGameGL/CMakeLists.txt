@@ -9,10 +9,14 @@ add_library(bowlinggl_core STATIC
     HudText.h HudText.cpp
     Hud.h Hud.cpp
     SceneAdapter.h SceneAdapter.cpp
+    SoundDirector.h SoundDirector.cpp
+    SoundSettings.h
+    ThemeSounds.h ThemeSounds.cpp
 )
 target_include_directories(bowlinggl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(bowlinggl_core PUBLIC
     ${CMAKE_ROOT_NAME}::Alley
+    ${CMAKE_ROOT_NAME}::Audio
     ${CMAKE_ROOT_NAME}::Render
     wx::core
     wx::base
@@ -33,7 +37,7 @@ create_application(
 if(BUILD_TESTING)
     build_gtest_executable(
         NAME     test_bowlinggl
-        SRC      test/test_InputMapper.cpp test/test_Gameplay.cpp
+        SRC      test/test_InputMapper.cpp test/test_Gameplay.cpp test/test_SoundDirector.cpp
         DEPENDS  bowlinggl_core GTest::gtest GTest::gmock GTest::gmock_main
         DISCOVER ON
     )

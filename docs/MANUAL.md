@@ -81,6 +81,7 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | `ENABLE_CLANG_TIDY` | `OFF` | Run `clang-tidy` during compilation |
 | `BUILD_VERBOSE_OUTPUT` | `OFF` | Verbose makefiles and CMake variable dumps |
 | `BOWLINGBOX_FETCH_OFFLINE` | `OFF` | Use only already-downloaded dependencies |
+| `BOWLINGBOX_STATIC_RUNTIME` | `OFF` | MinGW GCC only: link the GCC runtime into every binary (used by the Windows installer build) |
 
 The dependency versions can be overridden with `BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
 `BOWLINGBOX_WX_VERSION` and `BOWLINGBOX_GTEST_VERSION`.
@@ -154,6 +155,9 @@ On the second ball of a frame, the pins that are still standing stay exactly whe
 | Throw | release Space | release the left button |
 | New game | N or Ctrl+N | Game ▸ New Game |
 | Change scenery | T | View ▸ Theme |
+| Mute / unmute sound | M | Sound ▸ Mute |
+| Volume up / down | + / − | Sound ▸ Volume up / down |
+| Background ambience on / off | B | Sound ▸ Background ambience |
 | Show controls | | Help ▸ Controls |
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
@@ -175,6 +179,15 @@ Outdoor. Press `T` or use View ▸ Theme to switch. Start in a theme with:
 ```
 
 An unknown name prints `unknown theme '<name>'; use neon, classic or outdoor` and starts Neon Hall.
+
+### Sound
+
+BowlingGL plays the ball, the pins, a chime for a strike and a bell for a spare, and a background
+ambience for each theme: a bowling alley (Classic), an arcade (Neon) and a garden (Outdoor).
+The Sound menu and keys control it: `M` mutes, `+` / `−` change the volume in 10% steps, `B` turns the
+background ambience off and on. The status bar shows the volume, or "sound muted". The game remembers
+these settings (`~/.BowlingGL` on Linux, the registry on Windows); `--mute` starts muted for one
+session. Without an audio device the game prints `sound disabled: <reason>` once and stays silent.
 
 ### Graphics
 
@@ -299,7 +312,7 @@ cmake --build build/tidy
 - C++20, no compiler extensions, warnings as errors.
 - Public API in `include/Bowlingbox/<Lib>/`, namespaced `Bowlingbox::<Lib>`, and exported with
   `BOWLINGBOX_<LIB>_API`. Everything else stays in `src/`.
-- Depend on interfaces (`IBowlingGame`, `IPhysicsWorld`, `ICanvas2D`, `ITerminal`). Choose the
+- Depend on interfaces (`IBowlingGame`, `IPhysicsWorld`, `ICanvas2D`, `IAudioOutput`, `ITerminal`). Choose the
   concrete class in `main` or a default constructor, and inject fakes in tests.
 - Commands that can be refused return `Result<>` and do not throw.
 - Test names must start with `test_` and be lowercase.

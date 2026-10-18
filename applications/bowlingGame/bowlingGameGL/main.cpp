@@ -13,7 +13,7 @@ public:
     bool OnInit() override {
         if (!wxApp::OnInit())  // parses the command line
             return false;
-        auto* frame = new BowlingFrame(_theme);
+        auto* frame = new BowlingFrame(_theme, _muted);
         frame->Show(true);
         return true;
     }
@@ -21,6 +21,7 @@ public:
     void OnInitCmdLine(wxCmdLineParser& parser) override {
         wxApp::OnInitCmdLine(parser);
         parser.AddLongOption("theme", "scenery: neon, classic or outdoor", wxCMD_LINE_VAL_STRING);
+        parser.AddLongSwitch("mute", "start with the sound muted");
     }
 
     bool OnCmdLineParsed(wxCmdLineParser& parser) override {
@@ -34,11 +35,13 @@ public:
             else
                 std::fprintf(stderr, "%s\n", HudText::unknownThemeMessage(name).c_str());
         }
+        _muted = parser.Found("mute");
         return true;
     }
 
 private:
     Bowlingbox::Render::ThemeId _theme = Bowlingbox::Render::ThemeId::NeonHall;
+    bool _muted = false;
 };
 
 wxIMPLEMENT_APP_NO_MAIN(BowlingApp);

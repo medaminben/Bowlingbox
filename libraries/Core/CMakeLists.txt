@@ -1,4 +1,4 @@
-project(Core VERSION 1.1.0 LANGUAGES CXX)
+project(Core VERSION 2.0.0 LANGUAGES CXX)
 
 set(TARGET_NAME Core)
 
@@ -7,18 +7,18 @@ set(TST_DISCOVER ON)
 # Manage project files
 ###############################################################
 set(TARGET_HEADERS
-    # private headers belong to "src"
+    # private headers belong in "src"
     # src/${TARGET_NAME}_impl.h
     # Public headers belong in: include/CMAKE_ROOT_NAME/...
     # Other components and applications will add "include"
-    # to their search path, and need to use  the following
+    # to their search path, and need to use the following
     # kind of path: #include <CMAKE_ROOT_NAME/PROJECT_NAME/...>
     include/${CMAKE_ROOT_NAME}/${TARGET_NAME}/${TARGET_NAME}.h
 )
 
 set(TARGET_SOURCES
     # Source files belong in "src",
-    # they will never been seen or used by other components,
+    # they will never be seen or used by other components,
     src/${TARGET_NAME}.cpp
     #src/${TARGET_NAME}_impl.cpp
 )

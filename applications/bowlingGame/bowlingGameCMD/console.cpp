@@ -2,12 +2,11 @@
 #include "bowlingScreen.h"
 #include "terminal.h"
 
-#include <memory>
-
 int main(void) {
-    // Setup: the concrete collaborators are chosen here and nowhere else.
+    // Setup: the concrete collaborators are chosen here and nowhere else, and live as long as main.
+    Bowlingbox::Score::ScoreCalculator game;
     Console::SystemTerminal terminal;
-    Console::Screen screen(std::make_shared<Bowlingbox::Score::ScoreCalculator>(), terminal);
+    Console::Screen screen(game, terminal);
     // loop
     screen.start();
     return 0;

@@ -3,6 +3,7 @@
 #include <Bowlingbox/Score/Score.h>
 #include <gtest/gtest.h>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 using namespace Bowlingbox::Alley;
@@ -27,11 +28,11 @@ int standingCount(const Snapshot& s) {
 /// and the lane is back in Aiming (or GameOver).
 void throwBall(Lane& lane, float offset, float angleDeg, float power) {
     const auto s = lane.snapshot();
-    lane.moveAim(offset - s.aimOffset);
-    lane.rotateAim(angleDeg - s.aimAngle);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(offset - s.aimOffset).isValue());
+    ASSERT_TRUE(lane.rotateAim(angleDeg - s.aimAngle).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(power));
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (int i = 0; i < 60 * 60; ++i) {
         const auto phase = lane.snapshot().phase;
         if (phase == Phase::Aiming || phase == Phase::GameOver)
@@ -83,9 +84,9 @@ TEST_F(test_alley, move_aim_clamps_to_range) {
 }
 
 TEST_F(test_alley, aim_while_rolling_is_an_error) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(0.25f);
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     EXPECT_EQ(lane.snapshot().phase, Phase::Rolling);
     auto r = lane.moveAim(0.1f);
     EXPECT_TRUE(r.isError());
@@ -93,7 +94,7 @@ TEST_F(test_alley, aim_while_rolling_is_an_error) {
 }
 
 TEST_F(test_alley, charging_power_follows_one_hertz_cosine) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(0.25f);
     EXPECT_NEAR(lane.snapshot().power, 0.5f, 1e-4f);
     lane.step(0.25f);
@@ -103,8 +104,8 @@ TEST_F(test_alley, charging_power_follows_one_hertz_cosine) {
 }
 
 TEST_F(test_alley, new_game_resets_everything) {
-    lane.moveAim(0.3f);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(0.3f).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     EXPECT_TRUE(lane.newGame().isValue());
     const auto s = lane.snapshot();
     EXPECT_EQ(s.phase, Phase::Aiming);
@@ -158,10 +159,10 @@ TEST_F(test_alley, second_ball_keeps_standing_pins) {
 }
 
 TEST_F(test_alley, fallen_pins_stay_visible_until_aiming) {
-    lane.moveAim(kPocketOffset);
-    lane.startCharge();
+    ASSERT_TRUE(lane.moveAim(kPocketOffset).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(chargeTimeFor(kStrikePower));
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (int i = 0; i < 60 * 20 && lane.snapshot().phase != Phase::FrameDone; ++i)
         lane.step(kDt);
     const auto s = lane.snapshot();
@@ -184,6 +185,50 @@ TEST_F(test_alley, twelve_strikes_score_three_hundred) {
         throwBall(lane, kPocketOffset, 0.f, kStrikePower);
     EXPECT_EQ(lane.snapshot().phase, Phase::GameOver);
     EXPECT_EQ(lane.scoreSheet().score(), 300);
+}
+
+TEST_F(test_alley, a_pocket_throw_reports_ball_pin_impacts) {
+    ASSERT_TRUE(lane.moveAim(kPocketOffset).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
+    lane.step(chargeTimeFor(kStrikePower));
+    ASSERT_TRUE(lane.release().isValue());
+    bool ballHitPin = false;
+    for (int i = 0; i < 60 * 4 && !ballHitPin; ++i) {
+        lane.step(kDt);
+        const auto impacts = lane.drainImpacts();
+        EXPECT_LE(impacts.size(), 256u);
+        for (const Impact& im : impacts) {
+            EXPECT_LE(im.a, im.b);
+            EXPECT_GE(im.impulse, 0.3f);
+            if (im.a == Body::Ball && im.b == Body::Pin)
+                ballHitPin = true;
+        }
+    }
+    EXPECT_TRUE(ballHitPin);
+    EXPECT_TRUE(lane.drainImpacts().empty());
+}
+
+TEST_F(test_alley, no_pin_impacts_before_the_ball_reaches_the_rack) {
+    ASSERT_TRUE(lane.startCharge().isValue());
+    lane.step(chargeTimeFor(0.05f));  // 4.4 m/s: about 4 s to the head pin
+    ASSERT_TRUE(lane.release().isValue());
+    for (int i = 0; i < 60; ++i)
+        lane.step(kDt);
+    for (const Impact& im : lane.drainImpacts()) {
+        EXPECT_NE(im.a, Body::Pin);
+        EXPECT_NE(im.b, Body::Pin);
+    }
+}
+
+TEST_F(test_alley, new_game_drops_pending_impacts) {
+    ASSERT_TRUE(lane.moveAim(kPocketOffset).isValue());
+    ASSERT_TRUE(lane.startCharge().isValue());
+    lane.step(chargeTimeFor(kStrikePower));
+    ASSERT_TRUE(lane.release().isValue());
+    for (int i = 0; i < 60 * 3; ++i)
+        lane.step(kDt);
+    ASSERT_TRUE(lane.newGame().isValue());
+    EXPECT_TRUE(lane.drainImpacts().empty());
 }
 
 // ------------------------------------------------------------ injected collaborators
@@ -222,6 +267,8 @@ public:
     bool ballInPit() const override { return _launched; }
     float ballSpeed() const override { return 0.f; }
     bool allSlow() const override { return true; }
+    std::vector<Impact> queued;
+    std::vector<Impact> drainImpacts() override { return std::exchange(queued, {}); }
 
 private:
     bool _launched = false;
@@ -236,11 +283,11 @@ public:
     int rollsUntilOver = 100;
     int pinsLeftValue = 10;
 
-    bool roll(int pins) override {
+    Bowlingbox::Score::RollStatus roll(int pins) override {
         if (isOver())
-            return false;
+            return Bowlingbox::Score::RollStatus::GameOver;
         recorded.push_back(pins);
-        return true;
+        return Bowlingbox::Score::RollStatus::Accepted;
     }
     void reset() override { recorded.clear(); }
     std::vector<int> rolls() const override { return recorded; }
@@ -252,9 +299,9 @@ public:
 };
 
 void throwAndWait(Lane& lane, float seconds) {
-    lane.startCharge();
+    ASSERT_TRUE(lane.startCharge().isValue());
     lane.step(0.25f);
-    lane.release();
+    ASSERT_TRUE(lane.release().isValue());
     for (float t = 0.f; t < seconds; t += kDt)
         lane.step(kDt);
 }
@@ -329,4 +376,15 @@ TEST(test_alley_injected, tenth_frame_strike_then_open_balls_plays_three_balls) 
     throwAndWait(lane, 2.f);
     EXPECT_EQ(lane.snapshot().phase, Phase::GameOver);
     EXPECT_EQ(lane.scoreSheet().score(), 17);
+}
+
+TEST(test_alley_injected, impacts_are_forwarded_once) {
+    auto l = makeInjectedLane();
+    l.world->queued.push_back({Body::Ball, Body::Pin, 2.f, {0.f, 0.2f, 17.4f}});
+    const auto first = l.lane->drainImpacts();
+    ASSERT_EQ(first.size(), 1u);
+    EXPECT_EQ(first[0].a, Body::Ball);
+    EXPECT_EQ(first[0].b, Body::Pin);
+    EXPECT_FLOAT_EQ(first[0].impulse, 2.f);
+    EXPECT_TRUE(l.lane->drainImpacts().empty());
 }

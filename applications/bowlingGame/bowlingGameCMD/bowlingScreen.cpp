@@ -1,12 +1,11 @@
 #include "bowlingScreen.h"
 #include "banner.h"
 #include "scoreGrid.h"
-#include <utility>
 
 namespace Console {
 
-Screen::Screen(std::shared_ptr<Bowlingbox::Score::IBowlingGame> game, ITerminal& terminal)
-    : _session(std::move(game)), _terminal(terminal) {}
+Screen::Screen(Bowlingbox::Score::IBowlingGame& game, ITerminal& terminal)
+    : _session(game), _terminal(terminal) {}
 
 void Screen::start() {
     while (!_session.quit()) {

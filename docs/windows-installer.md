@@ -12,7 +12,8 @@ wxWidgets.
   libBowlingboxScore.dll     ┐
   libBowlingboxCore.dll      │ the Bowlingbox libraries, shared
   libBowlingboxAlley.dll     │ (Bullet3 linked into Alley)
-  libBowlingboxRender.dll    ┘ (glad and stb linked into Render)
+  libBowlingboxRender.dll    │ (glad and stb linked into Render)
+  libBowlingboxAudio.dll     ┘ (miniaudio linked into Audio)
   LICENSE
   THIRD_PARTY_NOTICES.txt
 ```
@@ -72,14 +73,14 @@ after the stage check.
 
 ### The stage check
 
-The staged folder must hold exactly the seven files above. Every DLL they
+The staged folder must hold exactly the eight files above. Every DLL they
 import must be shipped beside them or be on the script's list of Windows system
 DLLs, and none may import `libstdc++`, `libgcc`, `libwinpthread` or `libssp`.
 A new import fails the build with its name; add it to the list only if it is a
 part of every Windows 10/11 installation.
 
 `scripts\test_verify_installer_stage.ps1` (run by the workflow after the build)
-proves the check still rejects a stale file, an objdump output it cannot parse,
+proves the check still rejects a stale file, objdump output it cannot parse,
 and a foreign import. It also runs on Linux with PowerShell 7 and binutils
 against a downloaded `BowlingBox_stage` artifact.
 
@@ -89,7 +90,7 @@ After changing `licenses/glm.txt`, `glad.txt` or `mingw-w64.txt`, rebuild the
 notices file: keep its header (everything before the first licence text) and
 append the three files in that order, separated by two blank lines.
 
-## Hand check list
+## Manual checklist
 
 CI cannot start the game (its Windows runner has no OpenGL 3.3). Before handing
 out an installer, on a Windows 10/11 PC with a GPU:

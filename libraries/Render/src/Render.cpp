@@ -44,7 +44,7 @@ bool enableFullPipeline(ContextData& d) {
         std::fprintf(stderr, "render: composite shader failed (%s); using the basic path\n", composite.error().c_str());
         return false;
     }
-    d.composite = composite();
+    d.composite = std::move(composite).value();
     struct Stage {
         std::unique_ptr<GlShader>& slot;
         const char* vs;
@@ -60,14 +60,14 @@ bool enableFullPipeline(ContextData& d) {
             std::fprintf(stderr, "render: %s shader failed (%s); using the basic path\n", st.name, built.error().c_str());
             return false;
         }
-        st.slot = built();
+        st.slot = std::move(built).value();
     }
     auto resolve = GlShader::build(shaders::kPostVs, shaders::kResolveFs);
     if (resolve.isError()) {
         std::fprintf(stderr, "render: resolve shader failed (%s); using the basic path\n", resolve.error().c_str());
         return false;
     }
-    d.resolve = resolve();
+    d.resolve = std::move(resolve).value();
     // The shadow map is 1024x4096.
     GLint maxTexture = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexture);
@@ -111,9 +111,9 @@ Result<std::unique_ptr<Context>> Context::create() {
     if (sky.isError())
         return Bowlingbox::Core::Error<>("sky shader: " + sky.error());
     std::unique_ptr<Context> ctx(new Context());
-    ctx->_d->lit = lit();
-    ctx->_d->flat = flat();
-    ctx->_d->sky = sky();
+    ctx->_d->lit = std::move(lit).value();
+    ctx->_d->flat = std::move(flat).value();
+    ctx->_d->sky = std::move(sky).value();
     // Samplers of different types must not share a texture unit.
     ctx->_d->lit->use();
     ctx->_d->lit->setInt("uShadowMap", 1);
@@ -126,8 +126,8 @@ Result<std::unique_ptr<Context>> Context::create() {
         std::fprintf(stderr, "render: HUD font unavailable (%s); using the built-in font\n", font.error().c_str());
     } else {
         ContextData& d = *ctx->_d;
-        d.text = text();
-        d.font = font();
+        d.text = std::move(text).value();
+        d.font = std::move(font).value();
         d.fontTexture.create();
         glBindTexture(GL_TEXTURE_2D, d.fontTexture.id());
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
