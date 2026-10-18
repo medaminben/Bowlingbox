@@ -22,4 +22,4 @@ Freesound sources were converted from the page's high-quality preview
 | `theme_switch.wav` | https://kenney.nl/assets/interface-sounds | `switch_002.ogg` | Kenney (kenney.nl) | CC0 1.0 | |
 | `ambient_neon.wav` | https://freesound.org/s/655942/ | `Arcade Ambience FX.wav` (preview) | Santi171 | CC0 1.0 | `--start 76 --length 32 --loop --xfade 2 --rms -20` |
 | `ambient_classic.wav` | https://freesound.org/s/667757/ | `Bowling Alley Ambience 01b.wav` (preview) | dagray | CC0 1.0 | `--start 832 --length 42 --loop --xfade 2 --rms -20 --limit` |
-| `ambient_outdoor.wav` | https://freesound.org/s/459489/ | `GARDEN - 2` (preview) | SamuelGremaud | CC0 1.0 | `--start 30 --length 32 --loop --xfade 2 --rms -20` |
+| `ambient_outdoor.wav` | https://freesound.org/s/459489/ | `GARDEN - 2` (preview) | SamuelGremaud | CC0 1.0 | `--start 0 --length 35 --loop --xfade 2 --rms -20 --limit` (birds only; an ambulance starts at 35 s) |
