@@ -111,6 +111,10 @@ jobs:
             Get-ChildItem build/windows/dist | Format-Table Name -AutoSize
             throw "Expected $installer for release $env:TAG."
           }
-          gh release upload $env:TAG $installer --clobber
+          # The unversioned copy keeps releases/latest/download/BowlingBox_Setup.exe stable.
+          New-Item -ItemType Directory -Force build/windows/dist/latest | Out-Null
+          $latest = "build/windows/dist/latest/BowlingBox_Setup.exe"
+          Copy-Item $installer $latest -Force
+          gh release upload $env:TAG $installer $latest --clobber
           if ($LASTEXITCODE -ne 0) { throw "gh release upload failed for $env:TAG" }
-          "Attached $(Split-Path $installer -Leaf) to release $env:TAG." >> $env:GITHUB_STEP_SUMMARY
+          "Attached $(Split-Path $installer -Leaf) and BowlingBox_Setup.exe to release $env:TAG." >> $env:GITHUB_STEP_SUMMARY
