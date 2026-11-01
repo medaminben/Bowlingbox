@@ -2,7 +2,7 @@
 # build and ctest with the "ci" preset (CMakePresets.json: Debug, wx required,
 # no scaffold), including the GUI tests (xvfb) and the install smoke test (ctest
 # label "install").
-# A caller of a reusable workflow cannot set timeout-minutes (the old CI had 45).
+# Each build job has buildkit's default time limit of 45 minutes.
 # Until buildkit is released as medaminben/buildkit v2.0.0, the workflow and
 # buildkit itself come from unitpro's feature/buildkit branch.
 name: CI
@@ -33,9 +33,10 @@ jobs:
       compilers: "gcc"
       # wxWidgets with OpenGL (BowlingGL, BowlingDisplay), Bullet and glm as
       # installed packages, so nothing is built from source. GTK3 and the GL
-      # headers stay for a wx source build. xvfb comes with the xvfb input. Audio needs no package: miniaudio
+      # headers stay for a wx source build. Audio needs no package: miniaudio
       # loads ALSA/PulseAudio at run time.
       apt-packages: "libwxgtk3.2-dev libgtk-3-dev libgl1-mesa-dev libbullet-dev libglm-dev"
+      # Installs xvfb and runs ctest under xvfb-run, for the GUI tests.
       xvfb: true
       # clang-format stays off until the sources are checked against the style
       # (clang-format was not available where this was set up).
