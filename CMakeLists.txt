@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.29)
 
 # buildkit provides the CMake modules (create_library, dev_dependency, ...).
 # Set BUILDKIT_DIR to a local checkout; otherwise the loader fetches its tag.
-# Until buildkit is released as medaminben/buildkit v2.0.0, fresh clones and
-# CI fetch unitpro's feature/buildkit branch instead.
+# TEMPORARY until buildkit v2.0.0 — remove (plan Task 12 Step 5)
+# Until buildkit is released as medaminben/buildkit v2.0.0, fresh clones and the
+# installer/version workflows fetch unitpro's feature/buildkit branch instead.
 if(NOT DEFINED BUILDKIT_REPOSITORY)
     set(BUILDKIT_REPOSITORY https://github.com/medaminben/unitpro.git)
 endif()
@@ -15,6 +16,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/buildkit.cmake)
 # The version comes from the nearest vX.Y.Z git tag. Without git or tags the
 # fallback below is used; -DBOWLINGBOX_VERSION=X.Y.Z sets it by hand.
 if(NOT BOWLINGBOX_VERSION)
+    # ci/next-version.sh reads the FALLBACK line below; keep it on a line of its own.
     buildkit_git_version(${CMAKE_CURRENT_SOURCE_DIR} BOWLINGBOX_VERSION BOWLINGBOX_VERSION_FULL
         FALLBACK 1.4.0)
 else()
@@ -37,18 +39,20 @@ set(CMAKE_ROOT_NAME ${PROJECT_NAME})
 # ---------------------------------------------------------------------------
 option(BUILD_SHARED_LIBS     "Build project libraries as shared libraries" ON)
 option(BUILD_APPS            "Build applications"                          ON)
-option(BUILD_WX_UI           "Build wxWidgets based applications"          ON)
+# BUILD_WX_UI: AUTO (default) builds the wx applications when wxWidgets is found,
+# ON requires wxWidgets, OFF leaves them out.
+set(BUILD_WX_UI AUTO CACHE STRING "Build wxWidgets based applications (AUTO, ON, OFF)")
+set_property(CACHE BUILD_WX_UI PROPERTY STRINGS AUTO ON OFF)
 option(BUILD_VERBOSE_OUTPUT  "Build with verbose output"                   OFF)
 option(BUILD_TESTING         "Build tests"                                 ON)
 option(ENABLE_COVERAGE       "Enable code coverage instrumentation"        OFF)
 option(ENABLE_CLANG_TIDY     "Run clang-tidy during compilation"           OFF)
 option(GENERATE_SCAFFOLD     "Generate missing libraries from templates"   ON)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# Bowlingbox's cmake/ before buildkit's folders, which the loader appended.
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-# By path: buildkit's cmake/ comes first on CMAKE_MODULE_PATH and has a
-# Common.cmake of its own.
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Common.cmake)
+include(Common)
 
 # Libraries to generate / include. Add new names here for scaffold generation.
 set(BOWLINGBOX_LIBRARIES
@@ -83,6 +87,20 @@ if(BUILD_APPS AND EXISTS "${applications_dir}/CMakeLists.txt")
 endif()
 
 include(InstallConfig)
+
+# Install smoke test: installs this build tree and builds a consumer project
+# against the package (ci/install-smoke.sh). Linux only (bash, LD_LIBRARY_PATH).
+if(BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    get_filename_component(_bowlingbox_cmake_bin "${CMAKE_COMMAND}" DIRECTORY)
+    add_test(NAME install_smoke
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/ci/install-smoke.sh ${CMAKE_BINARY_DIR})
+    set_tests_properties(install_smoke PROPERTIES
+        LABELS install
+        # The cmake of this build, and ASan builds: the consumer is not
+        # instrumented, so the ASan runtime is not first in its link order.
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${_bowlingbox_cmake_bin};ASAN_OPTIONS=string_append::verify_asan_link_order=0")
+endif()
 
 if(BUILD_VERBOSE_OUTPUT)
     dump_cmake_vars(BuildLogEnd.log)

@@ -10,4 +10,5 @@ set(GLM_BUILD_INSTALL OFF)
 set(GLM_ENABLE_CXX_20 ON)
 
 dev_dependency(glm REQUIRED
-    FETCH_URL https://github.com/g-truc/glm/archive/refs/tags/1.0.1.tar.gz)
+    FETCH_URL https://github.com/g-truc/glm/archive/refs/tags/1.0.1.tar.gz
+    INSTALL_HINT "Debian/Ubuntu: apt install libglm-dev; MSYS2: pacman -S mingw-w64-ucrt-x86_64-glm")

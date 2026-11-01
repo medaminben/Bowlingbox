@@ -19,7 +19,8 @@ endforeach()
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 dev_dependency(Bullet REQUIRED
-    FETCH_URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz)
+    FETCH_URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
+    INSTALL_HINT "Debian/Ubuntu: apt install libbullet-dev; MSYS2: pacman -S mingw-w64-ucrt-x86_64-bullet")
 
 unset(CMAKE_POLICY_VERSION_MINIMUM)
 set(BUILD_SHARED_LIBS ${_bowlingbox_saved_shared})

@@ -51,7 +51,11 @@
       "displayName": "Bowlingbox CI",
       "inherits": "base",
       "binaryDir": "${sourceDir}/build/ci",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GENERATE_SCAFFOLD": "OFF",
+        "BUILD_WX_UI": "ON"
+      }
     }
   ],
   "buildPresets": [

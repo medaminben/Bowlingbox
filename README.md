@@ -65,7 +65,7 @@ also has `BowlingBox_Setup_<version>.exe`).
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (system wxWidgets, or fetched and built) |
+| `BUILD_WX_UI` | `AUTO` | Build `BowlingGL` and `BowlingDisplay` (system wxWidgets, or fetched and built); `ON` requires wxWidgets, `OFF` leaves them out |
 | `BUILD_TESTING` | `ON` | Build the GoogleTest suites |
 | `BUILD_SHARED_LIBS` | `ON` | Build the Bowlingbox libraries as shared libraries |
 

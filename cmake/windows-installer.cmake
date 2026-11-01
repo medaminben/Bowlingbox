@@ -4,8 +4,10 @@
 set(CMAKE_BUILD_TYPE          Release CACHE STRING "")
 set(BUILD_SHARED_LIBS         ON      CACHE BOOL "")
 set(BUILD_APPS                ON      CACHE BOOL "")
-set(BUILD_WX_UI               ON      CACHE BOOL "")
+set(BUILD_WX_UI               ON      CACHE STRING "")
 set(BUILD_TESTING             ON      CACHE BOOL "")
 set(GENERATE_SCAFFOLD         OFF     CACHE BOOL "")
 set(BOWLINGBOX_USE_SYSTEM_WX  OFF     CACHE BOOL "")
+# Third-party code static: an MSYS2 Bullet would be shared and not staged.
+set(CMAKE_DISABLE_FIND_PACKAGE_Bullet ON CACHE BOOL "")
 set(BOWLINGBOX_STATIC_RUNTIME ON      CACHE BOOL "")

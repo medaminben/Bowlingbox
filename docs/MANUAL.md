@@ -30,7 +30,7 @@ sudo apt install build-essential cmake git ninja-build \
 ```
 
 - `libgtk-3-dev`, `libgl1-mesa-dev`, `libx11-dev` and `zlib1g-dev` are needed for the wx apps
-  (`BUILD_WX_UI=ON`): BowlingGL and BowlingDisplay.
+  (`BUILD_WX_UI`): BowlingGL and BowlingDisplay.
 
 The CMake modules come from [buildkit](https://github.com/medaminben/unitpro). The first configure
 fetches it into the build directory; to use a local checkout instead, set `BUILDKIT_DIR` (as an
@@ -65,7 +65,7 @@ Executables are written to `<build-dir>/bin/` (`build/bin/` with the commands ab
 |---|---|
 | `BowlingGL` | 3D bowling game (wxWidgets + OpenGL) |
 | `BowlingConsole` | Text bowling score keeper |
-| `BowlingDisplay` | wx score display (with `BUILD_WX_UI=ON`) |
+| `BowlingDisplay` | wx score display (with `BUILD_WX_UI` `AUTO` or `ON`) |
 | `test_*` | GoogleTest suites |
 
 ### Build options
@@ -75,7 +75,7 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (uses the system wxWidgets, or fetches it; without wxWidgets or OpenGL they are left out with a warning) |
+| `BUILD_WX_UI` | `AUTO` | Build `BowlingGL` and `BowlingDisplay` (uses the system wxWidgets, or fetches it). `AUTO`: without wxWidgets or OpenGL they are left out with a warning. `ON`: wxWidgets is required. `OFF`: not built |
 | `BOWLINGBOX_USE_SYSTEM_WX` | `ON` | Use an installed wxWidgets if found; `OFF` always builds it from source |
 | `BUILD_TESTING` | `ON` | Fetch GoogleTest and build the test executables |
 | `BUILD_SHARED_LIBS` | `ON` | Bowlingbox libraries as shared (`.so` / `.dll`) instead of static |
@@ -231,7 +231,7 @@ terminal width. When the tenth frame is complete, the final score is shown.
 
 ## 5. BowlingDisplay (wx)
 
-The default wx build (`BUILD_WX_UI=ON`) produces `./build/bin/BowlingDisplay` next to BowlingGL.
+The default wx build produces `./build/default/bin/BowlingDisplay` next to BowlingGL.
 It is a form-based score display backed by the same `ScoreCalculator`. It uses `wx::core` and
 `wx::base`, not OpenGL.
 

@@ -74,7 +74,8 @@ endif()
 include(BulletSupport)   # Bowlingbox::Alley always needs it (REQUIRED)
 include(GlmSupport)      # Bowlingbox::Render always needs it (REQUIRED)
 # The wx applications need wxWidgets; BowlingConsole and the libraries do not
-# (OPTIONAL). BOWLINGBOX_WX_AVAILABLE tells applications/ whether to add them.
+# (OPTIONAL with BUILD_WX_UI=AUTO, REQUIRED with ON). BOWLINGBOX_WX_AVAILABLE
+# tells applications/ whether to add them.
 set(BOWLINGBOX_WX_AVAILABLE FALSE)
 if(BUILD_WX_UI)
     include(WxSupport)

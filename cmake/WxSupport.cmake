@@ -7,16 +7,25 @@
 #      (libgl1-mesa-dev); on Windows (MinGW) nothing beyond the compiler.
 # Set BOWLINGBOX_USE_SYSTEM_WX=OFF to skip 1 and 2 and always build from source.
 #
-# wxWidgets is OPTIONAL: only BowlingGL and BowlingDisplay need it. Without it
-# (or without OpenGL) BOWLINGBOX_WX_AVAILABLE stays FALSE and the wx
-# applications are left out with a warning; the libraries and BowlingConsole
-# still build.
+# Only BowlingGL and BowlingDisplay need wxWidgets. With BUILD_WX_UI=AUTO (the
+# default) it is OPTIONAL: without it (or without OpenGL)
+# BOWLINGBOX_WX_AVAILABLE stays FALSE and the wx applications are left out with
+# a warning; the libraries and BowlingConsole still build. With BUILD_WX_UI=ON
+# it is REQUIRED and its absence stops the configure.
 option(BOWLINGBOX_USE_SYSTEM_WX "Use an installed wxWidgets if one is found" ON)
+
+if(BUILD_WX_UI STREQUAL "AUTO")
+    set(_bowlingbox_wx_mode OPTIONAL)
+    set(_bowlingbox_wx_level WARNING)
+else()
+    set(_bowlingbox_wx_mode REQUIRED)
+    set(_bowlingbox_wx_level FATAL_ERROR)
+endif()
 
 find_package(OpenGL QUIET)
 if(NOT OpenGL_FOUND)
-    message(WARNING "OpenGL not found: building without the wxWidgets applications. "
-                    "Install with redev/bootstrap/bootstrap.sh")
+    message(${_bowlingbox_wx_level} "OpenGL not found: cannot build the wxWidgets applications. "
+            "Install with redev/bootstrap/bootstrap.sh (Debian/Ubuntu: apt install libgl1-mesa-dev)")
     return()
 endif()
 
@@ -51,10 +60,11 @@ if(NOT BOWLINGBOX_USE_SYSTEM_WX)
     set(CMAKE_DISABLE_FIND_PACKAGE_wxWidgets TRUE)
 endif()
 
-dev_dependency(wxWidgets VERSION 3.2 OPTIONAL
+dev_dependency(wxWidgets VERSION 3.2 ${_bowlingbox_wx_mode}
     COMPONENTS gl core base
     FETCH_URL https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.8/wxWidgets-3.2.8.tar.bz2
-    FETCH_CACHE ${_bowlingbox_wx_cache})
+    FETCH_CACHE ${_bowlingbox_wx_cache}
+    INSTALL_HINT "Debian/Ubuntu: apt install libwxgtk3.2-dev; MSYS2: pacman -S mingw-w64-ucrt-x86_64-wxwidgets3.2-msw")
 
 unset(CMAKE_FIND_PACKAGE_PREFER_CONFIG)
 unset(CMAKE_DISABLE_FIND_PACKAGE_wxWidgets)
@@ -89,6 +99,6 @@ endif()
 if(TARGET wx::base AND TARGET wx::core AND TARGET wx::gl)
     set(BOWLINGBOX_WX_AVAILABLE TRUE)
 else()
-    message(WARNING "wxWidgets found, but without the targets wx::base, wx::core and "
-                    "wx::gl: building without the wxWidgets applications")
+    message(${_bowlingbox_wx_level} "wxWidgets found, but without the targets wx::base, "
+            "wx::core and wx::gl: cannot build the wxWidgets applications")
 endif()

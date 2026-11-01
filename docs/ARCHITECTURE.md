@@ -256,7 +256,7 @@ entry point.
 
 ### BowlingDisplay (`bowlingGameUI`)
 
-A wxWidgets frame that shows a `ScoreCalculator`. It is built with `BUILD_WX_UI=ON`, next to BowlingGL,
+A wxWidgets frame that shows a `ScoreCalculator`. It is built with the wx apps (`BUILD_WX_UI`), next to BowlingGL,
 and links `wx::core` and `wx::base` (not OpenGL). The window is laid out in C++ with sizers.
 `BowlingDisplay::MainWindow` (`ScoreSheetFrame.*`) names every widget so `wxWindow::FindWindowByName` finds it, and draws
 the sheet from `Score::frames()`.
@@ -442,7 +442,7 @@ the installed interface. With the Windows installer the licence files are instal
 | `test_bowlingbox_audio` | The sound catalogue (every sound embedded and decodable within its length limit, loop flags, total size under 6 MB) and the silent output; no audio device is opened |
 | `test_bowlinggl` | Input mapping, lane commands, fixed time step, follow camera, scene adapter, HUD layout, text and drawing, `SoundDirector` against a recording output, `SoundSettings`; no window is opened |
 | `test_bowlingconsole` | `Session` (menu, rolls, game over, input trimming), score grid text against golden output, banner, and the game loop with a scripted terminal |
-| `test_bowlingdisplay` | The wx score sheet: pin buttons, tenth frame, game over, restart (only with `BUILD_WX_UI=ON`). Needs a display or `xvfb-run` |
+| `test_bowlingdisplay` | The wx score sheet: pin buttons, tenth frame, game over, restart (only with the wx apps). Needs a display or `xvfb-run` |
 
 Anything that needs a real window or GL context is checked by hand with the checklist in
 [applications/bowlingGame/README.md](../applications/bowlingGame/README.md).
@@ -450,11 +450,13 @@ Anything that needs a real window or GL context is checked by hand with the chec
 ## Continuous integration
 
 - **`.github/workflows/ci.yml`**: on pushes to `main` and `feature/**`, and on pull requests to
-  `main`, Ubuntu 24.04 with CMake 3.31 and Ninja:
-  - configures with Debug, `BUILD_WX_UI=ON` and `GENERATE_SCAFFOLD=OFF`
-  - builds, then runs `xvfb-run -a ctest --label-regex unit`
-  - installs the libraries and builds `ci/consumer` against them (`ci/install-smoke.sh`)
-  - caches the FetchContent downloads
+  `main`, calls buildkit's reusable CI workflow (Ubuntu, CMake 3.31, Ninja, GCC):
+  - configures the `ci` preset: Debug, `BUILD_WX_UI=ON` and `GENERATE_SCAFFOLD=OFF`, with
+    wxWidgets, Bullet and GLM as installed packages
+  - builds, then runs `ctest --preset ci` under `xvfb-run -a`; this includes the `install_smoke`
+    test (label `install`), which installs the libraries and builds `ci/consumer` against them
+    (`ci/install-smoke.sh`)
+  - checks the CMake style and, on pull requests, the commit messages
   - checks out the full history, because CMake reads the version from the tags
 - **`.github/workflows/automerge.yml`**: squash-merges a pull request labelled `automerge` once CI
   succeeds on it, and only if the pull request still points at the tested commit. It then calls
