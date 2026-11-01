@@ -21,8 +21,9 @@ Aim, charge and throw; Bullet3 decides which pins fall; Bowlingbox keeps the sco
 | Quit | Esc or Ctrl+Q | Game ▸ Quit |
 
 Prerequisites (Debian/Ubuntu): `sudo apt install build-essential cmake libgtk-3-dev libgl1-mesa-dev`.
-Bullet3 3.25, GLM and GoogleTest are downloaded at configure time, and wxWidgets 3.2.8 too unless
-`libwxgtk3.2-dev` is installed (`BOWLINGBOX_FETCH_OFFLINE=ON` reuses a populated `build/_deps`).
+Installed Bullet (`libbullet-dev`), GLM (`libglm-dev`) and wxWidgets (`libwxgtk3.2-dev`) are used
+if present; otherwise Bullet3 3.25, GLM 1.0.1 and wxWidgets 3.2.8 are downloaded at configure time,
+like GoogleTest (`BUILDKIT_OFFLINE=ON` never downloads).
 
 ```bash
 cmake -S . -B build

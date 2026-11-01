@@ -352,28 +352,31 @@ The canvas never changes game state directly. Every change goes through a `Comma
 
 ### Layout and conventions
 
-- The root `CMakeLists.txt` reads the version (`cmake/GitVersion.cmake`), sets the project
+- The CMake modules come from buildkit. The root `CMakeLists.txt` first includes the loader
+  `cmake/buildkit.cmake` (a copy of buildkit's `loader/buildkit.cmake`), which takes buildkit from
+  `BUILDKIT_DIR` or fetches it. It then reads the version (`buildkit_git_version()`), sets the project
   (`Bowlingbox`, C++20) and the options, then includes `cmake/Common.cmake`. It adds `3rdparty/`,
   `libraries/` (the list in `libraries/CMakeLists.txt`) and, with `BUILD_APPS`, `applications/`.
   The root `CMakeLists.txt` stops on a toolchain that is not 64-bit.
-- `GitVersion.cmake` takes the project version from the nearest `vX.Y.Z` tag, falls back to the
-  version written in the file without git or tags, and accepts `-DBOWLINGBOX_VERSION=X.Y.Z`. Each
+- `buildkit_git_version()` takes the project version from the nearest `vX.Y.Z` tag, falls back to
+  the `FALLBACK` version without git or tags, and `-DBOWLINGBOX_VERSION=X.Y.Z` overrides it. Each
   library keeps its own version in its `project()` call, which sets its `SOVERSION`.
-- `Common.cmake` sets the language level, loads the helper modules, sets up clang-tidy, offline
-  fetching and testing, and pulls in the third-party support modules. It also defines
+- `Common.cmake` sets the language level, sets up coverage, clang-tidy and testing, and pulls in
+  the third-party support modules. It also defines
   `BOWLINGBOX_STATIC_RUNTIME` (MinGW GCC: link the GCC runtime statically) and the install component
-  `BOWLINGBOX_RUNTIME_COMPONENT` (`BowlingBox`), which holds exactly what the Windows installer ships.
+  `BOWLINGBOX_RUNTIME_COMPONENT` (`BowlingBox`), which holds exactly what the Windows installer ships,
+  and installs `LICENSE` and `THIRD_PARTY_NOTICES.txt` into it on Windows.
 - `3rdparty/CMakeLists.txt` builds the in-tree code as targets: `glad::glad`, `stb::easy_font`,
   `stb::truetype`, `miniaudio::miniaudio`, and the dev tool `sound_convert` (excluded from `all`).
 - `cmake/EmbedFile.cmake` provides `bowlingbox_embed_file()`, which turns a file into a generated C++
   byte array at configure time (the Rubik font, the sounds).
 - `cmake/windows-installer.cmake` is the initial cache for the Windows installer build
   (see [windows-installer.md](windows-installer.md)).
-- Binaries go to `<build-dir>/bin`, and libraries to `<build-dir>/lib` on Unix (`cmake/BuildLocation.cmake`).
+- Binaries go to `<build-dir>/bin`, and libraries to `<build-dir>/lib` on Unix (buildkit's `BuildLocation.cmake`).
 - Warnings are `-Wall -Wextra -Wpedantic -Werror` (`/W4 /WX` on MSVC) for project targets
-  (`cmake/modules/CompilerWarnings.cmake`).
+  (`buildkit_set_warnings()`, buildkit's `CompilerWarnings.cmake`).
 
-### Helper functions (`cmake/BuildUtils.cmake`, `cmake/TestUtils.cmake`)
+### Helper functions (buildkit's `BuildUtils.cmake`, `TestUtils.cmake`)
 
 - `create_library(LIB_NAME … LIB_FILES … PUBLIC_DEPENDENCIES … PRIVATE_DEPENDENCIES … TEST_SOURCES …)`
   does the following:
@@ -386,33 +389,32 @@ The canvas never changes game state directly. Every change goes through a `Comma
   executable of the right kind; `COMPONENT` puts it in a named install component (BowlingGL uses
   `BOWLINGBOX_RUNTIME_COMPONENT`).
   It stops with an error for an unknown ENTRY or a disabled toolkit, so each wx app directory calls it
-  directly, inside `if(BUILD_WX_UI)`. The app's logic goes in
+  directly, inside `if(BUILD_WX_UI AND BOWLINGBOX_WX_AVAILABLE)`. The app's logic goes in
   a static `<app>_core` library that the executable and its test both link.
 - `build_gtest_executable(NAME test_… SRC … DEPENDS … DISCOVER ON [LABELS …])` registers the tests
   with `gtest_discover_tests` and labels them `unit` unless `LABELS` says otherwise
   (`test_bowlingdisplay` uses `unit;gui`). Names must start with `test_` and be lowercase.
 
-### Scaffold generator (`cmake/modules/LibraryGenerator.cmake`)
+### Scaffold generator (buildkit's `LibraryGenerator.cmake`)
 
 With `GENERATE_SCAFFOLD=ON`, any name in `BOWLINGBOX_LIBRARIES` (root `CMakeLists.txt`) that has no
-directory yet is generated from `cmake/template/lib` (header, pimpl, CMake file, test). A matching
-app is generated from `cmake/template/app` (console or wx entry). Existing directories are
+directory yet is generated from buildkit's `template/lib` (header, pimpl, CMake file, test). A matching
+app is generated from its `template/app` (console or wx entry). Existing directories are
 never touched.
 
 ### Dependencies
 
 | Dependency | Version | How | Used by |
 |---|---|---|---|
-| Bullet3 | 3.25 | FetchContent, static, `-fPIC` (`BulletSupport.cmake`) | Alley (private) |
-| GLM | 1.0.1 | FetchContent, header-only (`GlmSupport.cmake`) | Render |
-| wxWidgets | ≥ 3.2 installed, else 3.2.8 | Installed CMake package or `wx-config` first (`BOWLINGBOX_USE_SYSTEM_WX=ON`), otherwise FetchContent, static, GTK3 (`WxSupport.cmake`) | BowlingGL, BowlingDisplay |
-| GoogleTest | v1.15.2 | FetchContent (`GTestSupport.cmake`) | all tests |
+| Bullet3 | installed, else 3.25 | `dev_dependency`, REQUIRED: installed package first, otherwise fetched, static, `-fPIC` (`BulletSupport.cmake`) | Alley (private) |
+| GLM | installed, else 1.0.1 | `dev_dependency`, REQUIRED: installed package first, otherwise fetched, header-only (`GlmSupport.cmake`) | Render |
+| wxWidgets | ≥ 3.2 installed, else 3.2.8 | `dev_dependency`, OPTIONAL: installed CMake package or `wx-config` first (`BOWLINGBOX_USE_SYSTEM_WX=ON`), otherwise fetched, static, GTK3 (`WxSupport.cmake`); without it the wx apps are left out | BowlingGL, BowlingDisplay |
+| GoogleTest | installed ≥ 1.15, else v1.15.2 | `dev_dependency` in buildkit's `GTestSupport.cmake` | all tests |
 | GLAD 2, stb_easy_font, stb_truetype, Rubik font | in tree | `3rdparty/` | Render (private) |
 | miniaudio 0.11.25, 13 CC0 sounds | in tree | `3rdparty/miniaudio/`, `3rdparty/sounds/` | Audio (private) |
 | stb_vorbis | in tree | `3rdparty/stb/` | `sound_convert` dev tool only, not shipped |
 
-Versions are cache variables (`BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
-`BOWLINGBOX_WX_VERSION`, `BOWLINGBOX_GTEST_VERSION`).
+`-DBUILDKIT_OFFLINE=ON` never downloads: a missing REQUIRED dependency stops the configure at once.
 
 ### Install and export
 

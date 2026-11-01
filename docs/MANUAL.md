@@ -19,8 +19,8 @@ structured, see [ARCHITECTURE.md](ARCHITECTURE.md).
 |---|---|
 | C++ compiler | C++20: GCC 11+ or Clang 14+ (Linux is the tested platform) |
 | CMake | 3.29 or newer |
-| Git | to fetch GoogleTest |
-| Network access | on the first configure (or a pre-filled `build/_deps`, see [Offline builds](#offline-builds)) |
+| Git | to fetch buildkit and GoogleTest |
+| Network access | on the first configure, unless the dependencies are installed (see [Offline builds](#offline-builds)) |
 
 System packages on Debian/Ubuntu:
 
@@ -32,15 +32,17 @@ sudo apt install build-essential cmake git ninja-build \
 - `libgtk-3-dev`, `libgl1-mesa-dev`, `libx11-dev` and `zlib1g-dev` are needed for the wx apps
   (`BUILD_WX_UI=ON`): BowlingGL and BowlingDisplay.
 
-Bullet3 3.25, GLM 1.0.1 and GoogleTest 1.15.2 are downloaded and built during configure. You do
-not install them yourself.
+The CMake modules come from [buildkit](https://github.com/medaminben/unitpro). The first configure
+fetches it into the build directory; to use a local checkout instead, set `BUILDKIT_DIR` (as an
+environment variable or `-DBUILDKIT_DIR=...`).
 
-wxWidgets is taken from the system when an installed wxWidgets 3.2 or newer is found (a CMake
-package, or `wx-config`). If none is found, wxWidgets 3.2.8 is downloaded and built from source.
-To use the system package on Debian/Ubuntu:
+Every third-party library is taken from the system when it is installed, and downloaded and built
+during configure otherwise: Bullet3 (3.25 when downloaded), GLM (1.0.1), wxWidgets 3.2 or newer
+(3.2.8, a CMake package or `wx-config` when installed) and GoogleTest 1.15.2. To use the system
+packages on Debian/Ubuntu (`redev/bootstrap/bootstrap.sh` installs them too):
 
 ```bash
-sudo apt install libwxgtk3.2-dev
+sudo apt install libwxgtk3.2-dev libbullet-dev libglm-dev
 ```
 
 ## 2. Building
@@ -48,13 +50,14 @@ sudo apt install libwxgtk3.2-dev
 ### Standard build
 
 ```bash
-cmake -S . -B build -G Ninja
-cmake --build build -j
-ctest --test-dir build --output-on-failure
+cmake --preset default
+cmake --build --preset default
+ctest --preset default
 ```
 
-The first configure and build take several minutes, because Bullet (and wxWidgets, when it is not
-installed on the system) is compiled from source. Later builds are incremental.
+The presets (`default`, `debug`, `coverage`, `asan`, `ci`) build into `build/<preset>`. The first
+configure and build take several minutes when Bullet or wxWidgets is not installed on the system,
+because it is compiled from source. Later builds are incremental.
 
 Executables are written to `<build-dir>/bin/` (`build/bin/` with the commands above):
 
@@ -72,7 +75,7 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (uses the system wxWidgets, or fetches it) |
+| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (uses the system wxWidgets, or fetches it; without wxWidgets or OpenGL they are left out with a warning) |
 | `BOWLINGBOX_USE_SYSTEM_WX` | `ON` | Use an installed wxWidgets if found; `OFF` always builds it from source |
 | `BUILD_TESTING` | `ON` | Fetch GoogleTest and build the test executables |
 | `BUILD_SHARED_LIBS` | `ON` | Bowlingbox libraries as shared (`.so` / `.dll`) instead of static |
@@ -80,11 +83,11 @@ Pass options as `-D<OPTION>=ON|OFF` on the first `cmake` call.
 | `ENABLE_COVERAGE` | `OFF` | Add `--coverage` and a `coverage` target (GCC/Clang) |
 | `ENABLE_CLANG_TIDY` | `OFF` | Run `clang-tidy` during compilation |
 | `BUILD_VERBOSE_OUTPUT` | `OFF` | Verbose makefiles and CMake variable dumps |
-| `BOWLINGBOX_FETCH_OFFLINE` | `OFF` | Use only already-downloaded dependencies |
+| `BUILDKIT_OFFLINE` | `OFF` | Never download: use installed and already downloaded dependencies only |
 | `BOWLINGBOX_STATIC_RUNTIME` | `OFF` | MinGW GCC only: link the GCC runtime into every binary (used by the Windows installer build) |
 
-The dependency versions can be overridden with `BOWLINGBOX_BULLET_VERSION`, `BOWLINGBOX_GLM_VERSION`,
-`BOWLINGBOX_WX_VERSION` and `BOWLINGBOX_GTEST_VERSION`.
+The downloaded versions are set in `cmake/BulletSupport.cmake`, `cmake/GlmSupport.cmake` and
+`cmake/WxSupport.cmake`; GoogleTest's in buildkit.
 
 ### Common variants
 
@@ -100,14 +103,16 @@ Keep extra build directories under `build/` (for example `build/release`). It is
 
 ### Offline builds
 
-After one successful online configure, `build/_deps` contains every downloaded dependency. Then:
+With the dependencies installed (see [Requirements](#1-requirements)), or after one successful
+online configure of the same build directory, configure without network:
 
 ```bash
-cmake -S . -B build -DBOWLINGBOX_FETCH_OFFLINE=ON
+cmake --preset default -DBUILDKIT_OFFLINE=ON
 ```
 
-You can also share a download cache between build directories with
-`-DFETCHCONTENT_BASE_DIR=/path/to/cache`, as CI does.
+Offline, a dependency that is neither installed nor downloaded stops the configure at once with an
+error that names it and `redev/bootstrap/bootstrap.sh`; nothing is downloaded. buildkit itself then
+has to come from `BUILDKIT_DIR` or an earlier configure of the same build directory.
 
 ### Installing the libraries
 
@@ -256,7 +261,7 @@ frame's total appears once its bonus balls have been played.
 |---|---|
 | `Package 'gtk+-3.0' not found` / OpenGL not found | Install `libgtk-3-dev libgl1-mesa-dev`, or build without the wx apps (`-DBUILD_WX_UI=OFF`) |
 | `DSO missing from command line` (X11) | Install `libx11-dev` and configure again |
-| Configure hangs or fails while downloading | Check network or proxy access to github.com. Once `build/_deps` is filled, use `-DBOWLINGBOX_FETCH_OFFLINE=ON` |
+| Configure fails while downloading | Check network or proxy access to github.com, or install the dependencies and use `-DBUILDKIT_OFFLINE=ON` |
 | BowlingGL crashes at start on Wayland | The app switches to `GDK_BACKEND=x11` (XWayland) on its own. Make sure XWayland is available. Only set `GDK_BACKEND=wayland` if your wx/GL stack supports it |
 | Black window or an OpenGL error dialog | The GPU or driver lacks OpenGL 3.3 core. Run `glxinfo -B` and update the Mesa or vendor driver |
 | `CMake 3.29 or higher is required` | Install a newer CMake (for example `pip install cmake`, or from cmake.org) |
@@ -299,7 +304,7 @@ cmake --build build/tidy
 1. Add its name to `BOWLINGBOX_LIBRARIES` in the root `CMakeLists.txt`, and to
    `_bowlingbox_library_dirs` in `libraries/CMakeLists.txt`.
 2. Configure with `GENERATE_SCAFFOLD=ON`. This creates `libraries/<Name>/` from
-   `cmake/template/lib`: a public header under `include/Bowlingbox/<Name>/`, a pimpl source, a test,
+   buildkit's `template/lib`: a public header under `include/Bowlingbox/<Name>/`, a pimpl source, a test,
    and a `CMakeLists.txt` that calls `create_library`.
 3. Add dependencies to `PUBLIC_DEPS` (types that appear in your public headers) or `PRIVATE_DEPS`
    (implementation only). Wrap third-party targets in `$<BUILD_INTERFACE:…>` if they should not
@@ -319,8 +324,8 @@ cmake --build build/tidy
 
 ### Continuous integration
 
-Every push to `main` or `feature/**`, and every pull request to `main`, builds and tests on Ubuntu
-24.04 (`.github/workflows/ci.yml`). Add the `automerge` label to a pull request to squash-merge it
+Every push to `main` or `feature/**`, and every pull request to `main`, builds and tests the `ci`
+preset with GCC on Ubuntu (`.github/workflows/ci.yml`, which calls buildkit's reusable CI workflow). Add the `automerge` label to a pull request to squash-merge it
 automatically once CI is green. The merge only happens if the pull request still points at the commit CI tested. A merge made by the workflow does not start another CI run on `main`.
 
 ### Versioning
@@ -341,8 +346,8 @@ if more than one `semver:` label is set. Merges made by the `automerge` workflow
 too.
 
 CMake takes `Bowlingbox_VERSION` (and the version of the installed package) from the nearest
-`vX.Y.Z` tag, through `cmake/GitVersion.cmake`. Without git or tags, for example in a shallow
-clone, it uses the fallback version in that file. To set the version by hand, pass
+`vX.Y.Z` tag, through buildkit's `buildkit_git_version()`. Without git or tags, for example in a
+shallow clone, it uses the `FALLBACK` version given in the root `CMakeLists.txt`. To set the version by hand, pass
 `-DBOWLINGBOX_VERSION=X.Y.Z`. Each library keeps its own version in its `project()` call,
 and that version sets the shared library's `SOVERSION`. Run `git fetch --tags` and reconfigure
 to pick up a new release in an existing build tree.

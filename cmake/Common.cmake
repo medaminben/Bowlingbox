@@ -1,4 +1,7 @@
-# Common project settings. Include early from the root CMakeLists.txt.
+# Bowlingbox project settings. Included from the root CMakeLists.txt after
+# project(). The generic modules (BuildUtils, LibraryGenerator, BuildLocation,
+# CompilerWarnings, TestUtils, Dependency, ...) come from buildkit, which the
+# loader (cmake/buildkit.cmake) includes before project().
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -6,10 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(GNUInstallDirs)
-include(BuildUtils)
-include(LibraryGenerator)
-include(BuildLocation)
-include(CompilerWarnings)
+# Coverage did nothing when buildkit loaded it before project(); now the
+# compiler is known.
 include(Coverage)
 
 # Installer builds link the GCC runtime into every module, so BowlingGL.exe and
@@ -31,13 +32,23 @@ endif()
 # BowlingGL, the Bowlingbox DLLs, LICENSE and THIRD_PARTY_NOTICES.txt.
 set(BOWLINGBOX_RUNTIME_COMPONENT BowlingBox)
 
+# Windows installer: the licence files ship beside BowlingGL.exe.
+if(WIN32)
+    install(
+        FILES
+            "${CMAKE_SOURCE_DIR}/LICENSE"
+            "${CMAKE_SOURCE_DIR}/installer/THIRD_PARTY_NOTICES.txt"
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        COMPONENT ${BOWLINGBOX_RUNTIME_COMPONENT}
+    )
+endif()
+
 # Fetched projects must honour our normal variables in their option() calls
 # (CMP0077) and must not drop them when creating cache entries (CMP0126).
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0126 NEW)
 
 if(BUILD_VERBOSE_OUTPUT)
-    include(DebugUtils)
     set(CMAKE_VERBOSE_MAKEFILE ON)
     dump_cmake_vars(configLogStart.log)
 endif()
@@ -52,29 +63,19 @@ if(ENABLE_CLANG_TIDY)
     endif()
 endif()
 
-option(BOWLINGBOX_FETCH_OFFLINE "Only use pre-populated FetchContent dependencies (_deps)" OFF)
-
-if(BOWLINGBOX_FETCH_OFFLINE)
-    set(FETCHCONTENT_FULLY_DISCONNECTED ON)
-    message(STATUS "Fetch offline mode: requires pre-populated _deps")
-else()
-    if(DEFINED ENV{FETCHCONTENT_FULLY_DISCONNECTED})
-        set(FETCHCONTENT_FULLY_DISCONNECTED $ENV{FETCHCONTENT_FULLY_DISCONNECTED})
-    else()
-        set(FETCHCONTENT_FULLY_DISCONNECTED OFF)
-    endif()
-    message(STATUS "Fetch online mode")
-endif()
-
 if(BUILD_TESTING)
     message(STATUS "BUILD_TESTING: ${BUILD_TESTING}")
     include(CTest)
     enable_testing()
-    include(TestUtils)
 endif()
 
-include(BulletSupport)   # Bowlingbox::Alley always needs it
-include(GlmSupport)      # Bowlingbox::Render always needs it
+# Third-party code comes through dev_dependency(): an installed package first,
+# else a download. -DBUILDKIT_OFFLINE=ON never downloads.
+include(BulletSupport)   # Bowlingbox::Alley always needs it (REQUIRED)
+include(GlmSupport)      # Bowlingbox::Render always needs it (REQUIRED)
+# The wx applications need wxWidgets; BowlingConsole and the libraries do not
+# (OPTIONAL). BOWLINGBOX_WX_AVAILABLE tells applications/ whether to add them.
+set(BOWLINGBOX_WX_AVAILABLE FALSE)
 if(BUILD_WX_UI)
     include(WxSupport)
 endif()

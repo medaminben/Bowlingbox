@@ -1,7 +1,26 @@
 cmake_minimum_required(VERSION 3.29)
 
-# The version comes from the latest vX.Y.Z git tag (see cmake/GitVersion.cmake).
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GitVersion.cmake)
+# buildkit provides the CMake modules (create_library, dev_dependency, ...).
+# Set BUILDKIT_DIR to a local checkout; otherwise the loader fetches its tag.
+# Until buildkit is released as medaminben/buildkit v2.0.0, fresh clones and
+# CI fetch unitpro's feature/buildkit branch instead.
+if(NOT DEFINED BUILDKIT_REPOSITORY)
+    set(BUILDKIT_REPOSITORY https://github.com/medaminben/unitpro.git)
+endif()
+if(NOT DEFINED BUILDKIT_TAG)
+    set(BUILDKIT_TAG feature/buildkit)
+endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/buildkit.cmake)
+
+# The version comes from the nearest vX.Y.Z git tag. Without git or tags the
+# fallback below is used; -DBOWLINGBOX_VERSION=X.Y.Z sets it by hand.
+if(NOT BOWLINGBOX_VERSION)
+    buildkit_git_version(${CMAKE_CURRENT_SOURCE_DIR} BOWLINGBOX_VERSION BOWLINGBOX_VERSION_FULL
+        FALLBACK 1.4.0)
+else()
+    set(BOWLINGBOX_VERSION_FULL ${BOWLINGBOX_VERSION})
+endif()
+message(STATUS "Bowlingbox version: ${BOWLINGBOX_VERSION_FULL}")
 
 # Project names are only relevant for humans; camel case is okay.
 project(Bowlingbox VERSION ${BOWLINGBOX_VERSION} LANGUAGES CXX)
@@ -26,9 +45,10 @@ option(ENABLE_CLANG_TIDY     "Run clang-tidy during compilation"           OFF)
 option(GENERATE_SCAFFOLD     "Generate missing libraries from templates"   ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
-include(Common)
+# By path: buildkit's cmake/ comes first on CMAKE_MODULE_PATH and has a
+# Common.cmake of its own.
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Common.cmake)
 
 # Libraries to generate / include. Add new names here for scaffold generation.
 set(BOWLINGBOX_LIBRARIES
@@ -41,15 +61,14 @@ set(BOWLINGBOX_LIBRARIES
 
 set(libraries_dir    ${CMAKE_SOURCE_DIR}/libraries)
 set(applications_dir ${CMAKE_SOURCE_DIR}/applications)
-set(template_dir     ${CMAKE_SOURCE_DIR}/cmake/template)
 
 if(GENERATE_SCAFFOLD)
     # Existing kata apps stay topic-based; scaffold only creates apps for *new* libs.
+    # The templates are buildkit's (template/).
     generate_libraries(
         LIBRARIES_LIST     ${BOWLINGBOX_LIBRARIES}
         LIBRARIES_LOCATION ${libraries_dir}
         APPS_LOCATION      ${applications_dir}
-        TEMPLATE_LOCATION  ${template_dir}
     )
 endif()
 

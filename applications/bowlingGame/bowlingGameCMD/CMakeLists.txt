@@ -9,7 +9,7 @@ add_library(bowlingconsole_core STATIC
 )
 target_include_directories(bowlingconsole_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(bowlingconsole_core PUBLIC ${CMAKE_ROOT_NAME}::Score)
-bowlingbox_set_warnings(bowlingconsole_core)
+buildkit_set_warnings(bowlingconsole_core)
 
 create_application(
     NAME         BowlingConsole

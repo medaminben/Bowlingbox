@@ -110,8 +110,8 @@ if ($SkipInstaller) {
 }
 
 function Get-ProjectVersion {
-  # The version CMake configured: cmake/GitVersion.cmake resolves it from the
-  # nearest vX.Y.Z tag (fallback in that file), and project() records it here.
+  # The version CMake configured: buildkit_git_version() resolves it from the
+  # nearest vX.Y.Z tag (fallback in CMakeLists.txt), and project() records it here.
   $cache = Join-Path $BuildDir "CMakeCache.txt"
   if (-not (Test-Path $cache)) { throw "No $cache; configure the build first." }
   $match = Select-String -Path $cache -Pattern '^CMAKE_PROJECT_VERSION:[A-Z]+=(.*)$' | Select-Object -First 1
