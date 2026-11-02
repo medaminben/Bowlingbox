@@ -32,7 +32,7 @@ sudo apt install build-essential cmake git ninja-build \
 - `libgtk-3-dev`, `libgl1-mesa-dev`, `libx11-dev` and `zlib1g-dev` are needed for the wx apps
   (`BUILD_WX_UI`): BowlingGL and BowlingDisplay.
 
-The CMake modules come from [buildkit](https://github.com/medaminben/unitpro). The first configure
+The CMake modules come from [buildkit](https://github.com/medaminben/buildkit). The first configure
 fetches it into the build directory; to use a local checkout instead, set `BUILDKIT_DIR` (as an
 environment variable or `-DBUILDKIT_DIR=...`).
 

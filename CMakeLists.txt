@@ -2,15 +2,6 @@ cmake_minimum_required(VERSION 3.29)
 
 # buildkit provides the CMake modules (create_library, dev_dependency, ...).
 # Set BUILDKIT_DIR to a local checkout; otherwise the loader fetches its tag.
-# TEMPORARY until buildkit v2.0.0 — remove (plan Task 12 Step 5)
-# Until buildkit is released as medaminben/buildkit v2.0.0, fresh clones and the
-# installer/version workflows fetch unitpro's feature/buildkit branch instead.
-if(NOT DEFINED BUILDKIT_REPOSITORY)
-    set(BUILDKIT_REPOSITORY https://github.com/medaminben/unitpro.git)
-endif()
-if(NOT DEFINED BUILDKIT_TAG)
-    set(BUILDKIT_TAG feature/buildkit)
-endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/buildkit.cmake)
 
 # The version comes from the nearest vX.Y.Z git tag. Without git or tags the

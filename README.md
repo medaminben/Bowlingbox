@@ -33,7 +33,7 @@ ctest --preset default
 ```
 
 CMake 3.29 or newer is required. The build is based on
-[buildkit](https://github.com/medaminben/unitpro), which the first configure fetches (or set
+[buildkit](https://github.com/medaminben/buildkit), which the first configure fetches (or set
 `BUILDKIT_DIR` to a local checkout). Installed wxWidgets 3.2, Bullet and GLM are used if present;
 otherwise they are downloaded and built, like GoogleTest. The [manual](docs/MANUAL.md) covers controls,
 every build option, and troubleshooting.
