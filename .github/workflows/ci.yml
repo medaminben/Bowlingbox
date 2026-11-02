@@ -11,10 +11,12 @@ on:
   push:
     branches:
       - main
+      - Beta
       - "feature/**"
   pull_request:
     branches:
       - main
+      - Beta
 
 permissions:
   contents: read
