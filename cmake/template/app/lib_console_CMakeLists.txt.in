@@ -1,8 +1,0 @@
-project(${lib_NAME}_Console VERSION 1.1.1 LANGUAGES CXX)
-
-create_application(
-    NAME         ${lib_NAME}_Console
-    ENTRY        Console
-    SOURCES      ${lib_NAME}_Console.cpp
-    DEPENDENCIES ${VAR_MARKER_START}CMAKE_ROOT_NAME${VAR_MARKER_END}::${lib_NAME}
-)

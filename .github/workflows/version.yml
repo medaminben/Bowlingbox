@@ -1,7 +1,7 @@
 # Gives every pull request merged into main a semantic version (vX.Y.Z tag + GitHub release).
 # The pull request's label picks the bump: semver:major, semver:minor, semver:patch, or
 # semver:none for no release. Without a semver label the bump is patch. CMake reads the
-# version from the latest tag (cmake/GitVersion.cmake). Each release then gets the Windows
+# version from the latest tag (buildkit_git_version() in CMakeLists.txt). Each release then gets the Windows
 # installer attached (windows-installer.yml, called below).
 name: Version
 

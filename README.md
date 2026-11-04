@@ -23,17 +23,19 @@ describes the front-ends.
 Debian/Ubuntu:
 
 ```bash
-sudo apt install build-essential cmake git libgtk-3-dev libgl1-mesa-dev libx11-dev zlib1g-dev
-cmake -S . -B build
-cmake --build build -j
-ctest --test-dir build
-./build/bin/BowlingGL        # 3D game
-./build/bin/BowlingConsole   # text game
+sudo apt install build-essential cmake git ninja-build libwxgtk3.2-dev libgl1-mesa-dev \
+                 libbullet-dev libglm-dev
+cmake --preset default
+cmake --build --preset default
+ctest --preset default
+./build/default/bin/BowlingGL        # 3D game
+./build/default/bin/BowlingConsole   # text game
 ```
 
-CMake 3.29 or newer is required. Bullet3, GLM and GoogleTest are downloaded during the first
-configure. An installed wxWidgets 3.2 (`sudo apt install libwxgtk3.2-dev`) is used if present;
-otherwise wxWidgets is downloaded and built too. The [manual](docs/MANUAL.md) covers controls,
+CMake 3.29 or newer is required. The build is based on
+[buildkit](https://github.com/medaminben/buildkit), which the first configure fetches (or set
+`BUILDKIT_DIR` to a local checkout). Installed wxWidgets 3.2, Bullet and GLM are used if present;
+otherwise they are downloaded and built, like GoogleTest. The [manual](docs/MANUAL.md) covers controls,
 every build option, and troubleshooting.
 
 On Windows, **[download the installer](https://github.com/medaminben/Bowlingbox/releases/latest/download/BowlingBox_Setup.exe)**
@@ -63,7 +65,7 @@ also has `BowlingBox_Setup_<version>.exe`).
 | Option | Default | Effect |
 |---|---|---|
 | `BUILD_APPS` | `ON` | Build the applications |
-| `BUILD_WX_UI` | `ON` | Build `BowlingGL` and `BowlingDisplay` (system wxWidgets, or fetched and built) |
+| `BUILD_WX_UI` | `AUTO` | Build `BowlingGL` and `BowlingDisplay` (system wxWidgets, or fetched and built); `ON` requires wxWidgets, `OFF` leaves them out |
 | `BUILD_TESTING` | `ON` | Build the GoogleTest suites |
 | `BUILD_SHARED_LIBS` | `ON` | Build the Bowlingbox libraries as shared libraries |
 

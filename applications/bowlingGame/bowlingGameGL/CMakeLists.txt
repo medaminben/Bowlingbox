@@ -21,7 +21,7 @@ target_link_libraries(bowlinggl_core PUBLIC
     wx::core
     wx::base
 )
-bowlingbox_set_warnings(bowlinggl_core)
+buildkit_set_warnings(bowlinggl_core)
 
 create_application(
     NAME         BowlingGL
