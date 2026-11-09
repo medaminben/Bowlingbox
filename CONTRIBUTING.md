@@ -17,9 +17,9 @@ them privately.
 2. Build and run the tests. The [manual](docs/MANUAL.md) lists the packages you need.
 
    ```bash
-   cmake -S . -B build
-   cmake --build build -j
-   ctest --test-dir build --output-on-failure
+   cmake --preset default
+   cmake --build --preset default
+   ctest --preset default
    ```
 
 3. Add or update tests for what you change. After changes to Alley, Render or BowlingGL, also go

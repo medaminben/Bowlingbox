@@ -9,7 +9,7 @@ target_link_libraries(bowlingdisplay_core PUBLIC
     wx::core
     wx::base
 )
-bowlingbox_set_warnings(bowlingdisplay_core)
+buildkit_set_warnings(bowlingdisplay_core)
 
 create_application(
     NAME         BowlingDisplay

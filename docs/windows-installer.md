@@ -42,7 +42,7 @@ merge `vX.Y.Z` and publish a release (unless the pull request is labelled
 `semver:none`). It then calls `.github/workflows/windows-installer.yml` with that
 tag, which builds the installer from the tag and attaches it to the release about
 20 minutes later. The installer's version is the one CMake reads from the tag
-(`cmake/GitVersion.cmake`); the upload step refuses a file whose version does not
+(`buildkit_git_version()` in the root `CMakeLists.txt`); the upload step refuses a file whose version does not
 match.
 
 By hand, Actions → **Windows installer** → *Run workflow*:

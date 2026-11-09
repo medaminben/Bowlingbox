@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache/fetchcontent
-          key: fetchcontent-win-v1-${{ hashFiles('cmake/GTestSupport.cmake', 'cmake/BulletSupport.cmake', 'cmake/GlmSupport.cmake', 'cmake/WxSupport.cmake', 'cmake/windows-installer.cmake') }}
+          key: fetchcontent-win-v1-${{ hashFiles('CMakeLists.txt', 'cmake/BulletSupport.cmake', 'cmake/GlmSupport.cmake', 'cmake/WxSupport.cmake', 'cmake/windows-installer.cmake') }}
           restore-keys: |
             fetchcontent-win-v1-
 
