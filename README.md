@@ -1,7 +1,14 @@
 # Bowlingbox
 
-[![CI](https://github.com/medaminben/Bowlingbox/actions/workflows/ci.yml/badge.svg)](https://github.com/medaminben/Bowlingbox/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/medaminben/Bowlingbox/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/medaminben/Bowlingbox/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/medaminben/Bowlingbox)](https://github.com/medaminben/Bowlingbox/releases/latest)
+[![downloads](https://img.shields.io/github/downloads/medaminben/Bowlingbox/total)](https://github.com/medaminben/Bowlingbox/releases)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)
+![wxWidgets 3.2](https://img.shields.io/badge/wxWidgets-3.2-1A6FA5)
+![Bullet3](https://img.shields.io/badge/Bullet-3-6E4C9E)
+![OpenGL 3.3](https://img.shields.io/badge/OpenGL-3.3-5586A4)
+![platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-555)
+[![license: MIT](https://img.shields.io/github/license/medaminben/Bowlingbox)](LICENSE)
 
 A C++20 bowling game built from small, testable libraries: a ten-pin score calculator,
 a Bullet3 physics lane, an OpenGL renderer, a sound library, and three front-ends (wxWidgets/OpenGL,
